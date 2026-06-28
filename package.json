@@ -1,0 +1,45 @@
+{
+  "name": "meru-viajes",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "optimize:images": "node scripts/convert-to-avif.js",
+    "optimize:image": "node scripts/optimize-image.js",
+    "grant-admin": "node --env-file=.env.local scripts/grant-admin-by-email.cjs"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
+    "cloudinary": "^2.7.0",
+    "clsx": "^2.1.1",
+    "firebase": "^12.4.0",
+    "firebase-admin": "^12.7.0",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.543.0",
+    "next": "^15.5.9",
+    "next-auth": "^4.24.11",
+    "next-cloudinary": "^6.16.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-hook-form": "^7.62.0",
+    "resend": "^6.9.2",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.5",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.9",
+    "sharp": "^0.34.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,92 @@
+import type { Service } from "@/types";
+
+/**
+ * Datos de demostración para previsualizar el catálogo antes de conectar Firestore.
+ * Reemplazar por lectura real en Fase 3.
+ */
+export const SAMPLE_SERVICES: Service[] = [
+  {
+    id: "sample-1",
+    title: "Navegación por el Canal Beagle",
+    slug: "navegacion-canal-beagle",
+    description:
+      "Recorré el legendario Canal Beagle con vistas al archipiélago y las montañas del sur. Parada en Isla de los Lobos e Isla de los Pájaros. Incluye guía especializado y abrigo térmico a bordo.",
+    price: 95000,
+    duration: "Medio día",
+    difficulty: "Fácil",
+    location: "Canal Beagle, Ushuaia",
+    category: "Navegación",
+    meetingPoint: "Muelle comercial — 15 minutos antes de la salida coordinada con la agencia.",
+    requirements: "Documento de identidad. Indicar alergias o restricciones médicas al reservar.",
+    cancellationPolicy:
+      "Cancelación gratuita hasta 48 h antes. Después aplican cargos según operador y condiciones climáticas.",
+    additionalEquipment: "Binoculares opcionales. Ropa abrigada y capa impermeable recomendadas.",
+    notIncluded:
+      "Traslados al muelle (salvo indicación contraria), comidas, bebidas alcohólicas, propinas.",
+    photos: [
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80",
+      "https://images.unsplash.com/photo-1531572753322-ad063c01d8d0?w=1200&q=80",
+      "https://images.unsplash.com/photo-1518173946687-a4c036bc6ef4?w=1200&q=80",
+    ],
+    seasonalPhotos: [
+      {
+        season: "verano",
+        url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80",
+        label: "Verano en el Beagle",
+      },
+      {
+        season: "invierno",
+        url: "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?w=1200&q=80",
+        label: "Invierno patagónico",
+      },
+    ],
+    stock: 0,
+    active: true,
+  },
+  {
+    id: "sample-2",
+    title: "Trekking y montaña en Glaciar Martial",
+    slug: "trekking-glaciar-martial",
+    description:
+      "Ascenso guiado hacia el Glaciar Martial con panorámica de la ciudad y el canal. Senderos de bosque andino patagónico. Ideal para quienes buscan naturaleza y fotografía sin salir muy lejos de Ushuaia.",
+    price: 42000,
+    duration: "3 a 4 horas",
+    difficulty: "Moderada",
+    location: "Cerro Martial — Ushuaia",
+    category: "Montaña",
+    meetingPoint: "Base del cerro — coordinación de horario con Meru al confirmar reserva.",
+    requirements: "Buen estado físico básico. Calzado de trekking obligatorio. Menores con adulto responsable.",
+    cancellationPolicy: "Reembolso parcial según anticipación. Actividad sujeta a condiciones meteorológicas.",
+    additionalEquipment: "Bastones disponibles para alquiler. Llevar agua y snacks ligeros.",
+    notIncluded: "Comidas, equipo personal de montaña, traslado hasta el punto de encuentro salvo servicio contratado.",
+    photos: [
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80",
+    ],
+    stock: 0,
+    active: true,
+  },
+  {
+    id: "sample-3",
+    title: "Parque Nacional Tierra del Fuego",
+    slug: "parque-nacional-tierra-del-fuego",
+    description:
+      "Día completo en el Parque Nacional: bosques de lenga y coihue, costa del canal, fauna autóctona y aires del fin del mundo. Visitas interpretativas con tiempo libre para fotos y contemplación.",
+    price: 78000,
+    duration: "Día completo",
+    difficulty: "Fácil a moderada",
+    location: "Parque Nacional Tierra del Fuego",
+    category: "Naturaleza",
+    meetingPoint: "Punto acordado en Ushuaia (confirmación por mail o WhatsApp).",
+    requirements: "Entrada al parque puede no estar incluida según modalidad; consultar al reservar.",
+    cancellationPolicy: "Política de cancelación según disponibilidad del transporte y guía.",
+    additionalEquipment: "Protector solar, repelente, calzado cómodo y capa para lluvia.",
+    notIncluded: "Entrada al parque (cuando corresponda), almuerzo, gastos personales.",
+    photos: [
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80",
+      "https://images.unsplash.com/photo-1511497584788-876760111969?w=1200&q=80",
+    ],
+    stock: 0,
+    active: true,
+  },
+];

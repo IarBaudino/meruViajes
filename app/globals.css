@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* Great Friend: añadí /public/fonts/GreatFriend.woff2 (y opcional .woff) para activar la fuente decorativa. */
+@font-face {
+  font-family: "Great Friend";
+  src:
+    url("/fonts/GreatFriend.woff2") format("woff2"),
+    url("/fonts/GreatFriend.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Marca */
+  --color-meru-primary: #006633;
+  --color-meru-primary-dark: #004d27;
+  --color-meru-charcoal: #3c3c3b;
+  --color-meru-charcoal-muted: #5a5a58;
+  /* Acento secundario: verde un poco más claro para enlaces y hovers */
+  --color-meru-secondary: #0f7a4d;
+  --color-meru-secondary-hover: #0c633e;
+  /* Detalles (iconos, subrayados) — mismo verde con transparencia vía clases */
+  --color-meru-accent: #006633;
+
+  /* Crema (fondo principal) */
+  --color-meru-sand: #f7f4ed;
+  /* Superficies y bordes suaves */
+  --color-meru-ice: #e8f1eb;
+  --color-meru-surface: #fffcf7;
+  --color-meru-border: #ddd8cf;
+
+  --color-meru-muted: #5a5a58;
+  --color-meru-forest: #006633;
+
+  /* Tipografía: Bahnschrift cuerpos; Haettenschweiler títulos; Great Friend puntual */
+  --font-sans:
+    Bahnschrift, "Bahnschrift Condensed", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-heading:
+    Haettenschweiler, "Arial Narrow", "Franklin Gothic Medium", "Helvetica Neue Condensed",
+    "Segoe UI Semibold", system-ui, sans-serif;
+  --font-accent: "Great Friend", Bahnschrift, cursive;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  --shadow-card: 0 4px 6px -1px rgb(60 60 59 / 0.06), 0 2px 4px -2px rgb(60 60 59 / 0.05);
+  --shadow-elevated: 0 20px 25px -5px rgb(60 60 59 / 0.08), 0 8px 10px -6px rgb(60 60 59 / 0.06);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-meru-sand font-sans text-meru-charcoal antialiased;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-heading);
+    letter-spacing: 0.02em;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    @apply text-meru-charcoal;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-meru-primary;
+  }
+}
