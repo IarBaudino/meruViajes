@@ -1,3 +1,8 @@
+import type { ServiceDiscounts } from "@/types/discounts";
+
+export type { ServiceDiscounts, PassengerCategory } from "@/types/discounts";
+export { PASSENGER_CATEGORY_LABELS } from "@/types/discounts";
+
 export type UserRole = "customer" | "admin";
 
 export interface User {
@@ -41,6 +46,8 @@ export interface Service {
   cancellationPolicy?: string;
   additionalEquipment?: string;
   notIncluded?: string;
+  /** Descuentos por categoría de pasajero (% sobre precio adulto) */
+  discounts?: ServiceDiscounts;
   guides?: Record<string, unknown>;
   stock: number;
   active: boolean;

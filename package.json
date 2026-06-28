@@ -9,10 +9,16 @@
     "lint": "eslint .",
     "optimize:images": "node scripts/convert-to-avif.js",
     "optimize:image": "node scripts/optimize-image.js",
-    "grant-admin": "node --env-file=.env.local scripts/grant-admin-by-email.cjs"
+    "grant-admin": "node --env-file=.env.local scripts/grant-admin-by-email.cjs",
+    "seed:services": "node --env-file=.env.local scripts/seed-services.cjs",
+    "recompress:storage": "node --env-file=.env.local scripts/recompress-supabase-images.mjs",
+    "recompress:videos": "node --env-file=.env.local scripts/recompress-supabase-videos.mjs"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@hookform/resolvers": "^5.2.1",
+    "@supabase/supabase-js": "^2.49.8",
     "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
     "firebase": "^12.4.0",

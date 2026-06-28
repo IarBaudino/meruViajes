@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatCurrencyARS } from "@/lib/format";
+import { hasAnyDiscount } from "@/features/excursions/lib/pricing";
 
 type ExcursionCardProps = {
   service: Service;
@@ -56,6 +57,9 @@ export function ExcursionCard({ service, className }: ExcursionCardProps) {
           <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-meru-charcoal-muted">{service.description}</p>
           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-meru-border pt-4">
             <span className="text-lg font-bold text-meru-primary">{formatCurrencyARS(service.price)}</span>
+            {hasAnyDiscount(service.discounts) && (
+              <span className="text-xs font-medium text-meru-secondary">Descuentos disponibles</span>
+            )}
             {service.duration && (
               <span className="text-sm text-meru-muted">Duración: {service.duration}</span>
             )}

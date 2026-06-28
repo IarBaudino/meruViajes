@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Menu, X, Mountain } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
+import { AuthNav } from "@/components/layout/auth-nav";
+import { MobileAuthMenu } from "@/components/layout/mobile-auth-menu";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -27,7 +29,7 @@ export function Header() {
           <span>Meru Turismo</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Principal">
+        <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Principal">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -37,12 +39,7 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className="rounded-lg bg-meru-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-meru-primary-dark"
-          >
-            Mi cuenta
-          </Link>
+          <AuthNav />
         </nav>
 
         <button
@@ -77,15 +74,7 @@ export function Header() {
               </Link>
             </li>
           ))}
-          <li>
-            <Link
-              href="/login"
-              className="mt-2 block rounded-lg bg-meru-primary px-3 py-2.5 text-center font-semibold text-white"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Mi cuenta
-            </Link>
-          </li>
+          <MobileAuthMenu onNavigate={() => setMobileMenuOpen(false)} />
         </ul>
       </nav>
     </header>

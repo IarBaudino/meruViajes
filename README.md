@@ -7,14 +7,14 @@ Aplicación web para **Meru Turismo** (Ushuaia, Tierra del Fuego): catálogo de 
 - Next.js 15 (App Router) + React 19 + TypeScript
 - Tailwind CSS v4
 - Firebase (Auth + Firestore)
-- next-auth v4, Cloudinary, Resend, Zustand, Framer Motion
+- next-auth v4, **Supabase Storage** (medios), Resend, Zustand, Framer Motion
 
 ## Requisitos
 
 - Node.js 20+
 - Cuenta Firebase (proyecto nuevo)
 - Cuenta Resend (emails de consultas)
-- Cloudinary (Fase 6 — admin)
+- Cuenta Supabase (Storage para imágenes y vídeos) — ver [docs/MEDIA-STORAGE.md](docs/MEDIA-STORAGE.md)
 
 ## Setup local
 
@@ -56,6 +56,9 @@ Abrir [http://localhost:3000](http://localhost:3000).
 | `npm run build` | Build de producción |
 | `npm run lint` | ESLint |
 | `npm run grant-admin -- email@ejemplo.com` | Asignar rol admin |
+| `npm run seed:services` | *(Opcional)* Carga JSON de ejemplo — omitir si creás excursiones vos |
+| `npm run recompress:storage` | Recomprimir imágenes en Supabase (batch) |
+| `npm run recompress:videos` | Recomprimir vídeos con ffmpeg CLI |
 | `npm run optimize:images` | Convertir imágenes de `public/` a AVIF |
 
 ## Estructura
@@ -75,7 +78,7 @@ schemas/          → Validación Zod
 ## Fases del proyecto
 
 - **Fase 1–2** ✅ Scaffold + Home con formulario de consultas
-- **Fase 3** Catálogo Firestore + seed excursiones
+- **Fase 3** ✅ Catálogo Firestore + seed + descuentos en modelo
 - **Fase 4** Auth Firebase + next-auth + perfil
 - **Fase 5** Carrito, reservas, emails confirmación
 - **Fase 6** Admin CRUD + Cloudinary

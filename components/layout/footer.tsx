@@ -36,6 +36,11 @@ export function Footer() {
                   Consultas
                 </Link>
               </li>
+              <li>
+                <Link href="/admin" className="hover:text-meru-sand">
+                  Administración
+                </Link>
+              </li>
             </ul>
           </div>
 

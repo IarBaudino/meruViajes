@@ -6,9 +6,11 @@ import { getActiveServices, getServiceBySlug } from "@/features/excursions/lib/g
 import { ExcursionGallery } from "@/features/excursions/components/excursion-gallery";
 import { AddToCartButton } from "@/features/excursions/components/add-to-cart-button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrencyARS } from "@/lib/format";
+import { ExcursionPricingPanel } from "@/features/excursions/components/excursion-pricing-panel";
 
 type Props = { params: Promise<{ slug: string }> };
+
+export const revalidate = 60;
 
 export async function generateStaticParams() {
   const services = await getActiveServices();
@@ -134,10 +136,7 @@ export default async function ExcursionDetailPage({ params }: Props) {
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-xl border border-meru-border bg-white p-6 shadow-[var(--shadow-card)]">
-            <p className="text-sm text-meru-muted">Precio estimado</p>
-            <p className="mt-1 text-3xl font-bold text-meru-primary">
-              {formatCurrencyARS(service.price)}
-            </p>
+            <ExcursionPricingPanel service={service} />
             {service.duration && (
               <p className="mt-3 text-sm text-meru-charcoal-muted">
                 <span className="font-medium text-meru-charcoal">Duración:</span> {service.duration}
