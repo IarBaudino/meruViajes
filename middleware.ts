@@ -1,29 +1,38 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { getSessionCookieName } from "@/lib/auth/session-cookie";
 
-export default withAuth(
-  function middleware(req) {
-    const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
-    const role = req.nextauth.token?.role;
+export async function middleware(request: NextRequest) {
+  const secret = process.env.NEXTAUTH_SECRET;
+  const isSecure = request.nextUrl.protocol === "https:";
 
-    if (isAdminRoute && role !== "admin") {
-      const loginUrl = new URL("/login", req.url);
-      loginUrl.searchParams.set("error", "admin");
-      loginUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  const token = secret
+    ? await getToken({
+        req: request,
+        secret,
+        secureCookie: isSecure,
+        cookieName: getSessionCookieName(isSecure),
+      })
+    : null;
 
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => Boolean(token),
-    },
-    pages: {
-      signIn: "/login",
-    },
+  const { pathname } = request.nextUrl;
+
+  if (!token) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
-);
+
+  if (pathname.startsWith("/admin") && token.role !== "admin") {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("error", "admin");
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: ["/mi-cuenta/:path*", "/admin/:path*"],

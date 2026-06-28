@@ -5,6 +5,7 @@ import { syncUserProfile } from "@/lib/auth/sync-user-profile";
 import type { UserRole } from "@/types";
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -39,14 +40,17 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
     signIn: "/login",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.sub = user.id;
         token.uid = user.id;
+        token.email = user.email;
+        token.name = user.name;
         token.role = (user as { role?: UserRole }).role ?? "customer";
       }
       return token;

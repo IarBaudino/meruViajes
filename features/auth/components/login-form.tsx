@@ -2,22 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/schemas/auth";
-import {
-  firebaseEmailSignIn,
-  mapFirebaseAuthError,
-} from "@/lib/auth/firebase-auth-client";
+import { firebaseEmailSignIn, mapFirebaseAuthError } from "@/lib/auth/firebase-auth-client";
+import { resolvePostLoginDestination } from "@/lib/auth/post-login-destination";
 import { establishSession } from "@/lib/auth/session-client";
-import { useGoogleRedirectAuth } from "@/features/auth/hooks/use-google-redirect-auth";
+import { navigateAfterLogin } from "@/lib/auth/navigate-after-login";
+import { useAuthGoogle } from "@/features/auth/components/auth-google-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/mi-cuenta/perfil";
   const queryError = searchParams.get("error");
@@ -26,14 +24,7 @@ export function LoginForm() {
     queryError === "admin" ? "Necesitás una cuenta de administrador." : ""
   );
 
-  const {
-    resolvingRedirect,
-    googleLoading,
-    googleError,
-    setGoogleError,
-    startGoogleSignIn,
-  } = useGoogleRedirectAuth(callbackUrl);
-
+  const { googleLoading, googleError, startGoogleSignIn, clearGoogleError } = useAuthGoogle();
   const displayError = formError || googleError;
 
   const {
@@ -50,12 +41,13 @@ export function LoginForm() {
     if (!session.ok) {
       throw new Error(session.error ?? "Error de sesión");
     }
-    router.push(callbackUrl);
-    router.refresh();
+    const destination = resolvePostLoginDestination(callbackUrl, session.role);
+    navigateAfterLogin(destination);
   }
 
   async function onSubmit(data: LoginFormData) {
     setFormError("");
+    clearGoogleError();
     try {
       const credential = await firebaseEmailSignIn(data.email, data.password);
       await completeSignIn(() => credential.user.getIdToken());
@@ -67,16 +59,8 @@ export function LoginForm() {
 
   async function onGoogleSignIn() {
     setFormError("");
-    setGoogleError("");
-    await startGoogleSignIn();
-  }
-
-  if (resolvingRedirect) {
-    return (
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
-        <p className="text-center text-meru-muted">Completando ingreso con Google…</p>
-      </div>
-    );
+    clearGoogleError();
+    await startGoogleSignIn(callbackUrl);
   }
 
   return (
