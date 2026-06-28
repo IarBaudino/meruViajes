@@ -10,16 +10,27 @@ import { AlertCircle } from "lucide-react";
 import { registerSchema, type RegisterFormData } from "@/schemas/auth";
 import {
   firebaseEmailRegister,
-  firebaseGoogleSignIn,
   mapFirebaseAuthError,
 } from "@/lib/auth/firebase-auth-client";
 import { establishSession } from "@/lib/auth/session-client";
+import { useGoogleRedirectAuth } from "@/features/auth/hooks/use-google-redirect-auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function RegisterForm() {
   const router = useRouter();
   const [formError, setFormError] = useState("");
+  const callbackUrl = "/mi-cuenta/perfil";
+
+  const {
+    resolvingRedirect,
+    googleLoading,
+    googleError,
+    setGoogleError,
+    startGoogleSignIn,
+  } = useGoogleRedirectAuth(callbackUrl);
+
+  const displayError = formError || googleError;
 
   const {
     register,
@@ -53,13 +64,16 @@ export function RegisterForm() {
 
   async function onGoogleSignIn() {
     setFormError("");
-    try {
-      const credential = await firebaseGoogleSignIn();
-      await completeSignIn(() => credential.user.getIdToken());
-    } catch (err) {
-      const code = (err as { code?: string }).code ?? "";
-      setFormError(mapFirebaseAuthError(code));
-    }
+    setGoogleError("");
+    await startGoogleSignIn();
+  }
+
+  if (resolvingRedirect) {
+    return (
+      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
+        <p className="text-center text-meru-muted">Completando registro con Google…</p>
+      </div>
+    );
   }
 
   return (
@@ -102,10 +116,10 @@ export function RegisterForm() {
           {...register("confirmPassword")}
         />
 
-        {formError && (
+        {displayError && (
           <p className="flex items-start gap-2 text-sm text-red-600" role="alert">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            {formError}
+            {displayError}
           </p>
         )}
 
@@ -123,7 +137,13 @@ export function RegisterForm() {
         </div>
       </div>
 
-      <Button type="button" variant="outline" className="w-full" onClick={onGoogleSignIn}>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={onGoogleSignIn}
+        isLoading={googleLoading}
+      >
         Registrarse con Google
       </Button>
 

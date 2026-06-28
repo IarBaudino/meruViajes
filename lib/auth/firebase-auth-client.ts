@@ -1,12 +1,15 @@
 import {
   createUserWithEmailAndPassword,
+  getRedirectResult,
   GoogleAuthProvider,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   type UserCredential,
 } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebase/client";
+
+const googleProvider = new GoogleAuthProvider();
 
 function requireClientAuth() {
   const auth = getClientAuth();
@@ -27,8 +30,14 @@ export async function firebaseEmailRegister(
   return createUserWithEmailAndPassword(requireClientAuth(), email, password);
 }
 
-export async function firebaseGoogleSignIn(): Promise<UserCredential> {
-  return signInWithPopup(requireClientAuth(), new GoogleAuthProvider());
+/** Redirect completo a Google (recomendado en producción; evita errores COOP del popup). */
+export async function firebaseGoogleSignInRedirect(): Promise<void> {
+  await signInWithRedirect(requireClientAuth(), googleProvider);
+}
+
+/** Llamar al volver de Google; devuelve null si no hay redirect pendiente. */
+export async function firebaseGoogleRedirectResult(): Promise<UserCredential | null> {
+  return getRedirectResult(requireClientAuth());
 }
 
 export async function firebaseClientSignOut(): Promise<void> {
