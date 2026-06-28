@@ -7,20 +7,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProfile } from "firebase/auth";
 import { AlertCircle } from "lucide-react";
 import { registerSchema, type RegisterFormData } from "@/schemas/auth";
-import { firebaseEmailRegister, mapFirebaseAuthError } from "@/lib/auth/firebase-auth-client";
+import {
+  firebaseEmailRegister,
+  firebaseGoogleSignInPopup,
+  mapFirebaseAuthError,
+} from "@/lib/auth/firebase-auth-client";
 import { resolvePostLoginDestination } from "@/lib/auth/post-login-destination";
 import { establishSession } from "@/lib/auth/session-client";
 import { navigateAfterLogin } from "@/lib/auth/navigate-after-login";
-import { useAuthGoogle } from "@/features/auth/components/auth-google-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function RegisterForm() {
   const [formError, setFormError] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const callbackUrl = "/mi-cuenta/perfil";
-
-  const { googleLoading, googleError, startGoogleSignIn, clearGoogleError } = useAuthGoogle();
-  const displayError = formError || googleError;
 
   const {
     register,
@@ -42,7 +43,6 @@ export function RegisterForm() {
 
   async function onSubmit(data: RegisterFormData) {
     setFormError("");
-    clearGoogleError();
     try {
       const credential = await firebaseEmailRegister(data.email, data.password);
       await updateProfile(credential.user, { displayName: data.name });
@@ -55,8 +55,16 @@ export function RegisterForm() {
 
   async function onGoogleSignIn() {
     setFormError("");
-    clearGoogleError();
-    await startGoogleSignIn(callbackUrl);
+    setGoogleLoading(true);
+    try {
+      const credential = await firebaseGoogleSignInPopup();
+      await completeSignIn(() => credential.user.getIdToken());
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      setFormError(mapFirebaseAuthError(code));
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   return (
@@ -99,10 +107,10 @@ export function RegisterForm() {
           {...register("confirmPassword")}
         />
 
-        {displayError && (
+        {formError && (
           <p className="flex items-start gap-2 text-sm text-red-600" role="alert">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            {displayError}
+            {formError}
           </p>
         )}
 

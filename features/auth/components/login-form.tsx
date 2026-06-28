@@ -7,11 +7,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/schemas/auth";
-import { firebaseEmailSignIn, mapFirebaseAuthError } from "@/lib/auth/firebase-auth-client";
+import {
+  firebaseEmailSignIn,
+  firebaseGoogleSignInPopup,
+  mapFirebaseAuthError,
+} from "@/lib/auth/firebase-auth-client";
 import { resolvePostLoginDestination } from "@/lib/auth/post-login-destination";
 import { establishSession } from "@/lib/auth/session-client";
 import { navigateAfterLogin } from "@/lib/auth/navigate-after-login";
-import { useAuthGoogle } from "@/features/auth/components/auth-google-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -23,9 +26,7 @@ export function LoginForm() {
   const [formError, setFormError] = useState(
     queryError === "admin" ? "Necesitás una cuenta de administrador." : ""
   );
-
-  const { googleLoading, googleError, startGoogleSignIn, clearGoogleError } = useAuthGoogle();
-  const displayError = formError || googleError;
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const {
     register,
@@ -47,7 +48,6 @@ export function LoginForm() {
 
   async function onSubmit(data: LoginFormData) {
     setFormError("");
-    clearGoogleError();
     try {
       const credential = await firebaseEmailSignIn(data.email, data.password);
       await completeSignIn(() => credential.user.getIdToken());
@@ -59,8 +59,16 @@ export function LoginForm() {
 
   async function onGoogleSignIn() {
     setFormError("");
-    clearGoogleError();
-    await startGoogleSignIn(callbackUrl);
+    setGoogleLoading(true);
+    try {
+      const credential = await firebaseGoogleSignInPopup();
+      await completeSignIn(() => credential.user.getIdToken());
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      setFormError(mapFirebaseAuthError(code));
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   return (
@@ -88,10 +96,10 @@ export function LoginForm() {
           {...register("password")}
         />
 
-        {displayError && (
+        {formError && (
           <p className="flex items-start gap-2 text-sm text-red-600" role="alert">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            {displayError}
+            {formError}
           </p>
         )}
 
