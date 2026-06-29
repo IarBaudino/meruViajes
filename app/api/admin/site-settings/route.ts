@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdminApi } from "@/lib/auth/require-admin-api";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import { getSiteSettings, SITE_SETTINGS_COLLECTION, SITE_SETTINGS_DOC } from "@/lib/site-settings/get-site-settings";
@@ -45,6 +46,8 @@ export async function PATCH(request: Request) {
   };
 
   await db.collection(SITE_SETTINGS_COLLECTION).doc(SITE_SETTINGS_DOC).set(data, { merge: true });
+
+  revalidatePath("/");
 
   return NextResponse.json({ ok: true });
 }

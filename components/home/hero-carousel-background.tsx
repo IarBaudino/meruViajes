@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
@@ -25,23 +24,16 @@ export function HeroCarouselBackground({ images }: HeroCarouselBackgroundProps) 
   if (images.length === 0) return null;
 
   return (
-    <div className="absolute inset-0" aria-hidden>
+    <div className="absolute inset-0 z-0" aria-hidden>
       {images.map((src, i) => (
         <motion.div
           key={src}
-          className="absolute inset-0"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url("${src}")` }}
+          initial={{ opacity: i === 0 ? 1 : 0 }}
           animate={{ opacity: i === index ? 1 : 0 }}
           transition={{ duration: FADE_SECONDS, ease: "easeInOut" }}
-        >
-          <Image
-            src={src}
-            alt=""
-            fill
-            priority={i === 0}
-            className="object-cover"
-            sizes="100vw"
-          />
-        </motion.div>
+        />
       ))}
     </div>
   );

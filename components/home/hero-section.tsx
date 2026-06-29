@@ -26,10 +26,10 @@ export function HeroSection({ hero }: HeroSectionProps) {
         <HeroCarouselBackground images={backgroundImages} />
       ) : null}
       <div
-        className="absolute inset-0 opacity-90"
+        className="pointer-events-none absolute inset-0 z-[1]"
         style={{
           background:
-            "linear-gradient(160deg, rgba(60,60,59,0.97) 0%, rgba(0,102,51,0.55) 45%, rgba(0,77,39,0.75) 100%)",
+            "linear-gradient(160deg, rgba(60,60,59,0.55) 0%, rgba(0,102,51,0.35) 45%, rgba(0,77,39,0.5) 100%)",
         }}
         aria-hidden
       />

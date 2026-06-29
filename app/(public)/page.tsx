@@ -4,6 +4,9 @@ import { AboutSection } from "@/components/home/about-section";
 import { InquiryForm } from "@/components/home/inquiry-form";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 
+/** CMS del hero cambia en admin; no servir HTML estático con imágenes vacías. */
+export const revalidate = 60;
+
 export default async function HomePage() {
   const settings = await getSiteSettings();
 
