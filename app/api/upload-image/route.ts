@@ -30,7 +30,9 @@ export async function POST(request: Request) {
 
     if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: `Máximo ${MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024)} MB por imagen` },
+        {
+          error: `Máximo ${MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024)} MB por imagen (comprimí antes en el navegador o elegí un archivo más liviano).`,
+        },
         { status: 400 }
       );
     }

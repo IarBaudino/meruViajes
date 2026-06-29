@@ -9,6 +9,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     ctaPrimaryHref: "/#excursiones",
     ctaSecondaryLabel: "Consultanos",
     ctaSecondaryHref: "/#consulta",
+    backgroundImages: [],
   },
   excursionsPreview: {
     title: "Nuestras Excursiones",

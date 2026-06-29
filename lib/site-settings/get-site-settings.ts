@@ -5,9 +5,23 @@ import type { SiteSettings } from "@/types/site-settings";
 export const SITE_SETTINGS_DOC = "main";
 export const SITE_SETTINGS_COLLECTION = "siteSettings";
 
-function mergeSettings(partial: Partial<SiteSettings>): SiteSettings {
+type HeroFirestore = SiteSettings["hero"] & { backgroundImageUrl?: string };
+
+function mergeHero(partial?: Partial<HeroFirestore>): SiteSettings["hero"] {
+  const merged = { ...DEFAULT_SITE_SETTINGS.hero, ...partial };
+  const backgroundImages = [...(merged.backgroundImages ?? [])];
+  const legacyUrl = partial?.backgroundImageUrl?.trim();
+
+  if (legacyUrl && !backgroundImages.includes(legacyUrl)) {
+    backgroundImages.unshift(legacyUrl);
+  }
+
+  return { ...merged, backgroundImages };
+}
+
+function mergeSettings(partial: Partial<SiteSettings> & { hero?: Partial<HeroFirestore> }): SiteSettings {
   return {
-    hero: { ...DEFAULT_SITE_SETTINGS.hero, ...partial.hero },
+    hero: mergeHero(partial.hero),
     excursionsPreview: {
       ...DEFAULT_SITE_SETTINGS.excursionsPreview,
       ...partial.excursionsPreview,

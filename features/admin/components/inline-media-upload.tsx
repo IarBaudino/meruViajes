@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ImagePlus, Loader2, Trash2, X } from "lucide-react";
 import { uploadAdminMedia, type UploadProgress } from "@/lib/admin-media-upload";
 import type { StorageFolder } from "@/lib/storage/storage-folders";
+import { MAX_IMAGE_SOURCE_BYTES } from "@/lib/storage/storage-folders";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -116,7 +117,7 @@ export function SingleImageUpload({
         {busy ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Subiendo…
+            {progress?.phase === "compressing" ? "Comprimiendo…" : "Subiendo…"}
           </>
         ) : (
           <>
@@ -143,7 +144,7 @@ export function PhotoGalleryUpload({
   photos,
   onChange,
   label = "Fotos",
-  hint = "Subí todas las que quieras. Se comprimen automáticamente.",
+  hint = `Hasta ${MAX_IMAGE_SOURCE_BYTES / (1024 * 1024)} MB por foto. Se comprimen automáticamente en el navegador.`,
   accept = "image/*",
 }: PhotoGalleryUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -264,7 +265,7 @@ export function PhotoGalleryUpload({
         {busy ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Subiendo…
+            {progress?.phase === "compressing" ? "Comprimiendo…" : "Subiendo…"}
           </>
         ) : (
           <>

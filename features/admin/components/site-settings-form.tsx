@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { SingleImageUpload } from "@/features/admin/components/inline-media-upload";
+import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
 
 export function SiteSettingsForm() {
   const [loadError, setLoadError] = useState("");
@@ -30,7 +30,7 @@ export function SiteSettingsForm() {
   });
 
   const { fields } = useFieldArray({ control, name: "about.values" });
-  const heroBackground = watch("hero.backgroundImageUrl") ?? "";
+  const heroBackgrounds = watch("hero.backgroundImages") ?? [];
 
   useEffect(() => {
     async function load() {
@@ -77,14 +77,14 @@ export function SiteSettingsForm() {
           <Input label="Botón secundario — texto" {...register("hero.ctaSecondaryLabel")} />
           <Input label="Botón secundario — enlace" {...register("hero.ctaSecondaryHref")} />
         </div>
-        <SingleImageUpload
+        <PhotoGalleryUpload
           folder="content"
-          value={heroBackground}
-          onChange={(url) =>
-            setValue("hero.backgroundImageUrl", url, { shouldDirty: true })
+          photos={heroBackgrounds}
+          onChange={(urls) =>
+            setValue("hero.backgroundImages", urls, { shouldDirty: true })
           }
-          label="Imagen de fondo (opcional)"
-          hint="Se muestra detrás del texto del inicio, con un degradado encima."
+          label="Imágenes de fondo (carrusel)"
+          hint="Hasta 15 fotos. Podés subir archivos de hasta 25 MB: se comprimen en el navegador antes de guardarse en Supabase."
         />
       </section>
 

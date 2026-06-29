@@ -28,7 +28,7 @@ export const IMAGE_COMPRESS_PROFILES: Record<
   ImageCompressProfile
 > = {
   categories: { maxWidth: 1920, maxHeight: 1080, quality: 82 },
-  content: { maxWidth: 1920, maxHeight: 1080, quality: 82 },
+  content: { maxWidth: 2560, maxHeight: 1440, quality: 84 },
   products: { maxWidth: 1400, maxHeight: 1800, quality: 84 },
   team: { maxWidth: 800, maxHeight: 800, quality: 85 },
   blog: { maxWidth: 1200, maxHeight: 800, quality: 82 },
@@ -48,8 +48,11 @@ export const ALLOWED_IMAGE_MIME = new Set([
   "image/heif",
 ]);
 
+export const MAX_IMAGE_SOURCE_BYTES = 25 * 1024 * 1024;
+/** Tamaño máximo del archivo que llega al servidor (ya comprimido en cliente). */
 export const MAX_IMAGE_UPLOAD_BYTES = 12 * 1024 * 1024;
-export const MAX_IMAGE_CLIENT_BYTES = 5 * 1024 * 1024;
+/** @deprecated Usar MAX_IMAGE_SOURCE_BYTES */
+export const MAX_IMAGE_CLIENT_BYTES = MAX_IMAGE_SOURCE_BYTES;
 export const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024;
 
 export const VIDEO_EXTENSIONS = new Set([

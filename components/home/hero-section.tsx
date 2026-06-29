@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SiteSettings } from "@/types/site-settings";
+import { HeroCarouselBackground } from "@/components/home/hero-carousel-background";
 
 const btnBase =
   "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors px-7 py-3.5 text-lg";
@@ -14,17 +15,15 @@ type HeroSectionProps = {
 };
 
 export function HeroSection({ hero }: HeroSectionProps) {
+  const backgroundImages = hero.backgroundImages ?? [];
+
   return (
     <section
       className="relative flex min-h-[85vh] items-center justify-center overflow-hidden bg-meru-charcoal"
       aria-label="Presentación"
     >
-      {hero.backgroundImageUrl ? (
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${hero.backgroundImageUrl})` }}
-          aria-hidden
-        />
+      {backgroundImages.length > 0 ? (
+        <HeroCarouselBackground images={backgroundImages} />
       ) : null}
       <div
         className="absolute inset-0 opacity-90"

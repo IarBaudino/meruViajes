@@ -2,10 +2,17 @@
 
 import type { StorageFolder } from "@/lib/storage/storage-folders";
 import {
-  MAX_IMAGE_CLIENT_BYTES,
+  MAX_IMAGE_SOURCE_BYTES,
+  MAX_IMAGE_UPLOAD_BYTES,
   MAX_VIDEO_UPLOAD_BYTES,
   isVideoFile,
+  resolveImageProfile,
 } from "@/lib/storage/storage-folders";
+import {
+  canCompressImageInBrowser,
+  compressImageInBrowser,
+  formatBytes,
+} from "@/lib/storage/compress-image-client";
 import { compressVideoForWeb, type VideoCompressProgress } from "@/lib/storage/compress-video-client";
 import { getSupabaseBrowser, getBrowserStorageBucket } from "@/lib/storage/supabase-browser";
 
@@ -38,18 +45,67 @@ async function uploadImageViaApi(
   folder: StorageFolder,
   onProgress?: (p: UploadProgress) => void
 ): Promise<AdminMediaUploadResult> {
-  if (file.size > MAX_IMAGE_CLIENT_BYTES) {
+  if (file.size > MAX_IMAGE_SOURCE_BYTES) {
     return {
       success: false,
       resourceType: "image",
-      error: `La imagen supera ${MAX_IMAGE_CLIENT_BYTES / (1024 * 1024)} MB en cliente. Elegí un archivo más liviano.`,
+      error: `La imagen supera ${MAX_IMAGE_SOURCE_BYTES / (1024 * 1024)} MB. Elegí un archivo más liviano.`,
     };
   }
 
-  onProgress?.({ phase: "uploading", progress: 10, message: "Comprimiendo y subiendo imagen…" });
+  let fileToUpload = file;
+  let optimized = false;
+
+  if (canCompressImageInBrowser(file)) {
+    onProgress?.({
+      phase: "compressing",
+      progress: 15,
+      message: "Comprimiendo en el navegador…",
+    });
+
+    try {
+      const profile = resolveImageProfile(folder);
+      fileToUpload = await compressImageInBrowser(file, profile);
+      optimized = fileToUpload.size < file.size;
+
+      onProgress?.({
+        phase: "compressing",
+        progress: 70,
+        message: optimized
+          ? `Comprimida: ${formatBytes(file.size)} → ${formatBytes(fileToUpload.size)}`
+          : "Imagen lista para subir",
+      });
+    } catch {
+      if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+        return {
+          success: false,
+          resourceType: "image",
+          error:
+            "No se pudo comprimir la imagen en el navegador. Probá con JPG o PNG, o un archivo más chico.",
+        };
+      }
+      fileToUpload = file;
+    }
+  } else if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    return {
+      success: false,
+      resourceType: "image",
+      error: `Sin compresión en navegador, el máximo es ${MAX_IMAGE_UPLOAD_BYTES / (1024 * 1024)} MB.`,
+    };
+  }
+
+  if (fileToUpload.size > MAX_IMAGE_UPLOAD_BYTES) {
+    return {
+      success: false,
+      resourceType: "image",
+      error: `Tras comprimir sigue siendo muy pesada (${formatBytes(fileToUpload.size)}).`,
+    };
+  }
+
+  onProgress?.({ phase: "uploading", progress: 85, message: "Subiendo a Supabase…" });
 
   const formData = new FormData();
-  formData.set("file", file);
+  formData.set("file", fileToUpload);
   formData.set("folder", folder);
 
   const res = await fetch("/api/upload-image", {
@@ -72,7 +128,7 @@ async function uploadImageViaApi(
     width: json.width,
     height: json.height,
     resourceType: "image",
-    optimized: json.optimized,
+    optimized: optimized || json.optimized,
   };
 }
 
@@ -135,7 +191,7 @@ async function uploadVideoViaSignedUrl(
 }
 
 /**
- * Orquestador: vídeo → comprimir en cliente + signed upload; imagen → API Sharp.
+ * Orquestador: vídeo → comprimir en cliente + signed upload; imagen → comprimir en cliente + API Sharp.
  */
 export async function uploadAdminMedia(
   file: File,

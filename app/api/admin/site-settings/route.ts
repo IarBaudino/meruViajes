@@ -38,7 +38,8 @@ export async function PATCH(request: Request) {
     ...parsed.data,
     hero: {
       ...parsed.data.hero,
-      backgroundImageUrl: parsed.data.hero.backgroundImageUrl || undefined,
+      backgroundImages: parsed.data.hero.backgroundImages ?? [],
+      backgroundImageUrl: null,
     },
     updatedAt: new Date(),
   };

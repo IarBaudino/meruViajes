@@ -14,7 +14,7 @@ export const siteSettingsSchema = z.object({
     ctaPrimaryHref: z.string().min(1),
     ctaSecondaryLabel: z.string().min(2),
     ctaSecondaryHref: z.string().min(1),
-    backgroundImageUrl: z.string().url().optional().or(z.literal("")),
+    backgroundImages: z.array(z.string().url()).max(15),
   }),
   excursionsPreview: z.object({
     title: z.string().min(3),

@@ -12,7 +12,7 @@ export interface SiteSettings {
     ctaPrimaryHref: string;
     ctaSecondaryLabel: string;
     ctaSecondaryHref: string;
-    backgroundImageUrl?: string;
+    backgroundImages?: string[];
   };
   excursionsPreview: {
     title: string;
