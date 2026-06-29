@@ -73,7 +73,7 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
-      <h1 className="text-2xl font-bold text-meru-charcoal">Iniciar sesión</h1>
+      <h1 className="text-2xl text-meru-charcoal">Iniciar sesión</h1>
       <p className="mt-2 text-sm text-meru-muted">
         Accedé a tu cuenta para reservar excursiones y gestionar tu perfil.
       </p>

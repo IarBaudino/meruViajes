@@ -49,6 +49,31 @@ export async function getServiceBySlug(slug: string): Promise<Service | null> {
   return mapFirestoreService(doc.id, doc.data());
 }
 
+export async function getAllServicesAdmin(): Promise<Service[]> {
+  if (!isFirebaseAdminConfigured()) return [];
+
+  const db = getAdminFirestore();
+  if (!db) return [];
+
+  const snapshot = await db.collection(SERVICES_COLLECTION).get();
+
+  return snapshot.docs
+    .map((doc) => mapFirestoreService(doc.id, doc.data()))
+    .sort((a, b) => a.title.localeCompare(b.title, "es"));
+}
+
+export async function getServiceByIdAdmin(id: string): Promise<Service | null> {
+  if (!isFirebaseAdminConfigured()) return null;
+
+  const db = getAdminFirestore();
+  if (!db) return null;
+
+  const doc = await db.collection(SERVICES_COLLECTION).doc(id).get();
+  if (!doc.exists) return null;
+
+  return mapFirestoreService(doc.id, doc.data()!);
+}
+
 export async function getServiceCategoriesFromList(services: Service[]): Promise<string[]> {
   const set = new Set<string>();
   for (const s of services) {

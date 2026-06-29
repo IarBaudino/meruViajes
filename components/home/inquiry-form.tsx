@@ -8,8 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import type { SiteSettings } from "@/types/site-settings";
 
-export function InquiryForm() {
+type InquiryFormProps = {
+  inquiry: SiteSettings["inquiry"];
+};
+
+export function InquiryForm({ inquiry }: InquiryFormProps) {
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -51,10 +56,8 @@ export function InquiryForm() {
     <section id="consulta" className="scroll-mt-24 bg-meru-primary py-20 text-white">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">¿Tienes alguna consulta?</h2>
-          <p className="mt-3 text-meru-sand/85">
-            Estamos aquí para ayudarte a planificar tu próxima aventura
-          </p>
+          <h2 className="text-3xl text-white sm:text-4xl">{inquiry.title}</h2>
+          <p className="mt-3 text-meru-sand/85">{inquiry.subtitle}</p>
         </div>
 
         <form

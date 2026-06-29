@@ -45,7 +45,7 @@ export function ExcursionCard({ service, className }: ExcursionCardProps) {
           )}
         </div>
         <CardContent className="pt-5">
-          <h2 className="text-lg font-bold text-meru-charcoal transition-colors group-hover:text-meru-secondary md:text-xl">
+          <h2 className="text-lg text-meru-charcoal transition-colors group-hover:text-meru-secondary md:text-xl">
             {service.title}
           </h2>
           {service.location && (
@@ -56,7 +56,7 @@ export function ExcursionCard({ service, className }: ExcursionCardProps) {
           )}
           <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-meru-charcoal-muted">{service.description}</p>
           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-meru-border pt-4">
-            <span className="text-lg font-bold text-meru-primary">{formatCurrencyARS(service.price)}</span>
+            <span className="text-lg font-medium text-meru-primary">{formatCurrencyARS(service.price)}</span>
             {hasAnyDiscount(service.discounts) && (
               <span className="text-xs font-medium text-meru-secondary">Descuentos disponibles</span>
             )}

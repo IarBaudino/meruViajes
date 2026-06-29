@@ -15,7 +15,7 @@ export default async function ExcursionsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-meru-charcoal sm:text-4xl">Nuestras Excursiones</h1>
+      <h1 className="text-3xl text-meru-charcoal sm:text-4xl">Nuestras Excursiones</h1>
       <p className="mt-4 max-w-2xl text-meru-muted">
         Experiencias en el Fin del Mundo: navegación, montaña y naturaleza. Filtrá por categoría o
         precio. Tarifa adulto; menores, infantes y jubilados pueden tener descuento según cada

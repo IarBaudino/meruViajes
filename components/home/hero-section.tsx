@@ -4,16 +4,28 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SiteSettings } from "@/types/site-settings";
 
 const btnBase =
   "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors px-7 py-3.5 text-lg";
 
-export function HeroSection() {
+type HeroSectionProps = {
+  hero: SiteSettings["hero"];
+};
+
+export function HeroSection({ hero }: HeroSectionProps) {
   return (
     <section
       className="relative flex min-h-[85vh] items-center justify-center overflow-hidden bg-meru-charcoal"
       aria-label="Presentación"
     >
+      {hero.backgroundImageUrl ? (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${hero.backgroundImageUrl})` }}
+          aria-hidden
+        />
+      ) : null}
       <div
         className="absolute inset-0 opacity-90"
         style={{
@@ -28,9 +40,9 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-4 font-sans text-sm font-semibold uppercase tracking-[0.28em] text-meru-sand/90"
+          className="mb-4 font-sans text-sm font-medium uppercase tracking-[0.28em] text-meru-sand/90"
         >
-          Ushuaia · Tierra del Fuego
+          {hero.eyebrow}
         </motion.p>
 
         <motion.h1
@@ -39,7 +51,7 @@ export function HeroSection() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="text-4xl font-normal leading-[1.08] text-meru-sand sm:text-5xl md:text-6xl md:leading-[1.06]"
         >
-          AVENTURATE EN EL FIN DEL MUNDO CON MERU
+          {hero.title}
         </motion.h1>
 
         <motion.p
@@ -48,7 +60,7 @@ export function HeroSection() {
           transition={{ duration: 0.7, delay: 0.2 }}
           className="font-accent mt-6 text-2xl tracking-wide text-meru-sand sm:text-3xl"
         >
-          VIAJES Y TURISMO
+          {hero.subtitle}
         </motion.p>
 
         <motion.div
@@ -58,22 +70,22 @@ export function HeroSection() {
           className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
           <Link
-            href="/#excursiones"
+            href={hero.ctaPrimaryHref}
             className={cn(
               btnBase,
               "bg-meru-secondary text-white shadow-md hover:bg-meru-secondary-hover"
             )}
           >
-            Ver excursiones
+            {hero.ctaPrimaryLabel}
           </Link>
           <Link
-            href="/#consulta"
+            href={hero.ctaSecondaryHref}
             className={cn(
               btnBase,
               "border-2 border-meru-sand/90 text-meru-sand hover:bg-white/10"
             )}
           >
-            Consultanos
+            {hero.ctaSecondaryLabel}
           </Link>
         </motion.div>
       </div>

@@ -59,7 +59,7 @@ export function AdminMediaUploader({
 
   return (
     <div className="rounded-xl border border-meru-border bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-bold text-meru-charcoal">Subir imagen o vídeo</h2>
+      <h2 className="text-lg text-meru-charcoal">Subir imagen o vídeo</h2>
       <p className="mt-1 text-sm text-meru-muted">
         Imágenes: compresión WebP en servidor. Vídeos: H.264 en el navegador antes de subir.
       </p>

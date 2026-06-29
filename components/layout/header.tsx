@@ -22,7 +22,7 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold text-meru-charcoal"
+          className="flex items-center gap-2 text-xl text-meru-charcoal"
           onClick={() => setMobileMenuOpen(false)}
         >
           <Mountain className="h-8 w-8 text-meru-secondary" aria-hidden />

@@ -51,5 +51,10 @@ service cloud.firestore {
       allow create: if true;
       allow read, update: if isAdmin();
     }
+
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

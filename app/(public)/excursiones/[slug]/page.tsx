@@ -43,7 +43,7 @@ function InfoBlock({
 }) {
   return (
     <div className="rounded-xl border border-meru-border bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-meru-secondary">{title}</h2>
+      <h2 className="text-sm font-medium uppercase tracking-wide text-meru-secondary">{title}</h2>
       <div className="mt-2 text-sm leading-relaxed text-meru-charcoal-muted">{children}</div>
     </div>
   );
@@ -79,7 +79,7 @@ export default async function ExcursionDetailPage({ params }: Props) {
         {service.category && (
           <Badge className="bg-meru-ice text-meru-primary">{service.category}</Badge>
         )}
-        <h1 className="mt-3 text-3xl font-bold text-meru-charcoal sm:text-4xl">{service.title}</h1>
+        <h1 className="mt-3 text-3xl text-meru-charcoal sm:text-4xl">{service.title}</h1>
         {service.location && (
           <p className="mt-3 flex items-center gap-2 text-meru-muted">
             <MapPin className="h-5 w-5 shrink-0 text-meru-accent" aria-hidden />

@@ -1,75 +1,83 @@
 import Link from "next/link";
-import { ImageIcon, LayoutGrid, MessageSquare, Users } from "lucide-react";
-import { AdminMediaUploader } from "@/features/admin/components/admin-media-uploader";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { getAllServicesAdmin } from "@/features/excursions/lib/get-services";
+import { getAdminFirestore } from "@/lib/firebase/admin";
+import { Card, CardContent } from "@/components/ui/card";
+import { LayoutGrid, MessageSquare, ShoppingBag, Users } from "lucide-react";
 
-const upcomingSections = [
-  {
-    icon: LayoutGrid,
-    title: "Excursiones",
-    description: "Crear, editar precios, descuentos y fotos (Fase 6).",
-  },
-  {
-    icon: MessageSquare,
-    title: "Consultas",
-    description: "Ver y responder consultas del formulario de contacto.",
-  },
-  {
-    icon: Users,
-    title: "Usuarios y reservas",
-    description: "Órdenes, reservas y gestión de clientes (Fase 5–6).",
-  },
-];
+async function getCounts() {
+  const db = getAdminFirestore();
+  if (!db) return { inquiries: 0, users: 0, orders: 0 };
 
-export default function AdminDashboardPage() {
+  const [inquiries, users, orders] = await Promise.all([
+    db.collection("inquiries").where("status", "==", "nuevo").count().get(),
+    db.collection("users").count().get(),
+    db.collection("orders").count().get(),
+  ]);
+
+  return {
+    inquiries: inquiries.data().count,
+    users: users.data().count,
+    orders: orders.data().count,
+  };
+}
+
+export default async function AdminDashboardPage() {
+  const [services, counts] = await Promise.all([getAllServicesAdmin(), getCounts()]);
+  const active = services.filter((s) => s.active).length;
+
+  const stats = [
+    { label: "Excursiones activas", value: active, href: "/admin/excursiones", icon: LayoutGrid },
+    { label: "Consultas nuevas", value: counts.inquiries, href: "/admin/consultas", icon: MessageSquare },
+    { label: "Usuarios", value: counts.users, href: "/admin/usuarios", icon: Users },
+    { label: "Órdenes", value: counts.orders, href: "/admin/ordenes", icon: ShoppingBag },
+  ];
+
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-2xl font-bold text-meru-charcoal">Panel de administración</h1>
-        <p className="mt-2 max-w-2xl text-meru-muted">
-          Acceso restringido a administradores. Por ahora podés subir imágenes y vídeos para
-          excursiones; el CRUD completo de excursiones llegará en la Fase 6.
-        </p>
+    <div>
+      <PageHeader
+        title="Panel de administración"
+        description="Gestioná excursiones, contenido del sitio, consultas y usuarios desde un solo lugar."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map(({ label, value, href, icon: Icon }) => (
+          <Link key={href} href={href}>
+            <Card className="transition-shadow hover:shadow-[var(--shadow-card)]">
+              <CardContent className="flex items-center gap-4 pt-6">
+                <div className="rounded-lg bg-meru-ice p-3">
+                  <Icon className="h-5 w-5 text-meru-primary" aria-hidden />
+                </div>
+                <div>
+                  <p className="text-2xl text-meru-charcoal">{value}</p>
+                  <p className="text-sm text-meru-muted">{label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="rounded-lg bg-meru-ice p-2">
-            <ImageIcon className="h-5 w-5 text-meru-primary" aria-hidden />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-meru-charcoal">Medios (Supabase)</h2>
-            <p className="text-sm text-meru-muted">
-              Subí fotos o vídeos comprimidos. Copiá la URL resultante para usarla en Firestore.
-            </p>
-          </div>
-        </div>
-        <AdminMediaUploader folder="excursions" />
-      </section>
-
-      <section>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Próximamente</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {upcomingSections.map(({ icon: Icon, title, description }) => (
-            <div
-              key={title}
-              className="rounded-xl border border-dashed border-slate-300 bg-white/60 p-5 text-slate-600"
-            >
-              <Icon className="h-5 w-5 text-slate-400" aria-hidden />
-              <h3 className="mt-3 font-semibold text-meru-charcoal">{title}</h3>
-              <p className="mt-1 text-sm">{description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <p className="text-sm text-meru-muted">
-        ¿No ves este panel al iniciar sesión?{" "}
-        <Link href="/mi-cuenta/perfil" className="text-meru-secondary hover:underline">
-          Revisá tu perfil
-        </Link>{" "}
-        o cerrá sesión y entrá con{" "}
-        <strong className="font-medium text-meru-charcoal">evtmueru@gmail.com</strong>.
-      </p>
+      <div className="mt-8 rounded-xl border border-meru-border bg-white p-6">
+        <h2 className="text-lg text-meru-charcoal">Accesos rápidos</h2>
+        <ul className="mt-4 flex flex-wrap gap-3 text-sm">
+          <li>
+            <Link href="/admin/excursiones/nueva" className="text-meru-secondary hover:underline">
+              + Nueva excursión
+            </Link>
+          </li>
+          <li>
+            <Link href="/admin/contenido" className="text-meru-secondary hover:underline">
+              Editar contenido web
+            </Link>
+          </li>
+          <li>
+            <Link href="/admin/medios" className="text-meru-secondary hover:underline">
+              Subir medios
+            </Link>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

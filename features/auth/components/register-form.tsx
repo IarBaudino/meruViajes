@@ -69,7 +69,7 @@ export function RegisterForm() {
 
   return (
     <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
-      <h1 className="text-2xl font-bold text-meru-charcoal">Crear cuenta</h1>
+      <h1 className="text-2xl text-meru-charcoal">Crear cuenta</h1>
       <p className="mt-2 text-sm text-meru-muted">
         Registrate para reservar excursiones y guardar tu información de contacto.
       </p>

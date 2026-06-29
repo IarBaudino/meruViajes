@@ -4,8 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrencyARS } from "@/lib/format";
 import Image from "next/image";
+import type { SiteSettings } from "@/types/site-settings";
 
-export async function ExcursionsPreview() {
+type ExcursionsPreviewProps = {
+  section: SiteSettings["excursionsPreview"];
+};
+
+export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
   const services = await getActiveServices();
   const preview = services.slice(0, 3);
 
@@ -13,13 +18,8 @@ export async function ExcursionsPreview() {
     <section id="excursiones" className="scroll-mt-24 bg-white py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-meru-charcoal sm:text-4xl">
-            Nuestras Excursiones
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-meru-muted">
-            Descubrí experiencias en Ushuaia y Tierra del Fuego. Todas las excursiones se publican
-            desde nuestro catálogo oficial.
-          </p>
+          <h2 className="text-3xl text-meru-charcoal sm:text-4xl">{section.title}</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-meru-muted">{section.description}</p>
         </div>
 
         {preview.length === 0 ? (
@@ -58,13 +58,13 @@ export async function ExcursionsPreview() {
                           ) : null}
                         </div>
                         <CardContent className="flex flex-1 flex-col pt-5">
-                          <h3 className="text-lg font-bold text-meru-charcoal group-hover:text-meru-secondary">
+                          <h3 className="text-lg text-meru-charcoal group-hover:text-meru-secondary">
                             {service.title}
                           </h3>
                           <p className="mt-2 line-clamp-2 flex-1 text-sm text-meru-charcoal-muted">
                             {service.description}
                           </p>
-                          <p className="mt-4 font-bold text-meru-primary">
+                          <p className="mt-4 font-medium text-meru-primary">
                             {formatCurrencyARS(service.price)}
                           </p>
                           <span className="mt-2 text-sm font-semibold text-meru-secondary">
