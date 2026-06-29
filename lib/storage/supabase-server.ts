@@ -38,7 +38,14 @@ export async function uploadBufferToStorage(
     cacheControl: "31536000",
   });
 
-  if (error) throw error;
+  if (error) {
+    if (error.message?.toLowerCase().includes("bucket not found")) {
+      throw new Error(
+        `Bucket "${bucket}" no existe en Supabase. Creá el bucket en Storage → New bucket (público) o revisá NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET en Vercel.`
+      );
+    }
+    throw error;
+  }
 
   return { path, url: getPublicStorageUrl(path) };
 }
