@@ -11,21 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyARS } from "@/lib/format";
+import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
 
 type ServiceFormProps = {
   service?: Service;
 };
-
-function photosToText(photos: string[]): string {
-  return photos.join("\n");
-}
-
-function textToPhotos(text: string): string[] {
-  return text
-    .split(/[\n,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 function toFormDefaults(service?: Service): ServiceFormData {
   return {
@@ -51,7 +41,6 @@ function toFormDefaults(service?: Service): ServiceFormData {
 
 export function ServiceForm({ service }: ServiceFormProps) {
   const router = useRouter();
-  const [photosText, setPhotosText] = useState(photosToText(service?.photos ?? []));
   const [error, setError] = useState("");
   const isEdit = Boolean(service?.id);
 
@@ -68,6 +57,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
 
   const title = watch("title");
   const price = watch("price");
+  const photos = watch("photos") ?? [];
 
   useEffect(() => {
     if (!isEdit && title) {
@@ -82,7 +72,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
 
     const payload: ServiceFormData = {
       ...data,
-      photos: textToPhotos(photosText),
+      photos,
       duration: data.duration || undefined,
       difficulty: data.difficulty || undefined,
       location: data.location || undefined,
@@ -195,20 +185,13 @@ export function ServiceForm({ service }: ServiceFormProps) {
         <Textarea label="No incluye" rows={2} {...register("notIncluded")} />
       </section>
 
-      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-3">
-        <h2 className="text-lg text-meru-charcoal">Fotos (URLs)</h2>
-        <p className="text-sm text-meru-muted">
-          Una URL por línea. Subí imágenes en{" "}
-          <a href="/admin/medios" className="text-meru-secondary hover:underline">
-            Medios
-          </a>{" "}
-          y pegá el enlace aquí.
-        </p>
-        <Textarea
-          label="URLs de fotos"
-          rows={4}
-          value={photosText}
-          onChange={(e) => setPhotosText(e.target.value)}
+      <section className="rounded-xl border border-meru-border bg-white p-6">
+        <PhotoGalleryUpload
+          folder="excursions"
+          photos={photos}
+          onChange={(next) => setValue("photos", next, { shouldDirty: true })}
+          label="Galería de fotos"
+          hint="Subí todas las imágenes que quieras para esta excursión."
         />
       </section>
 

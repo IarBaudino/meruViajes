@@ -18,7 +18,7 @@ export function AdminAccessBanner() {
         <div>
           <p className="font-semibold text-meru-charcoal">Sos administrador</p>
           <p className="text-sm text-meru-muted">
-            Gestioná medios y, próximamente, excursiones desde el panel.
+            Gestioná excursiones, contenido del sitio y consultas desde el panel.
           </p>
         </div>
       </div>

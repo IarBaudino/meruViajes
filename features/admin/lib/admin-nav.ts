@@ -1,6 +1,5 @@
 import {
   FileText,
-  ImageIcon,
   LayoutDashboard,
   LayoutGrid,
   MessageSquare,
@@ -16,5 +15,4 @@ export const ADMIN_NAV: DashboardNavItem[] = [
   { href: "/admin/consultas", label: "Consultas", icon: MessageSquare },
   { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/ordenes", label: "Órdenes", icon: ShoppingBag },
-  { href: "/admin/medios", label: "Medios", icon: ImageIcon },
 ];

@@ -71,11 +71,6 @@ export default async function AdminDashboardPage() {
               Editar contenido web
             </Link>
           </li>
-          <li>
-            <Link href="/admin/medios" className="text-meru-secondary hover:underline">
-              Subir medios
-            </Link>
-          </li>
         </ul>
       </div>
     </div>
