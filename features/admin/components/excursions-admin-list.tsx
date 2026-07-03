@@ -65,6 +65,7 @@ export function ExcursionsAdminList() {
             <tr>
               <th className="px-4 py-3 font-medium">Título</th>
               <th className="px-4 py-3 font-medium">Precio</th>
+              <th className="px-4 py-3 font-medium">Cupos</th>
               <th className="px-4 py-3 font-medium">Estado</th>
               <th className="px-4 py-3 font-medium">Acciones</th>
             </tr>
@@ -77,6 +78,7 @@ export function ExcursionsAdminList() {
                   <p className="text-xs text-meru-muted">/{service.slug}</p>
                 </td>
                 <td className="px-4 py-3">{formatCurrencyARS(service.price)}</td>
+                <td className="px-4 py-3 text-meru-muted">{service.stock}</td>
                 <td className="px-4 py-3">
                   <Badge
                     className={

@@ -16,6 +16,7 @@ import { resolvePostLoginDestination } from "@/lib/auth/post-login-destination";
 import { establishSession } from "@/lib/auth/session-client";
 import { navigateAfterLogin } from "@/lib/auth/navigate-after-login";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 
 export function RegisterForm() {
@@ -90,17 +91,15 @@ export function RegisterForm() {
           error={errors.email?.message}
           {...register("email")}
         />
-        <Input
+        <PasswordInput
           label="Contraseña"
-          type="password"
           autoComplete="new-password"
           placeholder="Mínimo 6 caracteres"
           error={errors.password?.message}
           {...register("password")}
         />
-        <Input
+        <PasswordInput
           label="Confirmar contraseña"
-          type="password"
           autoComplete="new-password"
           placeholder="Repetí la contraseña"
           error={errors.confirmPassword?.message}

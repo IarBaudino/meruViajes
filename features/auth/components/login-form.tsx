@@ -16,6 +16,7 @@ import { resolvePostLoginDestination } from "@/lib/auth/post-login-destination";
 import { establishSession } from "@/lib/auth/session-client";
 import { navigateAfterLogin } from "@/lib/auth/navigate-after-login";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 
 export function LoginForm() {
@@ -87,14 +88,22 @@ export function LoginForm() {
           error={errors.email?.message}
           {...register("email")}
         />
-        <Input
+        <PasswordInput
           label="Contraseña"
-          type="password"
           autoComplete="current-password"
           placeholder="••••••••"
           error={errors.password?.message}
           {...register("password")}
         />
+
+        <div className="text-right">
+          <Link
+            href="/recuperar-contrasena"
+            className="text-sm font-medium text-meru-secondary hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
 
         {formError && (
           <p className="flex items-start gap-2 text-sm text-red-600" role="alert">

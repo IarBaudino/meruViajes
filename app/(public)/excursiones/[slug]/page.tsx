@@ -7,6 +7,7 @@ import { ExcursionGallery } from "@/features/excursions/components/excursion-gal
 import { AddToCartButton } from "@/features/excursions/components/add-to-cart-button";
 import { Badge } from "@/components/ui/badge";
 import { ExcursionPricingPanel } from "@/features/excursions/components/excursion-pricing-panel";
+import { ExcursionStockLabel } from "@/features/excursions/components/excursion-stock-label";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -137,6 +138,7 @@ export default async function ExcursionDetailPage({ params }: Props) {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-xl border border-meru-border bg-white p-6 shadow-[var(--shadow-card)]">
             <ExcursionPricingPanel service={service} />
+            <ExcursionStockLabel stock={service.stock} className="mt-4" />
             {service.duration && (
               <p className="mt-3 text-sm text-meru-charcoal-muted">
                 <span className="font-medium text-meru-charcoal">Duración:</span> {service.duration}
@@ -157,8 +159,7 @@ export default async function ExcursionDetailPage({ params }: Props) {
               </Link>
             </div>
             <p className="mt-4 text-xs text-meru-muted">
-              La confirmación y el pago se coordinan con la agencia. Reservá desde tu carrito o
-              escribinos.
+              Al confirmar desde tu carrito reservamos el cupo. El pago se coordina con la agencia.
             </p>
           </div>
         </aside>

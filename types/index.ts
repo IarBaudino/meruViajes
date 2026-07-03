@@ -61,6 +61,15 @@ export interface SeasonalPhoto {
 
 export type PaymentStatus = "pendiente" | "pagado";
 
+export interface OrderItem {
+  serviceId: string;
+  serviceTitle: string;
+  slug: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -69,6 +78,11 @@ export interface Order {
   paymentMethod?: string;
   paymentInformation?: string;
   paymentStatus: PaymentStatus;
+  items?: OrderItem[];
+  customerName?: string;
+  customerEmail?: string;
+  customerDni?: string;
+  customerPhone?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +95,9 @@ export interface Booking {
   bookingDate: Date;
   DNI_Personal: string;
   serviceOrderId?: string;
+  quantity?: number;
+  unitPrice?: number;
+  lineTotal?: number;
   seatNumber?: number;
   active: boolean;
 }

@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ProfileForm } from "@/features/auth/components/profile-form";
+import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
 import { AdminAccessBanner } from "@/features/auth/components/admin-access-banner";
 
 export default function ProfilePage() {
@@ -11,6 +12,7 @@ export default function ProfilePage() {
       />
       <AdminAccessBanner />
       <ProfileForm />
+      <ChangePasswordForm />
     </div>
   );
 }

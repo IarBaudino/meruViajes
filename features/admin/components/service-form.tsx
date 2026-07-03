@@ -143,11 +143,16 @@ export function ServiceForm({ service }: ServiceFormProps) {
           <Input label="Dificultad" placeholder="Ej. Moderada" {...register("difficulty")} />
           <Input label="Ubicación" {...register("location")} />
           <Input label="Categoría" {...register("category")} />
-          <Input
-            label="Stock / cupos"
-            type="number"
-            {...register("stock", { valueAsNumber: true })}
-          />
+          <div>
+            <Input
+              label="Stock / cupos"
+              type="number"
+              {...register("stock", { valueAsNumber: true })}
+            />
+            <p className="mt-1 text-xs text-meru-muted">
+              0 = sin cupos online. Indicá la cantidad de lugares disponibles.
+            </p>
+          </div>
         </div>
         <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("active")} />

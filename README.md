@@ -38,7 +38,7 @@ cp .env.example .env.local
    - Crear Firestore Database
    - Registrar app web y copiar config al `.env.local`
    - Generar clave de cuenta de servicio para Admin SDK
-   - Desplegar reglas: `firestore.rules`
+4. Desplegar reglas e índices Firestore desde Firebase Console (`firestore.rules`, `firestore.indexes.json`)
 
 5. Ejecutar en desarrollo:
 
@@ -79,9 +79,9 @@ schemas/          → Validación Zod
 
 - **Fase 1–2** ✅ Scaffold + Home con formulario de consultas
 - **Fase 3** ✅ Catálogo Firestore + seed + descuentos en modelo
-- **Fase 4** Auth Firebase + next-auth + perfil
-- **Fase 5** Carrito, reservas, emails confirmación
-- **Fase 6** Admin CRUD + Cloudinary
+- **Fase 4** ✅ Auth Firebase + next-auth + perfil
+- **Fase 5** ✅ Checkout, reservas, stock, emails confirmación
+- **Fase 6** ✅ Admin CRUD + Supabase Storage
 - **Fase 7** SEO, deploy, pulido
 
 ## Deploy (Vercel)

@@ -1,9 +1,13 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   GoogleAuthProvider,
+  linkWithCredential,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
+  updatePassword,
   type UserCredential,
 } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebase/client";
@@ -41,6 +45,42 @@ export async function firebaseClientSignOut(): Promise<void> {
   }
 }
 
+export async function firebaseSendPasswordReset(email: string): Promise<void> {
+  await sendPasswordResetEmail(requireClientAuth(), email);
+}
+
+/** Cambiar contraseña si la cuenta ya tiene email/contraseña. */
+export async function firebaseChangePassword(
+  email: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  const auth = requireClientAuth();
+  const credential = await signInWithEmailAndPassword(auth, email, currentPassword);
+  await updatePassword(credential.user, newPassword);
+}
+
+/** Vincular email/contraseña a una cuenta (ej. entró solo con Google). */
+export async function firebaseLinkEmailPassword(
+  email: string,
+  newPassword: string
+): Promise<void> {
+  const auth = requireClientAuth();
+  let user = auth.currentUser;
+
+  if (!user) {
+    const googleCredential = await signInWithPopup(auth, googleProvider);
+    user = googleCredential.user;
+  }
+
+  if (!user.email) {
+    throw new Error("La cuenta no tiene correo asociado.");
+  }
+
+  const emailCredential = EmailAuthProvider.credential(email, newPassword);
+  await linkWithCredential(user, emailCredential);
+}
+
 export function mapFirebaseAuthError(code: string): string {
   const messages: Record<string, string> = {
     "auth/invalid-email": "El correo no es válido.",
@@ -54,6 +94,9 @@ export function mapFirebaseAuthError(code: string): string {
     "auth/popup-blocked": "El navegador bloqueó la ventana emergente. Permitila e intentá de nuevo.",
     "auth/cancelled-popup-request": "Esperá a que termine el intento anterior.",
     "auth/too-many-requests": "Demasiados intentos. Probá más tarde.",
+    "auth/requires-recent-login": "Por seguridad, volvé a iniciar sesión e intentá de nuevo.",
+    "auth/provider-already-linked": "Esta cuenta ya tiene contraseña. Usá 'Cambiar contraseña'.",
+    "auth/credential-already-in-use": "Ese correo ya está en uso con otra cuenta.",
     "auth/unauthorized-domain":
       "Este dominio no está autorizado en Firebase. Agregá meru-viajes.vercel.app en Authentication → Settings → Authorized domains.",
   };

@@ -33,7 +33,7 @@ export default function AdminOrdersPage() {
     <div>
       <PageHeader
         title="Órdenes"
-        description="Pedidos de clientes. El checkout online se activará en la siguiente fase."
+        description="Pedidos y reservas confirmados desde la web."
       />
 
       {loading ? <p className="text-meru-muted">Cargando…</p> : null}

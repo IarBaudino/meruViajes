@@ -24,17 +24,18 @@ export function HeroSection({ hero }: HeroSectionProps) {
     >
       {backgroundImages.length > 0 ? (
         <HeroCarouselBackground images={backgroundImages} />
-      ) : null}
-      <div
-        className="pointer-events-none absolute inset-0 z-[1]"
-        style={{
-          background:
-            "linear-gradient(160deg, rgba(60,60,59,0.55) 0%, rgba(0,102,51,0.35) 45%, rgba(0,77,39,0.5) 100%)",
-        }}
-        aria-hidden
-      />
+      ) : (
+        <div
+          className="pointer-events-none absolute inset-0 z-[1]"
+          style={{
+            background:
+              "linear-gradient(160deg, rgba(60,60,59,0.97) 0%, rgba(0,102,51,0.55) 45%, rgba(0,77,39,0.75) 100%)",
+          }}
+          aria-hidden
+        />
+      )}
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center sm:px-6">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center sm:px-6 [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]">
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

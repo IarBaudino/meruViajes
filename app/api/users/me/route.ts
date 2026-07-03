@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getAdminFirestore } from "@/lib/firebase/admin";
+import { hasPasswordProvider } from "@/lib/auth/auth-providers";
+import { getAdminAuth, getAdminFirestore } from "@/lib/firebase/admin";
 import { profileSchema } from "@/schemas/user";
 
 export async function GET() {
@@ -21,6 +22,21 @@ export async function GET() {
   }
 
   const data = doc.data()!;
+
+  let authProviders: string[] = [];
+  let hasPasswordLogin = false;
+
+  const adminAuth = getAdminAuth();
+  if (adminAuth) {
+    try {
+      const authUser = await adminAuth.getUser(session.user.id);
+      authProviders = authUser.providerData.map((p) => p.providerId);
+      hasPasswordLogin = hasPasswordProvider(authProviders);
+    } catch {
+      authProviders = [];
+    }
+  }
+
   return NextResponse.json({
     uid: session.user.id,
     name: data.name ?? "",
@@ -29,6 +45,8 @@ export async function GET() {
     phone: data.phone ?? "",
     address: data.address ?? "",
     role: data.role ?? session.user.role ?? "customer",
+    authProviders,
+    hasPasswordLogin,
   });
 }
 

@@ -49,6 +49,7 @@ export async function GET() {
         id: doc.id,
         serviceTitle: data.serviceTitle ?? "",
         bookingDate: data.bookingDate?.toDate?.()?.toISOString?.() ?? null,
+        quantity: data.quantity ?? 1,
         active: data.active !== false,
       };
     }) ?? [];
