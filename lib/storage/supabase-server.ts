@@ -77,3 +77,25 @@ export async function createSignedVideoUpload(path: string): Promise<{
 export function randomStorageId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+/** Elimina objetos del bucket. Ignora paths vacíos; no lanza si no hay nada que borrar. */
+export async function removeStoragePaths(
+  paths: string[]
+): Promise<{ removed: number; error?: string }> {
+  const unique = [...new Set(paths.filter(Boolean))];
+  if (unique.length === 0) return { removed: 0 };
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return { removed: 0, error: "Supabase no configurado" };
+  }
+
+  const bucket = getStorageBucket();
+  const { data, error } = await supabase.storage.from(bucket).remove(unique);
+
+  if (error) {
+    return { removed: 0, error: error.message };
+  }
+
+  return { removed: data?.length ?? unique.length };
+}

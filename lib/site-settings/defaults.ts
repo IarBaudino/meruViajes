@@ -46,6 +46,12 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
       "Aventurate en el Fin del Mundo. Excursiones y experiencias únicas en Ushuaia, Tierra del Fuego.",
     address: "Ushuaia, Tierra del Fuego, Argentina",
     email: "info@meruviajes.tur.ar",
-    phoneLabel: "Consultanos por WhatsApp",
+    phoneLabel: "(2901) 588864",
+    phoneNumber: "2901588864",
+  },
+  googleReviews: {
+    enabled: false,
+    placeId: "",
+    title: "Lo que dicen en Google",
   },
 };

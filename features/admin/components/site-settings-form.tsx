@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { RefreshGoogleReviewsButton } from "@/features/admin/components/refresh-google-reviews-button";
 
 export function SiteSettingsForm() {
   const [loadError, setLoadError] = useState("");
@@ -68,6 +69,10 @@ export function SiteSettingsForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
         <h2 className="text-lg text-meru-charcoal">Hero (inicio)</h2>
+        <p className="text-sm text-meru-muted">
+          Textos e imágenes del encabezado. Sobre las fotos hay una veladura oscura automática
+          para que el título y los botones se lean siempre, sin importar los colores de la imagen.
+        </p>
         <Input label="Etiqueta superior" {...register("hero.eyebrow")} />
         <Input label="Título principal" {...register("hero.title")} />
         <Input label="Subtítulo decorativo" {...register("hero.subtitle")} />
@@ -84,7 +89,7 @@ export function SiteSettingsForm() {
             setValue("hero.backgroundImages", urls, { shouldDirty: true })
           }
           label="Imágenes de fondo (carrusel)"
-          hint="Hasta 15 fotos. Podés subir archivos de hasta 25 MB: se comprimen en el navegador antes de guardarse en Supabase."
+          hint="Hasta 15 fotos. Se comprimen antes de subirlas a Supabase. La veladura oscura protege el contraste del texto."
         />
       </section>
 
@@ -119,7 +124,34 @@ export function SiteSettingsForm() {
         <Textarea label="Descripción" rows={3} {...register("footer.tagline")} />
         <Input label="Dirección" {...register("footer.address")} />
         <Input label="Email" type="email" {...register("footer.email")} />
-        <Input label="Teléfono / WhatsApp (texto)" {...register("footer.phoneLabel")} />
+        <Input label="Teléfono (texto visible)" {...register("footer.phoneLabel")} />
+        <Input
+          label="Teléfono (solo dígitos, para llamar / WhatsApp)"
+          placeholder="2901588864"
+          {...register("footer.phoneNumber")}
+        />
+        <p className="text-xs text-meru-muted">
+          El texto se muestra en el footer; los dígitos se usan para el enlace de llamada y WhatsApp.
+        </p>
+      </section>
+
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Reseñas de Google</h2>
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+          <input type="checkbox" className="rounded" {...register("googleReviews.enabled")} />
+          Mostrar sección de reseñas en la home
+        </label>
+        <Input label="Título de la sección" {...register("googleReviews.title")} />
+        <Input
+          label="Google Place ID"
+          placeholder="ChIJ…"
+          {...register("googleReviews.placeId")}
+        />
+        <p className="text-xs text-meru-muted">
+          Necesitás el Place ID del negocio y la API key de Google Places en el servidor
+          (`GOOGLE_PLACES_API_KEY`). Guardá el Place ID y después usá el botón de refrescar.
+        </p>
+        <RefreshGoogleReviewsButton />
       </section>
 
       {saveOk ? (

@@ -1,122 +1,74 @@
 rules_version = '2';
 
-
-
 service cloud.firestore {
-
   match /databases/{database}/documents {
 
-
-
     function isSignedIn() {
-
       return request.auth != null;
-
     }
-
-
 
     function isAdmin() {
-
       return isSignedIn() && (
-
         request.auth.token.admin == true ||
-
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-
       );
-
     }
-
-
 
     function isOwner(uid) {
-
       return isSignedIn() && request.auth.uid == uid;
-
     }
-
-
-
-    // Servicios: lectura pública solo activos; escritura solo admin
 
     match /services/{serviceId} {
-
       allow read: if resource.data.active == true;
-
       allow write: if isAdmin();
-
     }
 
+    match /packages/{packageId} {
+      allow read: if resource.data.active == true;
+      allow write: if isAdmin();
+    }
 
+    match /serviceCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /googleReviewsCache/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     match /users/{uid} {
-
       allow read, write: if isOwner(uid) || isAdmin();
-
     }
-
-
-
-    // Órdenes y reservas: solo lectura del dueño; escritura solo servidor (Admin SDK) vía admin
 
     match /orders/{orderId} {
-
       allow read: if isAdmin() ||
-
         (isSignedIn() && resource.data.userId == request.auth.uid);
-
       allow write: if isAdmin();
-
     }
-
-
 
     match /bookings/{bookingId} {
-
       allow read: if isAdmin() ||
-
         (isSignedIn() && resource.data.userId == request.auth.uid);
-
       allow write: if isAdmin();
-
     }
-
-
 
     match /reviews/{reviewId} {
-
       allow read: if resource.data.active == true;
-
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-
       allow update, delete: if isAdmin() ||
-
         (isSignedIn() && resource.data.userId == request.auth.uid);
-
     }
-
-
 
     match /inquiries/{inquiryId} {
-
       allow create: if true;
-
       allow read, update: if isAdmin();
-
     }
-
-
 
     match /siteSettings/{docId} {
-
       allow read: if true;
-
       allow write: if isAdmin();
-
     }
-
   }
-
 }
-

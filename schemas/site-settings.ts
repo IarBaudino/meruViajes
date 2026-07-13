@@ -36,6 +36,15 @@ export const siteSettingsSchema = z.object({
     address: z.string().min(5),
     email: z.string().email(),
     phoneLabel: z.string().min(3),
+    phoneNumber: z.union([
+      z.literal(""),
+      z.string().regex(/^\d{8,15}$/, "Solo dígitos, 8 a 15 caracteres"),
+    ]),
+  }),
+  googleReviews: z.object({
+    enabled: z.boolean(),
+    placeId: z.string(),
+    title: z.string().min(3),
   }),
 });
 

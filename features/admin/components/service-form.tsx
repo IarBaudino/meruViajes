@@ -42,6 +42,7 @@ function toFormDefaults(service?: Service): ServiceFormData {
 export function ServiceForm({ service }: ServiceFormProps) {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const isEdit = Boolean(service?.id);
 
   const {
@@ -58,6 +59,21 @@ export function ServiceForm({ service }: ServiceFormProps) {
   const title = watch("title");
   const price = watch("price");
   const photos = watch("photos") ?? [];
+
+  useEffect(() => {
+    async function loadCategories() {
+      const res = await fetch("/api/admin/categories");
+      if (!res.ok) return;
+      const data = await res.json();
+      setCategories(
+        (data.categories ?? []).map((c: { id: string; name: string }) => ({
+          id: c.id,
+          name: c.name,
+        }))
+      );
+    }
+    void loadCategories();
+  }, []);
 
   useEffect(() => {
     if (!isEdit && title) {
@@ -142,7 +158,29 @@ export function ServiceForm({ service }: ServiceFormProps) {
           <Input label="Duración" placeholder="Ej. 4 horas" {...register("duration")} />
           <Input label="Dificultad" placeholder="Ej. Moderada" {...register("difficulty")} />
           <Input label="Ubicación" {...register("location")} />
-          <Input label="Categoría" {...register("category")} />
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-meru-charcoal">
+              Grupo
+            </label>
+            <select
+              className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-meru-charcoal"
+              {...register("category")}
+            >
+              <option value="">Sin grupo</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-meru-muted">
+              Administrá los grupos en{" "}
+              <a href="/admin/categorias" className="text-meru-secondary hover:underline">
+                Admin → Grupos
+              </a>
+              .
+            </p>
+          </div>
           <div>
             <Input
               label="Stock / cupos"

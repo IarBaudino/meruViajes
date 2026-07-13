@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
+import { PhoneContact } from "@/components/layout/phone-contact";
 
 export async function Footer() {
   const year = new Date().getFullYear();
@@ -23,6 +24,11 @@ export async function Footer() {
               <li>
                 <Link href="/excursiones" className="hover:text-meru-sand">
                   Excursiones
+                </Link>
+              </li>
+              <li>
+                <Link href="/paquetes" className="hover:text-meru-sand">
+                  Paquetes
                 </Link>
               </li>
               <li>
@@ -58,9 +64,11 @@ export async function Footer() {
                   {footer.email}
                 </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 shrink-0 text-meru-secondary" aria-hidden />
-                <span>{footer.phoneLabel}</span>
+              <li>
+                <PhoneContact
+                  phoneLabel={footer.phoneLabel}
+                  phoneNumber={footer.phoneNumber}
+                />
               </li>
             </ul>
           </div>

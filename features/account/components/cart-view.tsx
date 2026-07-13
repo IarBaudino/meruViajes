@@ -15,6 +15,8 @@ type ProfileCheck = {
   missing: string[];
 };
 
+type PaymentMethod = "coordinar" | "getnet";
+
 export function CartView() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
@@ -26,6 +28,8 @@ export function CartView() {
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutOk, setCheckoutOk] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("coordinar");
+  const [getnetReady, setGetnetReady] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -44,6 +48,16 @@ export function CartView() {
     void loadProfile();
   }, []);
 
+  useEffect(() => {
+    async function checkGetnet() {
+      const res = await fetch("/api/payments/getnet/status");
+      if (!res.ok) return;
+      const data = await res.json();
+      setGetnetReady(Boolean(data.configured));
+    }
+    void checkGetnet();
+  }, []);
+
   async function handleCheckout() {
     setCheckoutError("");
     setCheckingOut(true);
@@ -53,8 +67,11 @@ export function CartView() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          paymentMethod,
           items: items.map((item) => ({
+            kind: item.kind ?? "service",
             serviceId: item.serviceId,
+            packageId: item.packageId,
             quantity: item.quantity,
           })),
         }),
@@ -64,6 +81,12 @@ export function CartView() {
 
       if (!res.ok) {
         throw new Error(json.error ?? "No se pudo confirmar la reserva");
+      }
+
+      if (paymentMethod === "getnet" && json.checkoutUrl) {
+        clearCart();
+        window.location.href = json.checkoutUrl as string;
+        return;
       }
 
       clearCart();
@@ -82,7 +105,7 @@ export function CartView() {
     <div>
       <PageHeader
         title="Carrito"
-        description="Revisá tus excursiones y confirmá la reserva. El pago se coordina con la agencia."
+        description="Revisá tus excursiones o paquetes y confirmá la reserva."
       />
 
       {checkoutOk ? (
@@ -111,44 +134,102 @@ export function CartView() {
       {items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
           <p className="text-meru-charcoal">Tu carrito está vacío.</p>
-          <Link href="/excursiones" className="mt-4 inline-block">
-            <Button>Explorar excursiones</Button>
-          </Link>
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <Link href="/excursiones">
+              <Button>Explorar excursiones</Button>
+            </Link>
+            <Link href="/paquetes">
+              <Button variant="outline">Ver paquetes</Button>
+            </Link>
+          </div>
         </div>
       ) : (
         <>
           <ul className="space-y-4">
-            {items.map((item) => (
-              <li
-                key={item.serviceId}
-                className="flex gap-4 rounded-xl border border-meru-border bg-white p-4"
-              >
-                {item.image ? (
-                  <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    <Image src={item.image} alt="" fill className="object-cover" />
-                  </div>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/excursiones/${item.slug}`}
-                    className="text-meru-charcoal hover:text-meru-secondary"
-                  >
-                    {item.title}
-                  </Link>
-                  <p className="text-sm text-meru-muted">
-                    {formatCurrencyARS(item.price)} × {item.quantity}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="text-sm text-red-600 hover:underline"
-                  onClick={() => removeItem(item.serviceId)}
+            {items.map((item) => {
+              const isPackage = item.kind === "package";
+              const href = isPackage
+                ? `/paquetes/${item.slug}`
+                : `/excursiones/${item.slug}`;
+              return (
+                <li
+                  key={`${item.kind ?? "service"}-${item.serviceId}`}
+                  className="flex gap-4 rounded-xl border border-meru-border bg-white p-4"
                 >
-                  Quitar
-                </button>
-              </li>
-            ))}
+                  {item.image ? (
+                    <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                      <Image src={item.image} alt="" fill className="object-cover" />
+                    </div>
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    {isPackage ? (
+                      <p className="text-xs font-medium uppercase tracking-wider text-meru-secondary">
+                        Paquete
+                      </p>
+                    ) : null}
+                    <Link href={href} className="text-meru-charcoal hover:text-meru-secondary">
+                      {item.title}
+                    </Link>
+                    <p className="text-sm text-meru-muted">
+                      {formatCurrencyARS(item.price)} × {item.quantity}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-sm text-red-600 hover:underline"
+                    onClick={() => removeItem(item.serviceId)}
+                  >
+                    Quitar
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+
+          <fieldset className="mt-6 rounded-xl border border-meru-border bg-white p-5">
+            <legend className="px-1 text-sm font-medium text-meru-charcoal">
+              Forma de pago
+            </legend>
+            <div className="mt-2 space-y-3">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  className="mt-1"
+                  checked={paymentMethod === "coordinar"}
+                  onChange={() => setPaymentMethod("coordinar")}
+                />
+                <span>
+                  <span className="block text-sm text-meru-charcoal">
+                    Coordinar con la agencia
+                  </span>
+                  <span className="text-xs text-meru-muted">
+                    Reservamos el cupo y te contactamos para el pago.
+                  </span>
+                </span>
+              </label>
+              <label
+                className={`flex items-start gap-3 ${getnetReady ? "cursor-pointer" : "opacity-60"}`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  className="mt-1"
+                  checked={paymentMethod === "getnet"}
+                  disabled={!getnetReady}
+                  onChange={() => setPaymentMethod("getnet")}
+                />
+                <span>
+                  <span className="block text-sm text-meru-charcoal">Pagar con Getnet</span>
+                  <span className="text-xs text-meru-muted">
+                    {getnetReady
+                      ? "Te redirigimos al checkout seguro de Getnet."
+                      : "Disponible cuando estén configuradas las credenciales de Getnet."}
+                  </span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
             <p className="text-lg text-meru-charcoal">
@@ -168,6 +249,8 @@ export function CartView() {
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     Confirmando…
                   </>
+                ) : paymentMethod === "getnet" ? (
+                  "Pagar con Getnet"
                 ) : (
                   "Confirmar reserva"
                 )}
@@ -180,11 +263,6 @@ export function CartView() {
               {checkoutError}
             </p>
           ) : null}
-
-          <p className="mt-4 text-xs text-meru-muted">
-            Al confirmar, reservamos los cupos y te contactamos para el pago. Estado inicial:{" "}
-            <strong>pendiente</strong>.
-          </p>
         </>
       )}
     </div>

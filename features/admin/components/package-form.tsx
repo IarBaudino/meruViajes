@@ -1,0 +1,179 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, type Resolver } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { packageSchema, type PackageFormData } from "@/schemas/package";
+import type { ExcursionPackage } from "@/types/catalog";
+import type { Service } from "@/types";
+import { slugify } from "@/lib/utils/slugify";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { formatCurrencyARS } from "@/lib/format";
+
+type PackageFormProps = {
+  package?: ExcursionPackage;
+};
+
+function toDefaults(pkg?: ExcursionPackage): PackageFormData {
+  return {
+    title: pkg?.title ?? "",
+    slug: pkg?.slug ?? "",
+    description: pkg?.description ?? "",
+    price: pkg?.price ?? 0,
+    photos: pkg?.photos ?? [],
+    serviceIds: pkg?.serviceIds ?? [],
+    stock: pkg?.stock ?? 0,
+    active: pkg?.active ?? true,
+    category: pkg?.category ?? "",
+  };
+}
+
+export function PackageForm({ package: pkg }: PackageFormProps) {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [services, setServices] = useState<Service[]>([]);
+  const isEdit = Boolean(pkg?.id);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<PackageFormData>({
+    resolver: zodResolver(packageSchema) as Resolver<PackageFormData>,
+    defaultValues: toDefaults(pkg),
+  });
+
+  const title = watch("title");
+  const photos = watch("photos") ?? [];
+  const serviceIds = watch("serviceIds") ?? [];
+  const price = watch("price");
+
+  useEffect(() => {
+    if (!isEdit && title) {
+      setValue("slug", slugify(title));
+    }
+  }, [title, isEdit, setValue]);
+
+  useEffect(() => {
+    async function loadServices() {
+      const res = await fetch("/api/admin/services");
+      if (!res.ok) return;
+      const data = await res.json();
+      setServices(data.services ?? []);
+    }
+    void loadServices();
+  }, []);
+
+  function toggleService(id: string) {
+    const next = serviceIds.includes(id)
+      ? serviceIds.filter((s) => s !== id)
+      : [...serviceIds, id];
+    setValue("serviceIds", next, { shouldValidate: true, shouldDirty: true });
+  }
+
+  async function onSubmit(data: PackageFormData) {
+    setError("");
+    const payload = {
+      ...data,
+      photos,
+      category: data.category || undefined,
+    };
+
+    const url = isEdit ? `/api/admin/packages/${pkg!.id}` : "/api/admin/packages";
+    const method = isEdit ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setError(json.error ?? "Error al guardar");
+      return;
+    }
+
+    router.push("/admin/paquetes");
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
+        <h2 className="text-lg text-meru-charcoal">Paquete</h2>
+        <Input label="Título" error={errors.title?.message} {...register("title")} />
+        <Input label="Slug (URL)" error={errors.slug?.message} {...register("slug")} />
+        <Textarea
+          label="Descripción"
+          rows={5}
+          error={errors.description?.message}
+          {...register("description")}
+        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Input
+            label="Precio del paquete (ARS)"
+            type="number"
+            error={errors.price?.message}
+            {...register("price", { valueAsNumber: true })}
+          />
+          {price > 0 ? (
+            <p className="self-end pb-2 text-sm text-meru-muted">
+              Vista previa: {formatCurrencyARS(price)}
+            </p>
+          ) : null}
+          <Input
+            label="Cupos del paquete"
+            type="number"
+            {...register("stock", { valueAsNumber: true })}
+          />
+          <Input label="Grupo / categoría (opcional)" {...register("category")} />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+          <input type="checkbox" className="rounded" {...register("active")} />
+          Publicado
+        </label>
+      </section>
+
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Excursiones incluidas</h2>
+        {errors.serviceIds?.message ? (
+          <p className="text-sm text-red-600">{errors.serviceIds.message}</p>
+        ) : null}
+        <ul className="max-h-72 space-y-2 overflow-y-auto">
+          {services.map((service) => (
+            <li key={service.id}>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-meru-border px-3 py-2 hover:bg-meru-ice/50">
+                <input
+                  type="checkbox"
+                  checked={serviceIds.includes(service.id)}
+                  onChange={() => toggleService(service.id)}
+                />
+                <span className="text-sm text-meru-charcoal">{service.title}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-xl border border-meru-border bg-white p-6">
+        <PhotoGalleryUpload
+          folder="excursions"
+          photos={photos}
+          onChange={(urls) => setValue("photos", urls, { shouldDirty: true })}
+          label="Fotos del paquete"
+        />
+      </section>
+
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+      <Button type="submit" isLoading={isSubmitting}>
+        {isEdit ? "Guardar paquete" : "Crear paquete"}
+      </Button>
+    </form>
+  );
+}

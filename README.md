@@ -90,3 +90,19 @@ schemas/          → Validación Zod
 2. Configurar todas las variables de `.env.example`
 3. `FIREBASE_ADMIN_PRIVATE_KEY`: pegar con `\n` para saltos de línea
 4. Desplegar reglas Firestore desde Firebase Console
+
+### Variables nuevas (Fase features)
+
+```env
+# Google Places (reseñas en home)
+GOOGLE_PLACES_API_KEY=
+
+# Getnet (pagos online) — completar cuando el comercio esté habilitado
+GETNET_API_BASE_URL=
+GETNET_CLIENT_ID=
+GETNET_CLIENT_SECRET=
+GETNET_SELLER_ID=
+GETNET_WEBHOOK_SECRET=
+```
+
+Webhook Getnet (producción): `https://TU_DOMINIO/api/payments/getnet/webhook`

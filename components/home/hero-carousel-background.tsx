@@ -35,6 +35,14 @@ export function HeroCarouselBackground({ images }: HeroCarouselBackgroundProps) 
           transition={{ duration: FADE_SECONDS, ease: "easeInOut" }}
         />
       ))}
+      {/* Veladura fija: el texto del hero se lee sobre fotos claras u oscuras */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(20,20,18,0.55) 0%, rgba(20,20,18,0.42) 45%, rgba(20,20,18,0.72) 100%)",
+        }}
+      />
     </div>
   );
 }

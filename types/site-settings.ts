@@ -33,6 +33,14 @@ export interface SiteSettings {
     tagline: string;
     address: string;
     email: string;
+    /** Texto visible, ej. (2901) 588864 */
     phoneLabel: string;
+    /** Solo dígitos para tel:/WhatsApp, ej. 2901588864 */
+    phoneNumber?: string;
+  };
+  googleReviews?: {
+    enabled: boolean;
+    placeId: string;
+    title: string;
   };
 }

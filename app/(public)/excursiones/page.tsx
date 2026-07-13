@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getActiveServices } from "@/features/excursions/lib/get-services";
+import { getVisibleCategories } from "@/features/categories/lib/get-categories";
 import { ExcursionCatalog } from "@/features/excursions/components/excursion-catalog";
 
 export const metadata: Metadata = {
@@ -11,13 +12,16 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function ExcursionsPage() {
-  const services = await getActiveServices();
+  const [services, categories] = await Promise.all([
+    getActiveServices(),
+    getVisibleCategories(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-3xl text-meru-charcoal sm:text-4xl">Nuestras Excursiones</h1>
       <p className="mt-4 max-w-2xl text-meru-muted">
-        Experiencias en el Fin del Mundo: navegación, montaña y naturaleza. Filtrá por categoría o
+        Experiencias en el Fin del Mundo: navegación, montaña y naturaleza. Filtrá por grupo o
         precio. Tarifa adulto; menores, infantes y jubilados pueden tener descuento según cada
         excursión.
       </p>
@@ -38,7 +42,7 @@ export default async function ExcursionsPage() {
           </Link>
         </div>
       ) : (
-        <ExcursionCatalog services={services} />
+        <ExcursionCatalog services={services} categories={categories} />
       )}
     </div>
   );

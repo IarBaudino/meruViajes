@@ -21,7 +21,10 @@ export interface User {
 }
 
 export interface CartItem {
+  /** Por defecto "service". Los paquetes usan kind="package" y serviceId = packageId. */
+  kind?: "service" | "package";
   serviceId: string;
+  packageId?: string;
   slug: string;
   title: string;
   price: number;
@@ -68,6 +71,8 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  packageId?: string;
+  packageTitle?: string;
 }
 
 export interface Order {

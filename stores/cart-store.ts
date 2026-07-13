@@ -51,7 +51,9 @@ export const useCartStore = create<CartState>()(
             items: [
               ...state.items,
               {
+                kind: item.kind ?? "service",
                 serviceId: item.serviceId,
+                packageId: item.packageId,
                 slug: item.slug,
                 title: item.title,
                 price: item.price,
