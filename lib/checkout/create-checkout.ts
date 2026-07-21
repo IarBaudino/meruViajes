@@ -2,8 +2,13 @@ import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import type { CheckoutItemInput } from "@/schemas/checkout";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { getAdminFirestore } from "@/lib/firebase/admin";
-import type { OrderItem, PaymentStatus } from "@/types";
+import type { OrderItem, PaymentStatus, ServiceDiscounts } from "@/types";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
+import {
+  computePassengersLineTotal,
+  totalPassengers,
+  type CartPassengers,
+} from "@/features/excursions/lib/pricing";
 
 export type CheckoutResult = {
   orderId: string;
@@ -23,12 +28,24 @@ type BookingDraft = {
   unitPrice: number;
   lineTotal: number;
   packageId?: string;
+  passengers?: CartPassengers;
 };
 
 type StockUpdate = {
   ref: DocumentReference;
   nextStock: number;
 };
+
+function mapDiscountsFromData(data: Record<string, unknown>): ServiceDiscounts | undefined {
+  const raw = data.discounts;
+  if (!raw || typeof raw !== "object") return undefined;
+  const d = raw as Record<string, unknown>;
+  const discounts: ServiceDiscounts = {};
+  if (typeof d.minorPercent === "number") discounts.minorPercent = d.minorPercent;
+  if (typeof d.infantPercent === "number") discounts.infantPercent = d.infantPercent;
+  if (typeof d.seniorPercent === "number") discounts.seniorPercent = d.seniorPercent;
+  return Object.keys(discounts).length > 0 ? discounts : undefined;
+}
 
 function requireProfileFields(profile: {
   name?: string;
@@ -176,9 +193,19 @@ export async function createCheckout(
       if (stock <= 0) {
         throw new CheckoutError(`"${title}" no tiene cupos disponibles.`, 409);
       }
-      if (item.quantity > stock) {
+
+      const passengers = item.passengers;
+      if (!passengers) {
+        throw new CheckoutError(`Indicá pasajeros para "${title}".`, 400);
+      }
+
+      const seats = totalPassengers(passengers);
+      if (seats < 1) {
+        throw new CheckoutError(`Seleccioná al menos un pasajero para "${title}".`, 400);
+      }
+      if (seats > stock) {
         throw new CheckoutError(
-          `Solo quedan ${stock} cupo${stock === 1 ? "" : "s"} para "${title}".`,
+          `No hay suficientes lugares para "${title}".`,
           409
         );
       }
@@ -188,24 +215,29 @@ export async function createCheckout(
         throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
       }
 
+      const discounts = mapDiscountsFromData(data as Record<string, unknown>);
+      const lineTotal = computePassengersLineTotal(unitPrice, discounts, passengers);
+
       orderItems.push({
         serviceId: item.serviceId,
         serviceTitle: title,
         slug: String(data.slug ?? ""),
-        quantity: item.quantity,
+        quantity: seats,
         unitPrice,
-        lineTotal: unitPrice * item.quantity,
+        lineTotal,
+        passengers,
       });
 
       bookingDrafts.push({
         serviceId: item.serviceId,
         serviceTitle: title,
-        quantity: item.quantity,
+        quantity: seats,
         unitPrice,
-        lineTotal: unitPrice * item.quantity,
+        lineTotal,
+        passengers,
       });
 
-      stockUpdates.push({ ref: serviceRef, nextStock: stock - item.quantity });
+      stockUpdates.push({ ref: serviceRef, nextStock: stock - seats });
     }
 
     // 2) Escrituras
@@ -250,6 +282,7 @@ export async function createCheckout(
         unitPrice: draft.unitPrice,
         lineTotal: draft.lineTotal,
         packageId: draft.packageId ?? null,
+        passengers: draft.passengers ?? null,
         DNI_Personal: customerDni,
         bookingDate: now,
         active: true,

@@ -27,9 +27,22 @@ export interface CartItem {
   packageId?: string;
   slug: string;
   title: string;
+  /** Precio unitario adulto (excursión) o precio del paquete. */
   price: number;
+  /** Cupos / plazas (suma de pasajeros en excursiones). */
   quantity: number;
   image?: string;
+  /** Desglose de pasajeros (solo excursiones). */
+  passengers?: {
+    adult: number;
+    minor: number;
+    infant: number;
+    senior: number;
+  };
+  /** Snapshot de descuentos al agregar. */
+  discounts?: ServiceDiscounts;
+  /** Total de la línea ya calculado con descuentos. */
+  lineTotal?: number;
 }
 
 export interface Service {
@@ -73,6 +86,12 @@ export interface OrderItem {
   lineTotal: number;
   packageId?: string;
   packageTitle?: string;
+  passengers?: {
+    adult: number;
+    minor: number;
+    infant: number;
+    senior: number;
+  };
 }
 
 export interface Order {

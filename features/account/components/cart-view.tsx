@@ -9,6 +9,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyARS } from "@/lib/format";
+import { formatPassengersSummary } from "@/features/excursions/lib/pricing";
 
 type ProfileCheck = {
   ok: boolean;
@@ -73,6 +74,7 @@ export function CartView() {
             serviceId: item.serviceId,
             packageId: item.packageId,
             quantity: item.quantity,
+            passengers: item.passengers,
           })),
         }),
       });
@@ -151,6 +153,7 @@ export function CartView() {
               const href = isPackage
                 ? `/paquetes/${item.slug}`
                 : `/excursiones/${item.slug}`;
+              const lineTotal = item.lineTotal ?? item.price * item.quantity;
               return (
                 <li
                   key={`${item.kind ?? "service"}-${item.serviceId}`}
@@ -170,8 +173,17 @@ export function CartView() {
                     <Link href={href} className="text-meru-charcoal hover:text-meru-secondary">
                       {item.title}
                     </Link>
-                    <p className="text-sm text-meru-muted">
-                      {formatCurrencyARS(item.price)} × {item.quantity}
+                    {item.passengers ? (
+                      <p className="mt-1 text-sm text-meru-muted">
+                        {formatPassengersSummary(item.passengers)}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-meru-muted">
+                        Cantidad: {item.quantity}
+                      </p>
+                    )}
+                    <p className="mt-1 text-sm font-semibold text-meru-primary">
+                      {formatCurrencyARS(lineTotal)}
                     </p>
                   </div>
                   <button

@@ -4,10 +4,8 @@ import { notFound } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { getActiveServices, getServiceBySlug } from "@/features/excursions/lib/get-services";
 import { ExcursionGallery } from "@/features/excursions/components/excursion-gallery";
-import { AddToCartButton } from "@/features/excursions/components/add-to-cart-button";
+import { ExcursionBookingPanel } from "@/features/excursions/components/excursion-booking-panel";
 import { Badge } from "@/components/ui/badge";
-import { ExcursionPricingPanel } from "@/features/excursions/components/excursion-pricing-panel";
-import { ExcursionStockLabel } from "@/features/excursions/components/excursion-stock-label";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -137,29 +135,29 @@ export default async function ExcursionDetailPage({ params }: Props) {
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-xl border border-meru-border bg-white p-6 shadow-[var(--shadow-card)]">
-            <ExcursionPricingPanel service={service} />
-            <ExcursionStockLabel stock={service.stock} className="mt-4" />
             {service.duration && (
-              <p className="mt-3 text-sm text-meru-charcoal-muted">
+              <p className="text-sm text-meru-charcoal-muted">
                 <span className="font-medium text-meru-charcoal">Duración:</span> {service.duration}
               </p>
             )}
             {service.difficulty && (
               <p className="mt-1 text-sm text-meru-charcoal-muted">
-                <span className="font-medium text-meru-charcoal">Dificultad:</span> {service.difficulty}
+                <span className="font-medium text-meru-charcoal">Dificultad:</span>{" "}
+                {service.difficulty}
               </p>
             )}
-            <div className="mt-6 space-y-3">
-              <AddToCartButton service={service} />
-              <Link
-                href="/#consulta"
-                className="flex h-12 w-full items-center justify-center rounded-lg border-2 border-meru-primary font-semibold text-meru-primary transition-colors hover:bg-meru-ice"
-              >
-                Consultar por esta excursión
-              </Link>
+            <div className={service.duration || service.difficulty ? "mt-6" : undefined}>
+              <ExcursionBookingPanel service={service} />
             </div>
+            <Link
+              href="/#consulta"
+              className="mt-3 flex h-12 w-full items-center justify-center rounded-lg border-2 border-meru-primary font-semibold text-meru-primary transition-colors hover:bg-meru-ice"
+            >
+              Consultar por esta excursión
+            </Link>
             <p className="mt-4 text-xs text-meru-muted">
-              Al confirmar desde tu carrito reservamos el cupo. El pago se coordina con la agencia.
+              Elegí adultos, menores, infantes (sin cargo) y jubilados. El total se calcula con los
+              descuentos de la excursión. Al confirmar desde el carrito reservamos los lugares.
             </p>
           </div>
         </aside>

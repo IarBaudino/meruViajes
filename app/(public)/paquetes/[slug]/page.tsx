@@ -82,9 +82,7 @@ export default async function PackageDetailPage({ params }: Props) {
             {formatCurrencyARS(pkg.price)}
           </p>
           <p className="mt-2 text-sm text-meru-muted">
-            {pkg.stock > 0
-              ? `${pkg.stock} cupo${pkg.stock === 1 ? "" : "s"} disponible${pkg.stock === 1 ? "" : "s"}`
-              : "Sin cupos por el momento"}
+            {pkg.stock > 0 ? "Disponible para reservar" : "Sin cupos por el momento"}
           </p>
           <div className="mt-6">
             <AddPackageToCartButton package={pkg} />

@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Mountain } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { Service } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 import { formatCurrencyARS } from "@/lib/format";
 import { hasAnyDiscount } from "@/features/excursions/lib/pricing";
@@ -34,8 +35,8 @@ export function ExcursionCard({ service, className }: ExcursionCardProps) {
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-gradient-to-br from-meru-ice to-slate-200">
-              <Mountain className="h-16 w-16 text-meru-primary/25" aria-hidden />
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-meru-ice to-slate-200 opacity-80">
+              <BrandLogo href={null} size="lg" className="opacity-70" />
             </div>
           )}
           {service.category && (

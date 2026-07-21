@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   },
   description:
     "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia, Tierra del Fuego.",
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png" }],
+    shortcut: ["/logo.png"],
+  },
   openGraph: {
     type: "website",
     locale: "es_AR",
@@ -20,6 +25,21 @@ export const metadata: Metadata = {
     title: "Meru Viajes y Turismo | Ushuaia",
     description:
       "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Meru Viajes y Turismo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Meru Viajes y Turismo | Ushuaia",
+    description:
+      "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia.",
+    images: ["/logo.png"],
   },
 };
 

@@ -34,12 +34,16 @@ export async function POST(request: Request) {
     if (isResendConfigured()) {
       const resend = getResend();
       if (resend) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar";
+        const logoHtml = `<img src="${appUrl.replace(/\/$/, "")}/logo.png" alt="Meru Viajes y Turismo" width="120" style="display:block;margin:0 0 20px 0" />`;
+
         await resend.emails.send({
           from: resendDefaults.from,
           to: resendDefaults.to,
           replyTo: email,
           subject: `[Meru Turismo] Nueva consulta de ${name}`,
           html: `
+            ${logoHtml}
             <h2>Nueva consulta desde el sitio web</h2>
             <p><strong>Nombre:</strong> ${name}</p>
             <p><strong>Email:</strong> ${email}</p>
@@ -53,6 +57,7 @@ export async function POST(request: Request) {
           to: email,
           subject: "Recibimos tu consulta — Meru Viajes y Turismo",
           html: `
+            ${logoHtml}
             <p>Hola ${name},</p>
             <p>Gracias por contactarnos. Recibimos tu consulta y te responderemos a la brevedad.</p>
             <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>

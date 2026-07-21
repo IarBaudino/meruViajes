@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, Mountain } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useUiStore } from "@/stores/ui-store";
 import { AuthNav } from "@/components/layout/auth-nav";
 import { MobileAuthMenu } from "@/components/layout/mobile-auth-menu";
+import { BrandLogo } from "@/components/brand-logo";
+import { CartNavLink } from "@/components/layout/cart-nav-link";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "/#excursiones", label: "Excursiones" },
+  { href: "/excursiones", label: "Excursiones" },
   { href: "/paquetes", label: "Paquetes" },
   { href: "/#sobre-nosotros", label: "Sobre Nosotros" },
   { href: "/#consulta", label: "Contacto" },
-  { href: "/excursiones", label: "Catálogo" },
 ];
 
 export function Header() {
@@ -21,14 +22,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-meru-border/80 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-xl text-meru-charcoal"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <Mountain className="h-8 w-8 text-meru-secondary" aria-hidden />
-          <span>Meru Turismo</span>
-        </Link>
+        <BrandLogo href="/" size="md" priority onClick={() => setMobileMenuOpen(false)} />
 
         <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Principal">
           {navLinks.map((link) => (
@@ -41,18 +35,22 @@ export function Header() {
             </Link>
           ))}
           <AuthNav />
+          <CartNavLink />
         </nav>
 
-        <button
-          type="button"
-          className="rounded-lg p-2 text-meru-primary md:hidden"
-          onClick={toggleMobileMenu}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobile-menu"
-          aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-        >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          <CartNavLink onNavigate={() => setMobileMenuOpen(false)} />
+          <button
+            type="button"
+            className="rounded-lg p-2 text-meru-primary"
+            onClick={toggleMobileMenu}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       <nav

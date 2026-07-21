@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { ExcursionPackage } from "@/types/catalog";
+import { BrandLogo } from "@/components/brand-logo";
 import { formatCurrencyARS } from "@/lib/format";
 
 type Props = {
@@ -22,8 +23,8 @@ export function PackageCard({ package: pkg }: Props) {
             sizes="(max-width:768px) 100vw, 33vw"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-meru-muted">
-            Sin imagen
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-meru-ice to-slate-200">
+            <BrandLogo href={null} size="lg" className="opacity-70" />
           </div>
         )}
       </Link>

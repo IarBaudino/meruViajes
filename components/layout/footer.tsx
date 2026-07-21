@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, MapPin } from "lucide-react";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 import { PhoneContact } from "@/components/layout/phone-contact";
+import { BrandLogo } from "@/components/brand-logo";
 
 export async function Footer() {
   const year = new Date().getFullYear();
@@ -12,7 +13,10 @@ export async function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-3">
           <div>
-            <h2 className="text-lg text-meru-sand">{footer.brandName}</h2>
+            <div className="inline-flex rounded-xl bg-white/95 p-3">
+              <BrandLogo href="/" size="lg" />
+            </div>
+            <h2 className="mt-4 text-lg text-meru-sand">{footer.brandName}</h2>
             <p className="mt-3 text-sm leading-relaxed text-meru-sand/80">{footer.tagline}</p>
           </div>
 

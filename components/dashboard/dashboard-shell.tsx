@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, ShieldCheck } from "lucide-react";
+import { Menu, X, ShieldCheck } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 
 export type DashboardNavItem = {
@@ -68,10 +69,15 @@ export function DashboardShell({
   return (
     <div className="min-h-screen bg-meru-sand">
       <header className="border-b border-meru-border bg-white lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-meru-muted">{title}</p>
-            {subtitle ? <p className="text-sm text-meru-charcoal">{subtitle}</p> : null}
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <BrandLogo href={backHref} size="sm" />
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wider text-meru-muted">{title}</p>
+              {subtitle ? (
+                <p className="truncate text-sm text-meru-charcoal">{subtitle}</p>
+              ) : null}
+            </div>
           </div>
           <button
             type="button"
@@ -88,10 +94,8 @@ export function DashboardShell({
       <div className="mx-auto flex max-w-7xl">
         <aside className="hidden w-64 shrink-0 border-r border-meru-border bg-white lg:block lg:min-h-screen">
           <div className="border-b border-meru-border p-5">
-            <Link href={backHref} className="flex items-center gap-2 text-meru-charcoal">
-              <Mountain className="h-6 w-6 text-meru-secondary" aria-hidden />
-              <span className="font-medium">{title}</span>
-            </Link>
+            <BrandLogo href={backHref} size="md" />
+            <p className="mt-3 font-medium text-meru-charcoal">{title}</p>
             {subtitle ? <p className="mt-1 truncate text-xs text-meru-muted">{subtitle}</p> : null}
           </div>
           {navContent}
