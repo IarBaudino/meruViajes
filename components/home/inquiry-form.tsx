@@ -56,7 +56,7 @@ export function InquiryForm({ inquiry }: InquiryFormProps) {
     <section id="consulta" className="scroll-mt-24 bg-meru-primary py-20 text-white">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <div className="text-center">
-          <h2 className="text-3xl text-white sm:text-4xl">{inquiry.title}</h2>
+          <h2 className="text-3xl text-white">{inquiry.title}</h2>
           <p className="mt-3 text-meru-sand/85">{inquiry.subtitle}</p>
         </div>
 

@@ -1,131 +1,160 @@
-import type { PassengerCategory, ServiceDiscounts } from "@/types/discounts";
+import type { DiscountOption, Service, ServicePromotion } from "@/types";
+
+export type CartDiscountSeat = {
+  optionId: string;
+  label: string;
+  percent: number;
+  quantity: number;
+};
 
 export type CartPassengers = {
   adult: number;
-  minor: number;
   infant: number;
-  senior: number;
+  discounted: CartDiscountSeat[];
 };
 
 export const EMPTY_PASSENGERS: CartPassengers = {
   adult: 0,
-  minor: 0,
   infant: 0,
-  senior: 0,
+  discounted: [],
 };
+
+/** Parsea YYYY-MM-DD como inicio/fin del día en hora local. */
+function parseDayBound(isoDate: string, endOfDay: boolean): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  if (endOfDay) return new Date(y, mo, d, 23, 59, 59, 999);
+  return new Date(y, mo, d, 0, 0, 0, 0);
+}
+
+export function isPromotionActive(
+  promo: ServicePromotion | null | undefined,
+  now: Date = new Date()
+): boolean {
+  if (!promo?.enabled) return false;
+  if (!(promo.price > 0) || !promo.startsAt || !promo.endsAt) return false;
+  const start = parseDayBound(promo.startsAt, false);
+  const end = parseDayBound(promo.endsAt, true);
+  if (!start || !end) return false;
+  return now >= start && now <= end;
+}
+
+export function getEffectiveAdultPrice(
+  service: Pick<Service, "price" | "promotion">,
+  now: Date = new Date()
+): number {
+  if (isPromotionActive(service.promotion, now)) {
+    return service.promotion!.price;
+  }
+  return service.price;
+}
+
+/** Descuentos que se pueden elegir ahora (todos, o solo los de la promo activa). */
+export function getApplicableDiscountOptions(
+  service: Pick<Service, "discountOptions" | "promotion">,
+  now: Date = new Date()
+): DiscountOption[] {
+  const options = service.discountOptions ?? [];
+  const promo = service.promotion;
+  if (!isPromotionActive(promo, now)) return options;
+  const allowed = new Set(promo!.appliesToDiscountIds ?? []);
+  return options.filter((o) => allowed.has(o.id));
+}
 
 export function applyDiscountPercent(basePrice: number, percent?: number): number {
   if (percent == null || percent <= 0) return basePrice;
   return Math.round(basePrice * (1 - percent / 100));
 }
 
-export function getDiscountPercent(
-  discounts: ServiceDiscounts | undefined,
-  category: Exclude<PassengerCategory, "adult">
-): number | undefined {
-  if (!discounts) return undefined;
-  switch (category) {
-    case "minor":
-      return discounts.minorPercent;
-    case "infant":
-      return discounts.infantPercent;
-    case "senior":
-      return discounts.seniorPercent;
-  }
+export function hasAnyDiscount(
+  service: Pick<Service, "discountOptions" | "promotion" | "discounts">
+): boolean {
+  if ((service.discountOptions?.length ?? 0) > 0) return true;
+  if (isPromotionActive(service.promotion)) return true;
+  const d = service.discounts;
+  if (!d) return false;
+  return (d.minorPercent ?? 0) > 0 || (d.seniorPercent ?? 0) > 0;
 }
 
-/** Infantes no pagan. Menores/jubilados usan % si está configurado; si no, tarifa adulto. */
-export function getPriceForCategory(
-  basePrice: number,
-  discounts: ServiceDiscounts | undefined,
-  category: PassengerCategory
-): number {
-  if (category === "adult") return basePrice;
-  if (category === "infant") return 0;
-  const percent = getDiscountPercent(discounts, category);
-  return applyDiscountPercent(basePrice, percent);
-}
-
-export function hasAnyDiscount(discounts?: ServiceDiscounts): boolean {
-  if (!discounts) return false;
-  return (
-    (discounts.minorPercent ?? 0) > 0 ||
-    (discounts.infantPercent ?? 0) > 0 ||
-    (discounts.seniorPercent ?? 0) > 0
-  );
-}
-
-export type DiscountLine = {
-  category: Exclude<PassengerCategory, "adult">;
-  label: string;
-  percent: number;
-  price: number;
-};
-
-export function getDiscountLines(
-  basePrice: number,
-  discounts?: ServiceDiscounts
-): DiscountLine[] {
-  const lines: DiscountLine[] = [
-    {
-      category: "infant",
-      label: "Infantes",
-      percent: 100,
-      price: 0,
-    },
-  ];
-
-  if (discounts) {
-    const entries: {
-      category: Exclude<PassengerCategory, "adult" | "infant">;
-      label: string;
-      percent?: number;
-    }[] = [
-      { category: "minor", label: "Menores", percent: discounts.minorPercent },
-      { category: "senior", label: "Jubilados", percent: discounts.seniorPercent },
-    ];
-
-    for (const { category, label, percent } of entries) {
-      if (percent != null && percent > 0) {
-        lines.push({
-          category,
-          label,
-          percent,
-          price: applyDiscountPercent(basePrice, percent),
-        });
-      }
-    }
-  }
-
-  return lines;
+export function hasActivePromotion(
+  service: Pick<Service, "promotion">,
+  now: Date = new Date()
+): boolean {
+  return isPromotionActive(service.promotion, now);
 }
 
 export function totalPassengers(passengers: CartPassengers): number {
   return (
-    passengers.adult + passengers.minor + passengers.infant + passengers.senior
+    passengers.adult +
+    passengers.infant +
+    passengers.discounted.reduce((sum, line) => sum + line.quantity, 0)
   );
 }
 
 export function mergePassengers(a: CartPassengers, b: CartPassengers): CartPassengers {
+  const byId = new Map<string, CartDiscountSeat>();
+  for (const line of [...a.discounted, ...b.discounted]) {
+    const prev = byId.get(line.optionId);
+    if (prev) {
+      byId.set(line.optionId, {
+        ...prev,
+        quantity: prev.quantity + line.quantity,
+        percent: line.percent,
+        label: line.label,
+      });
+    } else {
+      byId.set(line.optionId, { ...line });
+    }
+  }
   return {
     adult: a.adult + b.adult,
-    minor: a.minor + b.minor,
     infant: a.infant + b.infant,
-    senior: a.senior + b.senior,
+    discounted: Array.from(byId.values()),
   };
 }
 
+/**
+ * Total de línea usando el precio adulto vigente y las opciones aplicables del servicio
+ * (fuente de verdad en checkout; ignora % enviados por el cliente).
+ */
+export function computePassengersLineTotalFromService(
+  service: Pick<Service, "price" | "promotion" | "discountOptions">,
+  passengers: CartPassengers,
+  now: Date = new Date()
+): number {
+  const adultPrice = getEffectiveAdultPrice(service, now);
+  const applicable = new Map(
+    getApplicableDiscountOptions(service, now).map((o) => [o.id, o])
+  );
+
+  let total = passengers.adult * adultPrice;
+  // Infantes siempre gratis
+  for (const line of passengers.discounted) {
+    if (line.quantity <= 0) continue;
+    const opt = applicable.get(line.optionId);
+    if (!opt) {
+      total += line.quantity * adultPrice;
+    } else {
+      total += line.quantity * applyDiscountPercent(adultPrice, opt.percent);
+    }
+  }
+  return total;
+}
+
+/** Total de línea con precio adulto ya resuelto y % de cada asiento descontado. */
 export function computePassengersLineTotal(
-  basePrice: number,
-  discounts: ServiceDiscounts | undefined,
+  adultPrice: number,
   passengers: CartPassengers
 ): number {
-  return (
-    passengers.adult * getPriceForCategory(basePrice, discounts, "adult") +
-    passengers.minor * getPriceForCategory(basePrice, discounts, "minor") +
-    passengers.infant * getPriceForCategory(basePrice, discounts, "infant") +
-    passengers.senior * getPriceForCategory(basePrice, discounts, "senior")
-  );
+  let total = passengers.adult * adultPrice;
+  for (const line of passengers.discounted) {
+    if (line.quantity <= 0) continue;
+    total += line.quantity * applyDiscountPercent(adultPrice, line.percent);
+  }
+  return total;
 }
 
 export function formatPassengersSummary(passengers: CartPassengers): string {
@@ -135,9 +164,11 @@ export function formatPassengersSummary(passengers: CartPassengers): string {
       passengers.adult === 1 ? "1 adulto" : `${passengers.adult} adultos`
     );
   }
-  if (passengers.minor > 0) {
+  for (const line of passengers.discounted) {
+    if (line.quantity <= 0) continue;
+    const label = line.label.toLowerCase();
     parts.push(
-      passengers.minor === 1 ? "1 menor" : `${passengers.minor} menores`
+      line.quantity === 1 ? `1 ${label}` : `${line.quantity} ${label}`
     );
   }
   if (passengers.infant > 0) {
@@ -145,10 +176,57 @@ export function formatPassengersSummary(passengers: CartPassengers): string {
       passengers.infant === 1 ? "1 infante" : `${passengers.infant} infantes`
     );
   }
-  if (passengers.senior > 0) {
-    parts.push(
-      passengers.senior === 1 ? "1 jubilado" : `${passengers.senior} jubilados`
-    );
-  }
   return parts.join(" · ");
+}
+
+/** Normaliza pasajeros legacy (minor/senior) o incompletos. */
+export function normalizeCartPassengers(raw: unknown): CartPassengers | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Record<string, unknown>;
+
+  if (Array.isArray(p.discounted)) {
+    return {
+      adult: Math.max(0, Number(p.adult) || 0),
+      infant: Math.max(0, Number(p.infant) || 0),
+      discounted: p.discounted
+        .map((item) => {
+          if (!item || typeof item !== "object") return null;
+          const o = item as Record<string, unknown>;
+          const optionId = typeof o.optionId === "string" ? o.optionId : "";
+          const label = typeof o.label === "string" ? o.label : "Descuento";
+          const percent = Number(o.percent) || 0;
+          const quantity = Math.max(0, Number(o.quantity) || 0);
+          if (!optionId || quantity <= 0) return null;
+          return { optionId, label, percent, quantity };
+        })
+        .filter((x): x is CartDiscountSeat => x !== null),
+    };
+  }
+
+  // Legacy: adult/minor/infant/senior
+  const discounted: CartDiscountSeat[] = [];
+  const minor = Math.max(0, Number(p.minor) || 0);
+  const senior = Math.max(0, Number(p.senior) || 0);
+  if (minor > 0) {
+    discounted.push({
+      optionId: "minor",
+      label: "Menor",
+      percent: 0,
+      quantity: minor,
+    });
+  }
+  if (senior > 0) {
+    discounted.push({
+      optionId: "senior",
+      label: "Jubilado",
+      percent: 0,
+      quantity: senior,
+    });
+  }
+
+  return {
+    adult: Math.max(0, Number(p.adult) || 0),
+    infant: Math.max(0, Number(p.infant) || 0),
+    discounted,
+  };
 }

@@ -38,19 +38,31 @@ export async function GET() {
         id: doc.id,
         total: data.total ?? 0,
         paymentStatus: data.paymentStatus ?? "pendiente",
+        paymentMethod: data.paymentMethod ?? "coordinar",
+        items: Array.isArray(data.items) ? data.items : [],
         createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
       };
     }) ?? [];
 
+  const paymentByOrderId = new Map(
+    orders.map((o) => [o.id, o.paymentStatus as string])
+  );
+
   const bookings =
     bookingsSnap?.docs.map((doc) => {
       const data = doc.data();
+      const orderId =
+        typeof data.serviceOrderId === "string" ? data.serviceOrderId : "";
       return {
         id: doc.id,
         serviceTitle: data.serviceTitle ?? "",
         bookingDate: data.bookingDate?.toDate?.()?.toISOString?.() ?? null,
         quantity: data.quantity ?? 1,
+        lineTotal: typeof data.lineTotal === "number" ? data.lineTotal : undefined,
         active: data.active !== false,
+        orderId,
+        paymentStatus: paymentByOrderId.get(orderId) ?? "pendiente",
+        passengers: data.passengers ?? null,
       };
     }) ?? [];
 

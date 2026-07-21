@@ -1,5 +1,5 @@
-import type { Service, SeasonalPhoto } from "@/types";
-import type { ServiceDiscounts } from "@/types/discounts";
+import type { Service, SeasonalPhoto, DiscountOption, ServicePromotion } from "@/types";
+import { legacyDiscountsToOptions } from "@/types/discounts";
 import type { DocumentData } from "firebase-admin/firestore";
 
 function asString(value: unknown, fallback = ""): string {
@@ -19,21 +19,53 @@ function asStringArray(value: unknown): string[] {
   return value.filter((v): v is string => typeof v === "string");
 }
 
-function mapDiscounts(data: DocumentData): ServiceDiscounts | undefined {
-  const raw = data.discounts;
-  if (!raw || typeof raw !== "object") return undefined;
+function mapDiscountOptions(data: DocumentData): DiscountOption[] {
+  const raw = data.discountOptions;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const o = item as Record<string, unknown>;
+        const id = asString(o.id);
+        const label = asString(o.label);
+        const percent = asNumber(o.percent, NaN);
+        if (!id || !label || Number.isNaN(percent)) return null;
+        return { id, label, percent } as DiscountOption;
+      })
+      .filter((o): o is DiscountOption => o !== null);
+  }
 
-  const d = raw as Record<string, unknown>;
-  const minorPercent = asNumber(d.minorPercent, NaN);
-  const infantPercent = asNumber(d.infantPercent, NaN);
-  const seniorPercent = asNumber(d.seniorPercent, NaN);
+  const legacy = data.discounts;
+  if (legacy && typeof legacy === "object") {
+    const d = legacy as Record<string, unknown>;
+    return legacyDiscountsToOptions({
+      minorPercent:
+        typeof d.minorPercent === "number" ? d.minorPercent : undefined,
+      infantPercent:
+        typeof d.infantPercent === "number" ? d.infantPercent : undefined,
+      seniorPercent:
+        typeof d.seniorPercent === "number" ? d.seniorPercent : undefined,
+    });
+  }
 
-  const discounts: ServiceDiscounts = {};
-  if (!Number.isNaN(minorPercent)) discounts.minorPercent = minorPercent;
-  if (!Number.isNaN(infantPercent)) discounts.infantPercent = infantPercent;
-  if (!Number.isNaN(seniorPercent)) discounts.seniorPercent = seniorPercent;
+  return [];
+}
 
-  return Object.keys(discounts).length > 0 ? discounts : undefined;
+function mapPromotion(data: DocumentData): ServicePromotion | null {
+  const raw = data.promotion;
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Record<string, unknown>;
+  const price = asNumber(p.price, NaN);
+  const startsAt = asString(p.startsAt);
+  const endsAt = asString(p.endsAt);
+  if (Number.isNaN(price) || !startsAt || !endsAt) return null;
+  return {
+    enabled: p.enabled !== false,
+    price,
+    startsAt,
+    endsAt,
+    appliesToDiscountIds: asStringArray(p.appliesToDiscountIds),
+  };
 }
 
 function mapSeasonalPhotos(value: unknown): SeasonalPhoto[] | undefined {
@@ -65,6 +97,7 @@ function mapSeasonalPhotos(value: unknown): SeasonalPhoto[] | undefined {
 }
 
 export function mapFirestoreService(id: string, data: DocumentData): Service {
+  const discountOptions = mapDiscountOptions(data);
   return {
     id,
     title: asString(data.title),
@@ -82,13 +115,45 @@ export function mapFirestoreService(id: string, data: DocumentData): Service {
     cancellationPolicy: asString(data.cancellationPolicy) || undefined,
     additionalEquipment: asString(data.additionalEquipment) || undefined,
     notIncluded: asString(data.notIncluded) || undefined,
-    discounts: mapDiscounts(data),
+    discountOptions,
+    promotion: mapPromotion(data),
     stock: asNumber(data.stock, 0),
     active: asBool(data.active, true),
   };
 }
 
-export function serviceToFirestore(data: Omit<Service, "id">): DocumentData {
+export function serviceToFirestore(data: {
+  title: string;
+  slug: string;
+  description: string;
+  price: number;
+  duration?: string | null;
+  difficulty?: string | null;
+  location?: string | null;
+  photos: string[];
+  seasonalPhotos?: SeasonalPhoto[] | null;
+  category?: string | null;
+  meetingPoint?: string | null;
+  requirements?: string | null;
+  cancellationPolicy?: string | null;
+  additionalEquipment?: string | null;
+  notIncluded?: string | null;
+  discountOptions?: DiscountOption[];
+  promotion?: ServicePromotion | null;
+  stock: number;
+  active: boolean;
+}): DocumentData {
+  const promotion =
+    data.promotion && data.promotion.enabled
+      ? {
+          enabled: true,
+          price: data.promotion.price,
+          startsAt: data.promotion.startsAt,
+          endsAt: data.promotion.endsAt,
+          appliesToDiscountIds: data.promotion.appliesToDiscountIds ?? [],
+        }
+      : null;
+
   return {
     title: data.title,
     slug: data.slug,
@@ -105,7 +170,9 @@ export function serviceToFirestore(data: Omit<Service, "id">): DocumentData {
     cancellationPolicy: data.cancellationPolicy ?? null,
     additionalEquipment: data.additionalEquipment ?? null,
     notIncluded: data.notIncluded ?? null,
-    discounts: data.discounts ?? null,
+    discountOptions: data.discountOptions ?? [],
+    promotion,
+    discounts: null,
     stock: data.stock,
     active: data.active,
   };

@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartItem, ServiceDiscounts } from "@/types";
+import type { CartItem, DiscountOption } from "@/types";
 import { canAddQuantity } from "@/lib/excursions/stock";
 import {
   computePassengersLineTotal,
   mergePassengers,
+  normalizeCartPassengers,
   totalPassengers,
   type CartPassengers,
 } from "@/features/excursions/lib/pricing";
@@ -13,7 +14,7 @@ type AddItemInput = Omit<CartItem, "quantity" | "lineTotal"> & {
   quantity?: number;
   maxStock?: number;
   passengers?: CartPassengers;
-  discounts?: ServiceDiscounts;
+  discountOptions?: DiscountOption[];
   lineTotal?: number;
 };
 
@@ -30,6 +31,10 @@ interface CartState {
 function itemLineTotal(item: CartItem): number {
   if (typeof item.lineTotal === "number") return item.lineTotal;
   return item.price * item.quantity;
+}
+
+function emptyPassengersFromQty(quantity: number): CartPassengers {
+  return { adult: quantity, infant: 0, discounted: [] };
 }
 
 export const useCartStore = create<CartState>()(
@@ -84,12 +89,9 @@ export const useCartStore = create<CartState>()(
             };
           }
 
-          const passengers = item.passengers ?? {
-            adult: item.quantity ?? 1,
-            minor: 0,
-            infant: 0,
-            senior: 0,
-          };
+          const passengers =
+            item.passengers ??
+            emptyPassengersFromQty(item.quantity ?? 1);
           const seats = totalPassengers(passengers);
           if (seats < 1) return state;
 
@@ -99,24 +101,15 @@ export const useCartStore = create<CartState>()(
           }
 
           added = true;
-          const discounts = item.discounts;
+          const adultPrice = item.unitAdultPrice ?? item.price;
 
           if (existing) {
-            const mergedPassengers = mergePassengers(
-              existing.passengers ?? {
-                adult: existing.quantity,
-                minor: 0,
-                infant: 0,
-                senior: 0,
-              },
-              passengers
-            );
+            const existingPassengers =
+              normalizeCartPassengers(existing.passengers) ??
+              emptyPassengersFromQty(existing.quantity);
+            const mergedPassengers = mergePassengers(existingPassengers, passengers);
             const nextQty = totalPassengers(mergedPassengers);
-            const nextTotal = computePassengersLineTotal(
-              item.price,
-              discounts ?? existing.discounts,
-              mergedPassengers
-            );
+            const nextTotal = computePassengersLineTotal(adultPrice, mergedPassengers);
 
             return {
               items: state.items.map((i) =>
@@ -124,9 +117,11 @@ export const useCartStore = create<CartState>()(
                   ? {
                       ...i,
                       passengers: mergedPassengers,
-                      discounts: discounts ?? existing.discounts,
+                      discountOptions: item.discountOptions ?? existing.discountOptions,
+                      promotionApplied: item.promotionApplied ?? existing.promotionApplied,
+                      unitAdultPrice: adultPrice,
                       quantity: nextQty,
-                      price: item.price,
+                      price: adultPrice,
                       lineTotal: nextTotal,
                     }
                   : i
@@ -135,8 +130,7 @@ export const useCartStore = create<CartState>()(
           }
 
           const lineTotal =
-            item.lineTotal ??
-            computePassengersLineTotal(item.price, discounts, passengers);
+            item.lineTotal ?? computePassengersLineTotal(adultPrice, passengers);
 
           return {
             items: [
@@ -146,10 +140,12 @@ export const useCartStore = create<CartState>()(
                 serviceId: item.serviceId,
                 slug: item.slug,
                 title: item.title,
-                price: item.price,
+                price: adultPrice,
                 image: item.image,
                 passengers,
-                discounts,
+                discountOptions: item.discountOptions,
+                promotionApplied: item.promotionApplied,
+                unitAdultPrice: adultPrice,
                 quantity: seats,
                 lineTotal,
               },
@@ -177,8 +173,12 @@ export const useCartStore = create<CartState>()(
             if (i.kind === "package") {
               return { ...i, quantity, lineTotal: i.price * quantity };
             }
-            // Para excursiones con desglose, no usar updateQuantity genérico.
-            return { ...i, quantity, lineTotal: i.price * quantity, passengers: undefined };
+            return {
+              ...i,
+              quantity,
+              lineTotal: i.price * quantity,
+              passengers: undefined,
+            };
           }),
         }));
         return true;
@@ -191,6 +191,6 @@ export const useCartStore = create<CartState>()(
       totalItems: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
-    { name: "meru-cart-v2" }
+    { name: "meru-cart-v3" }
   )
 );

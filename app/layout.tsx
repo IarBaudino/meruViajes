@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import { Oswald, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
+
+const fontSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-meru-sans",
+  display: "swap",
+});
+
+const fontHeading = Oswald({
+  subsets: ["latin"],
+  variable: "--font-meru-heading",
+  display: "swap",
+});
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -49,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" className={`${fontSans.variable} ${fontHeading.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

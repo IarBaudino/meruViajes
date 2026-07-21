@@ -1,5 +1,6 @@
-import { CategoriesAdminList } from "@/features/admin/components/categories-admin-list";
+import { redirect } from "next/navigation";
 
-export default function AdminCategoriesPage() {
-  return <CategoriesAdminList />;
+/** Las categorías se cargan al crear/editar cada excursión. */
+export default function AdminCategoriesRedirectPage() {
+  redirect("/admin/excursiones");
 }

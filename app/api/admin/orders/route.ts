@@ -24,6 +24,11 @@ export async function GET(request: Request) {
       userId: data.userId ?? "",
       total: data.total ?? 0,
       paymentStatus: data.paymentStatus ?? "pendiente",
+      paymentMethod: data.paymentMethod ?? "coordinar",
+      customerName: data.customerName ?? "",
+      customerEmail: data.customerEmail ?? "",
+      customerPhone: data.customerPhone ?? "",
+      itemCount: Array.isArray(data.items) ? data.items.length : 0,
       orderDate: orderDate instanceof Date ? orderDate.toISOString() : null,
       createdAt: createdAt instanceof Date ? createdAt.toISOString() : null,
     };

@@ -57,7 +57,7 @@ export function CategoriesAdminList() {
       const data = await res.json();
       setCategories(data.categories ?? []);
     } catch {
-      setError("No se pudieron cargar los grupos");
+      setError("No se pudieron cargar las categorías");
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export function CategoriesAdminList() {
   }
 
   async function remove(id: string, name: string) {
-    if (!confirm(`¿Eliminar el grupo "${name}"? Las excursiones no se borran.`)) return;
+    if (!confirm(`¿Eliminar la categoría "${name}"? Las excursiones no se borran.`)) return;
     setActionError("");
     const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
     const json = await res.json();
@@ -146,8 +146,8 @@ export function CategoriesAdminList() {
   return (
     <div>
       <PageHeader
-        title="Grupos de excursiones"
-        description="Trekking, Convencionales, Experiencias, etc. Podés ocultar un grupo del catálogo público."
+        title="Categorías"
+        description="Clasificación del catálogo (Trekking, Convencionales, Experiencias…). No son packs: solo agrupan/filtran. Los packs con precio se crean en Paquetes."
       />
 
       {actionError ? (
@@ -161,7 +161,7 @@ export function CategoriesAdminList() {
         className="mb-8 space-y-4 rounded-xl border border-meru-border bg-white p-6"
       >
         <h2 className="text-lg text-meru-charcoal">
-          {editingId ? "Editar grupo" : "Nuevo grupo"}
+          {editingId ? "Editar categoría" : "Nueva categoría"}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Nombre" error={errors.name?.message} {...register("name")} />
@@ -179,7 +179,7 @@ export function CategoriesAdminList() {
         <Textarea label="Descripción (opcional)" rows={2} {...register("description")} />
         <div className="flex gap-3">
           <Button type="submit" isLoading={isSubmitting}>
-            {editingId ? "Guardar cambios" : "Crear grupo"}
+            {editingId ? "Guardar cambios" : "Crear categoría"}
           </Button>
           {editingId ? (
             <Button type="button" variant="outline" onClick={cancelEdit}>
@@ -254,7 +254,7 @@ export function CategoriesAdminList() {
 
       {!loading && categories.length === 0 ? (
         <p className="mt-4 text-sm text-meru-muted">
-          Todavía no hay grupos. Creá por ejemplo: Trekking, Convencionales, Experiencias.
+          Todavía no hay categorías. Creá por ejemplo: Trekking, Convencionales, Experiencias.
         </p>
       ) : null}
     </div>

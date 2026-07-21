@@ -78,7 +78,7 @@ export default async function ExcursionDetailPage({ params }: Props) {
         {service.category && (
           <Badge className="bg-meru-ice text-meru-primary">{service.category}</Badge>
         )}
-        <h1 className="mt-3 text-3xl text-meru-charcoal sm:text-4xl">{service.title}</h1>
+        <h1 className="mt-3 text-3xl text-meru-charcoal">{service.title}</h1>
         {service.location && (
           <p className="mt-3 flex items-center gap-2 text-meru-muted">
             <MapPin className="h-5 w-5 shrink-0 text-meru-accent" aria-hidden />

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     .get();
 
   if (!existing.empty) {
-    return NextResponse.json({ error: "Ya existe un grupo con ese slug" }, { status: 409 });
+    return NextResponse.json({ error: "Ya existe una categoría con ese slug" }, { status: 409 });
   }
 
   const ref = await db.collection(SERVICE_CATEGORIES_COLLECTION).add({

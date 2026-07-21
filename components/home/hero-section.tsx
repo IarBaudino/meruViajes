@@ -49,7 +49,7 @@ export function HeroSection({ hero }: HeroSectionProps) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-4xl font-normal leading-[1.08] text-meru-sand sm:text-5xl md:text-6xl md:leading-[1.06]"
+          className="text-5xl font-normal leading-[1.08] text-meru-sand md:leading-[1.06]"
         >
           {hero.title}
         </motion.h1>
@@ -58,7 +58,7 @@ export function HeroSection({ hero }: HeroSectionProps) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="font-accent mt-6 text-2xl tracking-wide text-meru-sand sm:text-3xl"
+          className="font-accent mt-6 text-2xl tracking-wide text-meru-sand"
         >
           {hero.subtitle}
         </motion.p>

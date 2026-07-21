@@ -2,10 +2,13 @@ import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import type { CheckoutItemInput } from "@/schemas/checkout";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { getAdminFirestore } from "@/lib/firebase/admin";
-import type { OrderItem, PaymentStatus, ServiceDiscounts } from "@/types";
+import type { OrderItem, PaymentStatus } from "@/types";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
+import { mapFirestoreService } from "@/features/excursions/lib/firestore-mapper";
 import {
-  computePassengersLineTotal,
+  computePassengersLineTotalFromService,
+  getEffectiveAdultPrice,
+  normalizeCartPassengers,
   totalPassengers,
   type CartPassengers,
 } from "@/features/excursions/lib/pricing";
@@ -35,17 +38,6 @@ type StockUpdate = {
   ref: DocumentReference;
   nextStock: number;
 };
-
-function mapDiscountsFromData(data: Record<string, unknown>): ServiceDiscounts | undefined {
-  const raw = data.discounts;
-  if (!raw || typeof raw !== "object") return undefined;
-  const d = raw as Record<string, unknown>;
-  const discounts: ServiceDiscounts = {};
-  if (typeof d.minorPercent === "number") discounts.minorPercent = d.minorPercent;
-  if (typeof d.infantPercent === "number") discounts.infantPercent = d.infantPercent;
-  if (typeof d.seniorPercent === "number") discounts.seniorPercent = d.seniorPercent;
-  return Object.keys(discounts).length > 0 ? discounts : undefined;
-}
 
 function requireProfileFields(profile: {
   name?: string;
@@ -194,7 +186,11 @@ export async function createCheckout(
         throw new CheckoutError(`"${title}" no tiene cupos disponibles.`, 409);
       }
 
-      const passengers = item.passengers;
+      if (!item.passengers) {
+        throw new CheckoutError(`Indicá pasajeros para "${title}".`, 400);
+      }
+
+      const passengers = normalizeCartPassengers(item.passengers);
       if (!passengers) {
         throw new CheckoutError(`Indicá pasajeros para "${title}".`, 400);
       }
@@ -210,13 +206,13 @@ export async function createCheckout(
         );
       }
 
-      const unitPrice = Number(data.price ?? 0);
+      const service = mapFirestoreService(item.serviceId, data);
+      const unitPrice = getEffectiveAdultPrice(service);
       if (unitPrice <= 0) {
         throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
       }
 
-      const discounts = mapDiscountsFromData(data as Record<string, unknown>);
-      const lineTotal = computePassengersLineTotal(unitPrice, discounts, passengers);
+      const lineTotal = computePassengersLineTotalFromService(service, passengers);
 
       orderItems.push({
         serviceId: item.serviceId,

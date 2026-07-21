@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 import { formatCurrencyARS } from "@/lib/format";
-import { hasAnyDiscount } from "@/features/excursions/lib/pricing";
+import {
+  getEffectiveAdultPrice,
+  hasActivePromotion,
+  hasAnyDiscount,
+} from "@/features/excursions/lib/pricing";
 
 type ExcursionCardProps = {
   service: Service;
@@ -46,7 +50,7 @@ export function ExcursionCard({ service, className }: ExcursionCardProps) {
           )}
         </div>
         <CardContent className="pt-5">
-          <h2 className="text-lg text-meru-charcoal transition-colors group-hover:text-meru-secondary md:text-xl">
+          <h2 className="text-lg text-meru-charcoal transition-colors group-hover:text-meru-secondary">
             {service.title}
           </h2>
           {service.location && (
@@ -57,9 +61,25 @@ export function ExcursionCard({ service, className }: ExcursionCardProps) {
           )}
           <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-meru-charcoal-muted">{service.description}</p>
           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-meru-border pt-4">
-            <span className="text-lg font-medium text-meru-primary">{formatCurrencyARS(service.price)}</span>
-            {hasAnyDiscount(service.discounts) && (
-              <span className="text-xs font-medium text-meru-secondary">Descuentos disponibles</span>
+            {hasActivePromotion(service) ? (
+              <>
+                <span className="text-sm text-meru-muted line-through">
+                  {formatCurrencyARS(service.price)}
+                </span>
+                <span className="text-lg font-medium text-meru-primary">
+                  {formatCurrencyARS(getEffectiveAdultPrice(service))}
+                </span>
+                <span className="text-xs font-medium text-meru-secondary">Promo</span>
+              </>
+            ) : (
+              <span className="text-lg font-medium text-meru-primary">
+                {formatCurrencyARS(service.price)}
+              </span>
+            )}
+            {hasAnyDiscount(service) && (
+              <span className="text-xs font-medium text-meru-secondary">
+                Descuentos disponibles
+              </span>
             )}
             {service.duration && (
               <span className="text-sm text-meru-muted">Duración: {service.duration}</span>

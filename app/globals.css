@@ -33,13 +33,10 @@
   --color-meru-muted: #5a5a58;
   --color-meru-forest: #006633;
 
-  /* Tipografía: Bahnschrift cuerpos; Haettenschweiler títulos; Great Friend puntual */
-  --font-sans:
-    Bahnschrift, "Bahnschrift Condensed", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-heading:
-    Haettenschweiler, "Arial Narrow", "Franklin Gothic Medium", "Helvetica Neue Condensed",
-    "Segoe UI Semibold", system-ui, sans-serif;
-  --font-accent: "Great Friend", Bahnschrift, cursive;
+  /* Tipografía: web fonts (igual en mobile y desktop) */
+  --font-sans: var(--font-meru-sans), "Segoe UI", system-ui, sans-serif;
+  --font-heading: var(--font-meru-heading), "Arial Narrow", system-ui, sans-serif;
+  --font-accent: "Great Friend", var(--font-meru-sans), cursive;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;

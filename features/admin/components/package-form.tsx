@@ -105,7 +105,10 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
-        <h2 className="text-lg text-meru-charcoal">Paquete</h2>
+        <h2 className="text-lg text-meru-charcoal">Datos del paquete</h2>
+        <p className="text-sm text-meru-muted">
+          Un paquete es una combinación de excursiones existentes, con su propio precio y cupos.
+        </p>
         <Input label="Título" error={errors.title?.message} {...register("title")} />
         <Input label="Slug (URL)" error={errors.slug?.message} {...register("slug")} />
         <Textarea
@@ -131,33 +134,68 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
             type="number"
             {...register("stock", { valueAsNumber: true })}
           />
-          <Input label="Grupo / categoría (opcional)" {...register("category")} />
         </div>
         <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("active")} />
-          Publicado
+          Publicado (visible en /paquetes)
         </label>
       </section>
 
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-meru-charcoal">Excursiones incluidas</h2>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg text-meru-charcoal">Excursiones incluidas</h2>
+            <p className="mt-1 text-sm text-meru-muted">
+              Elegí de las ya creadas. Si falta alguna, creala primero en Excursiones.
+            </p>
+          </div>
+          <a
+            href="/admin/excursiones/nueva"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-meru-secondary hover:underline"
+          >
+            + Nueva excursión
+          </a>
+        </div>
         {errors.serviceIds?.message ? (
           <p className="text-sm text-red-600">{errors.serviceIds.message}</p>
         ) : null}
-        <ul className="max-h-72 space-y-2 overflow-y-auto">
-          {services.map((service) => (
-            <li key={service.id}>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-meru-border px-3 py-2 hover:bg-meru-ice/50">
-                <input
-                  type="checkbox"
-                  checked={serviceIds.includes(service.id)}
-                  onChange={() => toggleService(service.id)}
-                />
-                <span className="text-sm text-meru-charcoal">{service.title}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
+        {services.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-meru-border p-4 text-sm text-meru-muted">
+            Todavía no hay excursiones. Creá al menos una en{" "}
+            <a href="/admin/excursiones/nueva" className="text-meru-secondary hover:underline">
+              Excursiones
+            </a>{" "}
+            y volvé a armar el paquete.
+          </p>
+        ) : (
+          <ul className="max-h-72 space-y-2 overflow-y-auto">
+            {services.map((service) => (
+              <li key={service.id}>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-meru-border px-3 py-2 hover:bg-meru-ice/50">
+                  <input
+                    type="checkbox"
+                    checked={serviceIds.includes(service.id)}
+                    onChange={() => toggleService(service.id)}
+                  />
+                  <span className="text-sm text-meru-charcoal">
+                    {service.title}
+                    {!service.active ? (
+                      <span className="ml-2 text-xs text-meru-muted">(inactiva)</span>
+                    ) : null}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+        {serviceIds.length > 0 ? (
+          <p className="text-xs text-meru-muted">
+            {serviceIds.length} excursión{serviceIds.length === 1 ? "" : "es"} seleccionada
+            {serviceIds.length === 1 ? "" : "s"}.
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-xl border border-meru-border bg-white p-6">

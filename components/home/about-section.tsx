@@ -13,7 +13,7 @@ export function AboutSection({ about }: AboutSectionProps) {
     <section id="sobre-nosotros" className="scroll-mt-24 bg-meru-sand py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl text-meru-charcoal sm:text-4xl">{about.title}</h2>
+          <h2 className="text-3xl text-meru-charcoal">{about.title}</h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg italic text-meru-charcoal-muted">
             &ldquo;{about.quote}&rdquo;
           </p>

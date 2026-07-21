@@ -9,7 +9,7 @@ export default async function PackagesPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <header className="max-w-2xl">
-        <h1 className="text-3xl text-meru-charcoal sm:text-4xl">Paquetes</h1>
+        <h1 className="text-3xl text-meru-charcoal">Paquetes</h1>
         <p className="mt-3 text-meru-muted">
           Combinaciones de excursiones con precio especial. Reservá el pack completo.
         </p>

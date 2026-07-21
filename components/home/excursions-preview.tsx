@@ -18,7 +18,7 @@ export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
     <section id="excursiones" className="scroll-mt-24 bg-white py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl text-meru-charcoal sm:text-4xl">{section.title}</h2>
+          <h2 className="text-3xl text-meru-charcoal">{section.title}</h2>
           <p className="mx-auto mt-4 max-w-2xl text-meru-muted">{section.description}</p>
         </div>
 

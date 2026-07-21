@@ -52,7 +52,7 @@ export default async function PackageDetailPage({ params }: Props) {
               />
             </div>
           ) : null}
-          <h1 className="mt-6 text-3xl text-meru-charcoal sm:text-4xl">{pkg.title}</h1>
+          <h1 className="mt-6 text-3xl text-meru-charcoal">{pkg.title}</h1>
           <p className="mt-4 whitespace-pre-line text-meru-muted leading-relaxed">
             {pkg.description}
           </p>

@@ -2,24 +2,15 @@
 
 import { useMemo, useState } from "react";
 import type { Service } from "@/types";
-import type { ServiceCategory } from "@/types/catalog";
 import { ExcursionCard } from "@/features/excursions/components/excursion-card";
 import { getServiceCategories } from "@/features/excursions/lib/excursion-utils";
 
 type Props = {
   services: Service[];
-  categories?: ServiceCategory[];
 };
 
-export function ExcursionCatalog({ services, categories: managedCategories }: Props) {
-  const fallbackCategories = useMemo(() => getServiceCategories(services), [services]);
-  const categoryOptions = useMemo(() => {
-    if (managedCategories && managedCategories.length > 0) {
-      return managedCategories.filter((c) => c.visible).map((c) => c.name);
-    }
-    return fallbackCategories;
-  }, [managedCategories, fallbackCategories]);
-
+export function ExcursionCatalog({ services }: Props) {
+  const categoryOptions = useMemo(() => getServiceCategories(services), [services]);
   const [category, setCategory] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
 
@@ -47,7 +38,7 @@ export function ExcursionCatalog({ services, categories: managedCategories }: Pr
       <div className="flex flex-col gap-4 rounded-xl border border-meru-border bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
         <div className="min-w-[180px] flex-1">
           <label htmlFor="filter-category" className="block text-sm font-medium text-meru-charcoal">
-            Grupo
+            Categoría
           </label>
           <select
             id="filter-category"
@@ -55,7 +46,7 @@ export function ExcursionCatalog({ services, categories: managedCategories }: Pr
             onChange={(e) => setCategory(e.target.value)}
             className="mt-1.5 w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-meru-charcoal"
           >
-            <option value="">Todos</option>
+            <option value="">Todas</option>
             {categoryOptions.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -91,7 +82,7 @@ export function ExcursionCatalog({ services, categories: managedCategories }: Pr
 
       {filtered.length === 0 ? (
         <p className="mt-12 rounded-xl border border-dashed border-meru-border bg-white py-16 text-center text-meru-muted">
-          No hay excursiones con esos filtros. Probá otro grupo o precio.
+          No hay excursiones con esos filtros. Probá otra categoría o precio.
         </p>
       ) : (
         <ul className="mt-10 grid list-none gap-8 sm:grid-cols-2 lg:grid-cols-3">

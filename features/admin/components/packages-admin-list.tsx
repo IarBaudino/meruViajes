@@ -72,7 +72,7 @@ export function PackagesAdminList() {
     <div>
       <PageHeader
         title="Paquetes"
-        description="Combiná varias excursiones en un pack con precio propio."
+        description="Combiná varias excursiones en un pack con precio propio. Podés crear todos los que quieras."
         action={
           <Link href="/admin/paquetes/nuevo">
             <Button>Nuevo paquete</Button>

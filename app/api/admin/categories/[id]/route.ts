@@ -26,7 +26,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const docRef = db.collection(SERVICE_CATEGORIES_COLLECTION).doc(id);
   const doc = await docRef.get();
   if (!doc.exists) {
-    return NextResponse.json({ error: "Grupo no encontrado" }, { status: 404 });
+    return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 });
   }
 
   if (typeof body.visible === "boolean" && Object.keys(body).length === 1) {
@@ -48,7 +48,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .where("slug", "==", parsed.data.slug)
     .get();
   if (slugConflict.docs.some((d) => d.id !== id)) {
-    return NextResponse.json({ error: "Ya existe otro grupo con ese slug" }, { status: 409 });
+    return NextResponse.json({ error: "Ya existe otra categoría con ese slug" }, { status: 409 });
   }
 
   await docRef.set(
@@ -75,7 +75,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   const docRef = db.collection(SERVICE_CATEGORIES_COLLECTION).doc(id);
   const doc = await docRef.get();
   if (!doc.exists) {
-    return NextResponse.json({ error: "Grupo no encontrado" }, { status: 404 });
+    return NextResponse.json({ error: "Categoría no encontrada" }, { status: 404 });
   }
 
   await docRef.delete();

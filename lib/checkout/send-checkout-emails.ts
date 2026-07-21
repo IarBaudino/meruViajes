@@ -1,5 +1,9 @@
 import { formatCurrencyARS } from "@/lib/format";
 import { getResend, isResendConfigured, resendDefaults } from "@/lib/resend";
+import {
+  formatPassengersSummary,
+  normalizeCartPassengers,
+} from "@/features/excursions/lib/pricing";
 import type { OrderItem } from "@/types";
 
 type CheckoutEmailParams = {
@@ -22,19 +26,15 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
 
   const itemsHtml = params.items
     .map((item) => {
-      const passengers = item.passengers
-        ? `<br><small>${[
-            item.passengers.adult ? `${item.passengers.adult} adulto(s)` : "",
-            item.passengers.minor ? `${item.passengers.minor} menor(es)` : "",
-            item.passengers.infant ? `${item.passengers.infant} infante(s)` : "",
-            item.passengers.senior ? `${item.passengers.senior} jubilado(s)` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ")}</small>`
+      const normalized = normalizeCartPassengers(item.passengers);
+      const summary = normalized ? formatPassengersSummary(normalized) : "";
+      const passengers = summary
+        ? `<br><small>${summary}</small>`
         : "";
       return `<li><strong>${item.serviceTitle}</strong> × ${item.quantity} — ${formatCurrencyARS(item.lineTotal)}${passengers}</li>`;
     })
     .join("");
+
 
   const orderRef = params.orderId.slice(0, 8).toUpperCase();
 

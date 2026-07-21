@@ -3,15 +3,14 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { AdminAccessBanner } from "@/features/auth/components/admin-access-banner";
 import { getSessionUser } from "@/lib/auth/require-auth";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarCheck, ShoppingBag, ShoppingCart, User } from "lucide-react";
+import { CalendarCheck, ShoppingCart, User } from "lucide-react";
 
 export default async function AccountHomePage() {
   const user = await getSessionUser();
 
   const links = [
     { href: "/mi-cuenta/perfil", label: "Completar perfil", icon: User },
-    { href: "/mi-cuenta/carrito", label: "Ver carrito", icon: ShoppingCart },
-    { href: "/mi-cuenta/pedidos", label: "Mis pedidos", icon: ShoppingBag },
+    { href: "/mi-cuenta/carrito", label: "Carrito", icon: ShoppingCart },
     { href: "/mi-cuenta/reservas", label: "Reservas", icon: CalendarCheck },
   ];
 
@@ -19,7 +18,7 @@ export default async function AccountHomePage() {
     <div>
       <PageHeader
         title={`Hola${user?.name ? `, ${user.name.split(" ")[0]}` : ""}`}
-        description="Gestioná tu perfil, carrito y reservas desde el menú lateral."
+        description="En el carrito ves lo que aún no pagaste; en Reservas, lo ya confirmado."
       />
       <AdminAccessBanner />
       <div className="grid gap-4 sm:grid-cols-2">

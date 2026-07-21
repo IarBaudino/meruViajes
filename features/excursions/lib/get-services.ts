@@ -23,26 +23,7 @@ export async function getActiveServices(): Promise<Service[]> {
   if (!isFirebaseAdminConfigured()) {
     return [];
   }
-  const services = await fetchActiveFromFirestore();
-
-  // Ocultar grupos no visibles: si hay categorías en Firestore, filtramos por ellas
-  const { getVisibleCategories, getAllCategoriesAdmin } = await import(
-    "@/features/categories/lib/get-categories"
-  );
-  const allCategories = await getAllCategoriesAdmin();
-  if (allCategories.length === 0) return services;
-
-  const visibleNames = new Set(
-    (await getVisibleCategories()).map((c) => c.name.toLowerCase())
-  );
-  const knownNames = new Set(allCategories.map((c) => c.name.toLowerCase()));
-
-  return services.filter((s) => {
-    if (!s.category) return true;
-    const key = s.category.toLowerCase();
-    if (!knownNames.has(key)) return true;
-    return visibleNames.has(key);
-  });
+  return fetchActiveFromFirestore();
 }
 
 export async function getServiceBySlug(slug: string): Promise<Service | null> {

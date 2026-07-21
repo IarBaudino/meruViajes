@@ -1,10 +1,16 @@
 import { z } from "zod";
 
+export const discountedSeatSchema = z.object({
+  optionId: z.string().min(1),
+  label: z.string().min(1),
+  percent: z.number().min(0).max(100),
+  quantity: z.number().int().min(0).max(20),
+});
+
 export const passengersSchema = z.object({
   adult: z.number().int().min(0).max(20),
-  minor: z.number().int().min(0).max(20),
   infant: z.number().int().min(0).max(20),
-  senior: z.number().int().min(0).max(20),
+  discounted: z.array(discountedSeatSchema).max(20).default([]),
 });
 
 export const checkoutItemSchema = z
@@ -20,16 +26,15 @@ export const checkoutItemSchema = z
     if (!item.passengers) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Indicá adultos, menores, infantes y/o jubilados",
+        message: "Indicá el desglose de pasajeros",
         path: ["passengers"],
       });
       return;
     }
     const seats =
       item.passengers.adult +
-      item.passengers.minor +
       item.passengers.infant +
-      item.passengers.senior;
+      item.passengers.discounted.reduce((sum, line) => sum + line.quantity, 0);
     if (seats < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

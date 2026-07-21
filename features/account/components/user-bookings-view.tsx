@@ -2,24 +2,27 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { CheckCircle } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrencyARS } from "@/lib/format";
 
-type Booking = {
-  id: string;
-  serviceTitle: string;
-  bookingDate: string | null;
+type PaidOrderItem = {
+  serviceTitle?: string;
   quantity?: number;
-  active: boolean;
+  lineTotal?: number;
+};
+
+type PaidOrder = {
+  id: string;
+  total: number;
+  paymentStatus: string;
+  items: PaidOrderItem[];
+  createdAt: string | null;
 };
 
 export function UserBookingsView() {
-  const searchParams = useSearchParams();
-  const justReserved = searchParams.get("reserva") === "ok";
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [orders, setOrders] = useState<PaidOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +30,10 @@ export function UserBookingsView() {
       const res = await fetch("/api/users/me/orders");
       if (res.ok) {
         const data = await res.json();
-        setBookings(data.bookings ?? []);
+        const paid = ((data.orders ?? []) as PaidOrder[]).filter(
+          (o) => o.paymentStatus === "pagado"
+        );
+        setOrders(paid);
       }
       setLoading(false);
     }
@@ -36,48 +42,60 @@ export function UserBookingsView() {
 
   return (
     <div>
-      <PageHeader title="Reservas" description="Excursiones que reservaste." />
-
-      {justReserved ? (
-        <p className="mb-6 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-          <CheckCircle className="h-4 w-4 shrink-0" aria-hidden />
-          Reserva confirmada. Revisá tu email; te contactaremos para coordinar el pago.
-        </p>
-      ) : null}
+      <PageHeader
+        title="Reservas"
+        description="Reservas con pago confirmado. Las pendientes de pago están en el carrito."
+      />
 
       {loading ? <p className="text-meru-muted">Cargando…</p> : null}
 
-      {!loading && bookings.length === 0 ? (
+      {!loading && orders.length === 0 ? (
         <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
-          <p className="text-meru-charcoal">No tenés reservas activas.</p>
+          <p className="text-meru-charcoal">Todavía no tenés reservas pagadas.</p>
+          <p className="mt-2 text-sm text-meru-muted">
+            Si ya reservaste y el pago está pendiente, mirá el{" "}
+            <Link href="/mi-cuenta/carrito" className="text-meru-secondary hover:underline">
+              carrito
+            </Link>
+            .
+          </p>
           <Link href="/excursiones" className="mt-4 inline-block">
-            <Button>Reservar una excursión</Button>
+            <Button>Explorar excursiones</Button>
           </Link>
         </div>
       ) : null}
 
       <ul className="space-y-4">
-        {bookings.map((booking) => (
-          <li key={booking.id} className="rounded-xl border border-meru-border bg-white p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+        {orders.map((order) => (
+          <li key={order.id} className="rounded-xl border border-meru-border bg-white p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-meru-charcoal">{booking.serviceTitle}</p>
-                <p className="text-sm text-meru-muted">
-                  {booking.quantity && booking.quantity > 1
-                    ? `${booking.quantity} lugares · `
-                    : ""}
-                  {booking.bookingDate
-                    ? new Date(booking.bookingDate).toLocaleDateString("es-AR")
-                    : "Fecha a confirmar"}
+                <p className="font-medium text-meru-charcoal">
+                  Reserva #{order.id.slice(0, 8).toUpperCase()}
+                </p>
+                <p className="mt-1 text-sm text-meru-muted">
+                  {order.createdAt
+                    ? new Date(order.createdAt).toLocaleString("es-AR")
+                    : "—"}
+                </p>
+                <ul className="mt-3 space-y-1 text-sm text-meru-charcoal">
+                  {(order.items ?? []).map((item, idx) => (
+                    <li key={`${order.id}-${idx}`}>
+                      {item.serviceTitle ?? "Ítem"}
+                      {item.quantity ? ` × ${item.quantity}` : ""}
+                      {typeof item.lineTotal === "number"
+                        ? ` — ${formatCurrencyARS(item.lineTotal)}`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="text-right">
+                <Badge className="bg-green-100 text-green-800">Pagado</Badge>
+                <p className="mt-2 font-semibold text-meru-primary">
+                  {formatCurrencyARS(order.total)}
                 </p>
               </div>
-              <Badge
-                className={
-                  booking.active ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-600"
-                }
-              >
-                {booking.active ? "Activa" : "Cancelada"}
-              </Badge>
             </div>
           </li>
         ))}

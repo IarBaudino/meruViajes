@@ -13,7 +13,7 @@ export function GoogleReviewsSection({ title, cache }: Props) {
     <section id="reseñas" className="bg-meru-ice/40 py-16 sm:py-20" aria-labelledby="reviews-heading">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <h2 id="reviews-heading" className="text-3xl text-meru-charcoal sm:text-4xl">
+          <h2 id="reviews-heading" className="text-3xl text-meru-charcoal">
             {title}
           </h2>
           {cache.rating != null ? (

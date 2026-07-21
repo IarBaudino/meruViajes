@@ -1,7 +1,17 @@
-import type { ServiceDiscounts } from "@/types/discounts";
+import type {
+  ServiceDiscounts,
+  DiscountOption,
+  ServicePromotion,
+} from "@/types/discounts";
 
-export type { ServiceDiscounts, PassengerCategory } from "@/types/discounts";
-export { PASSENGER_CATEGORY_LABELS } from "@/types/discounts";
+export type {
+  ServiceDiscounts,
+  PassengerCategory,
+  DiscountOption,
+  ServicePromotion,
+} from "@/types/discounts";
+export { PASSENGER_CATEGORY_LABELS, legacyDiscountsToOptions } from "@/types/discounts";
+
 
 export type UserRole = "customer" | "admin";
 
@@ -35,11 +45,21 @@ export interface CartItem {
   /** Desglose de pasajeros (solo excursiones). */
   passengers?: {
     adult: number;
-    minor: number;
     infant: number;
-    senior: number;
+    discounted: Array<{
+      optionId: string;
+      label: string;
+      percent: number;
+      quantity: number;
+    }>;
   };
-  /** Snapshot de descuentos al agregar. */
+  /** Snapshot de opciones de descuento al agregar. */
+  discountOptions?: DiscountOption[];
+  /** Snapshot de promo vigente al agregar (si había). */
+  promotionApplied?: boolean;
+  /** Precio adulto usado (habitual o promo). */
+  unitAdultPrice?: number;
+  /** @deprecated */
   discounts?: ServiceDiscounts;
   /** Total de la línea ya calculado con descuentos. */
   lineTotal?: number;
@@ -62,7 +82,11 @@ export interface Service {
   cancellationPolicy?: string;
   additionalEquipment?: string;
   notIncluded?: string;
-  /** Descuentos por categoría de pasajero (% sobre precio adulto) */
+  /** Descuentos flexibles por tipo de pasajero (% sobre tarifa adulta vigente). */
+  discountOptions?: DiscountOption[];
+  /** Promo temporal de precio adulto + qué descuentos aplican. */
+  promotion?: ServicePromotion | null;
+  /** @deprecated Migrado a discountOptions al leer. */
   discounts?: ServiceDiscounts;
   guides?: Record<string, unknown>;
   stock: number;
@@ -88,9 +112,16 @@ export interface OrderItem {
   packageTitle?: string;
   passengers?: {
     adult: number;
-    minor: number;
     infant: number;
-    senior: number;
+    discounted?: Array<{
+      optionId: string;
+      label: string;
+      percent: number;
+      quantity: number;
+    }>;
+    /** @deprecated */
+    minor?: number;
+    senior?: number;
   };
 }
 
