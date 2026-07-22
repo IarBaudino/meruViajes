@@ -62,6 +62,10 @@ export function BookingHoldSettingsCard() {
         Al confirmar una reserva, el cupo queda sostenido este tiempo. Si no se paga, se libera
         solo (o lo liberás antes desde Órdenes).
       </p>
+      <p className="mt-2 rounded-lg bg-meru-sand/70 px-3 py-2 text-sm text-meru-charcoal">
+        <strong>Rango permitido:</strong> entre <strong>1</strong> y <strong>336</strong> horas
+        (máximo 14 días). Ejemplos: 24 = 1 día · 48 = 2 días · 72 = 3 días.
+      </p>
 
       {loading ? (
         <p className="mt-4 text-sm text-meru-muted">Cargando…</p>
@@ -84,7 +88,8 @@ export function BookingHoldSettingsCard() {
       )}
 
       <p className="mt-2 text-xs text-meru-muted">
-        Ej.: 24 = 1 día · 48 = 2 días · 72 = 3 días. Máximo 336 (14 días).
+        La liberación automática de cupos vencidos se revisa una vez al día. Mientras tanto podés
+        liberarlos a mano en Órdenes.
       </p>
 
       {message ? (
