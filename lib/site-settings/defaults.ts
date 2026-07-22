@@ -56,5 +56,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   },
   booking: {
     orderHoldHours: 48,
+    shortHoldEnabled: false,
+    shortHoldHours: 2,
+    holdWarningMessage: "",
   },
 };

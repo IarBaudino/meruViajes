@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyARS } from "@/lib/format";
 import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { ServiceDeparturesFields } from "@/features/admin/components/service-departures-fields";
 
 type ServiceFormProps = {
   service?: Service;
@@ -62,6 +63,7 @@ function toFormDefaults(service?: Service): ServiceFormData {
       appliesToDiscountIds: promo?.appliesToDiscountIds ?? [],
     },
     stock: service?.stock ?? 0,
+    departures: service?.departures ?? [],
     active: service?.active ?? true,
   };
 }
@@ -157,6 +159,23 @@ export function ServiceForm({ service }: ServiceFormProps) {
           }
         : null;
 
+    const cleanedDepartures = (data.departures ?? [])
+      .map((d) => ({
+        id: d.id || `dep-${Math.random().toString(36).slice(2, 10)}`,
+        date: d.date,
+        time: d.time,
+        capacity: Number(d.capacity),
+        booked: Math.max(0, Number(d.booked) || 0),
+        active: d.active !== false,
+      }))
+      .filter(
+        (d) =>
+          Boolean(d.date) &&
+          Boolean(d.time) &&
+          Number.isFinite(d.capacity) &&
+          d.capacity > 0
+      );
+
     const payload: ServiceFormData = {
       ...data,
       photos,
@@ -171,6 +190,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
       notIncluded: data.notIncluded || undefined,
       discountOptions: cleanedOptions,
       promotion,
+      departures: cleanedDepartures,
     };
 
     const url = isEdit ? `/api/admin/services/${service!.id}` : "/api/admin/services";
@@ -248,7 +268,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
               {...register("stock", { valueAsNumber: true })}
             />
             <p className="mt-1 text-xs text-meru-muted">
-              0 = sin cupos online. Indicá la cantidad de lugares disponibles.
+              Ya no se usa para reserva online. La venta exige turnos con fecha, hora y cupos.
             </p>
           </div>
         </div>
@@ -257,6 +277,13 @@ export function ServiceForm({ service }: ServiceFormProps) {
           Publicada (visible en el catálogo)
         </label>
       </section>
+
+      <ServiceDeparturesFields
+        control={control}
+        register={register}
+        watch={watch}
+        setValue={setValue}
+      />
 
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
         <div>

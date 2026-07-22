@@ -20,6 +20,9 @@ export const checkoutItemSchema = z
     packageId: z.string().min(1).optional(),
     quantity: z.number().int().positive().max(40),
     passengers: passengersSchema.optional(),
+    departureId: z.string().min(1).optional(),
+    departureDate: z.string().optional(),
+    departureTime: z.string().optional(),
   })
   .superRefine((item, ctx) => {
     if ((item.kind ?? "service") !== "service") return;
@@ -30,6 +33,13 @@ export const checkoutItemSchema = z
         path: ["passengers"],
       });
       return;
+    }
+    if (!item.departureId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Elegí fecha y hora de la salida",
+        path: ["departureId"],
+      });
     }
     const seats =
       item.passengers.adult +

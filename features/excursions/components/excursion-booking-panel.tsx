@@ -5,7 +5,7 @@ import { ShoppingCart } from "lucide-react";
 import type { Service } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cart-store";
-import { canAddQuantity, hasAvailableStock } from "@/lib/excursions/stock";
+import { canAddQuantity } from "@/lib/excursions/stock";
 import { formatCurrencyARS } from "@/lib/format";
 import {
   applyDiscountPercent,
@@ -16,6 +16,12 @@ import {
   totalPassengers,
   type CartPassengers,
 } from "@/features/excursions/lib/pricing";
+import {
+  formatDepartureLabel,
+  getBookableDepartures,
+  serviceUsesDepartures,
+  slotRemaining,
+} from "@/features/excursions/lib/departures";
 
 type Props = {
   service: Service;
@@ -23,21 +29,46 @@ type Props = {
 
 export function ExcursionBookingPanel({ service }: Props) {
   const addItem = useCartStore((s) => s.addItem);
-  const cartQuantity = useCartStore(
-    (s) =>
-      s.items.find((i) => i.serviceId === service.id && (i.kind ?? "service") === "service")
-        ?.quantity ?? 0
+  const hasDeparturesConfigured = serviceUsesDepartures(service.departures);
+  const bookable = useMemo(
+    () => getBookableDepartures(service.departures),
+    [service.departures]
   );
 
+  const cartItems = useCartStore((s) => s.items);
   const promoActive = hasActivePromotion(service);
   const adultPrice = getEffectiveAdultPrice(service);
   const discountOptions = getApplicableDiscountOptions(service);
 
+  const dates = useMemo(() => {
+    const set = new Set(bookable.map((d) => d.date));
+    return Array.from(set).sort();
+  }, [bookable]);
+
+  const [selectedDate, setSelectedDate] = useState(dates[0] ?? "");
+  const [departureId, setDepartureId] = useState(() => {
+    const firstDate = dates[0];
+    return bookable.find((d) => d.date === firstDate)?.id ?? bookable[0]?.id ?? "";
+  });
   const [adult, setAdult] = useState(1);
   const [infant, setInfant] = useState(0);
   const [discountQty, setDiscountQty] = useState<Record<string, number>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const effectiveDate = selectedDate || dates[0] || "";
+  const timesForDate = bookable.filter((d) => d.date === effectiveDate);
+  const selected = bookable.find((d) => d.id === departureId) ?? timesForDate[0] ?? null;
+
+  const cartQuantity =
+    cartItems.find(
+      (i) =>
+        i.serviceId === service.id &&
+        (i.kind ?? "service") === "service" &&
+        (i.departureId ?? "") === (selected?.id ?? "")
+    )?.quantity ?? 0;
+
+  const maxStock = selected ? slotRemaining(selected) : 0;
 
   const passengers: CartPassengers = useMemo(
     () => ({
@@ -55,7 +86,7 @@ export function ExcursionBookingPanel({ service }: Props) {
     [adult, infant, discountOptions, discountQty]
   );
 
-  const inStock = hasAvailableStock(service.stock);
+  const canBook = Boolean(selected && maxStock > 0);
   const seats = totalPassengers(passengers);
   const lineTotal = useMemo(
     () => computePassengersLineTotal(adultPrice, passengers),
@@ -70,16 +101,26 @@ export function ExcursionBookingPanel({ service }: Props) {
     setError(null);
     setMessage(null);
 
-    if (!inStock) {
-      setError("Esta excursión no tiene cupos disponibles por el momento.");
+    if (!hasDeparturesConfigured) {
+      setError("Esta excursión todavía no tiene salidas cargadas.");
+      return;
+    }
+    if (!selected) {
+      setError("Elegí una fecha y hora disponibles.");
+      return;
+    }
+    if (maxStock < 1) {
+      setError("Ese turno no tiene cupos disponibles.");
       return;
     }
     if (seats < 1) {
       setError("Seleccioná al menos un pasajero.");
       return;
     }
-    if (!canAddQuantity(cartQuantity, seats, service.stock)) {
-      setError("No hay suficientes lugares para esa cantidad de pasajeros.");
+    if (!canAddQuantity(cartQuantity, seats, maxStock)) {
+      setError(
+        `Solo quedan ${maxStock} lugar${maxStock === 1 ? "" : "es"} en ese turno.`
+      );
       return;
     }
 
@@ -94,12 +135,15 @@ export function ExcursionBookingPanel({ service }: Props) {
       discountOptions: service.discountOptions,
       promotionApplied: promoActive,
       unitAdultPrice: adultPrice,
+      departureId: selected.id,
+      departureDate: selected.date,
+      departureTime: selected.time,
       lineTotal,
-      maxStock: service.stock,
+      maxStock,
     });
 
     if (!ok) {
-      setError("No hay suficientes lugares para esa cantidad de pasajeros.");
+      setError("No hay suficientes lugares en ese turno.");
       return;
     }
 
@@ -107,7 +151,15 @@ export function ExcursionBookingPanel({ service }: Props) {
     setTimeout(() => setMessage(null), 2500);
   }
 
-  const promoEnds = service.promotion?.endsAt;
+  function onPickDate(date: string) {
+    setSelectedDate(date);
+    const first = bookable.find((d) => d.date === date);
+    setDepartureId(first?.id ?? "");
+  }
+
+  function onPickTime(id: string) {
+    setDepartureId(id);
+  }
 
   return (
     <div className="space-y-5">
@@ -123,9 +175,9 @@ export function ExcursionBookingPanel({ service }: Props) {
             <p className="text-3xl font-bold text-meru-primary">
               {formatCurrencyARS(adultPrice)}
             </p>
-            {promoEnds ? (
+            {service.promotion?.endsAt ? (
               <p className="mt-1 text-xs text-meru-secondary">
-                Promo válida hasta {promoEnds.split("-").reverse().join("/")}
+                Promo válida hasta {service.promotion.endsAt.split("-").reverse().join("/")}
               </p>
             ) : null}
           </div>
@@ -137,67 +189,118 @@ export function ExcursionBookingPanel({ service }: Props) {
       </div>
 
       <div className="space-y-3">
-        <p className="text-sm font-medium text-meru-charcoal">¿Quiénes viajan?</p>
+        <p className="text-sm font-medium text-meru-charcoal">Fecha y hora</p>
+        {!hasDeparturesConfigured ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            Por ahora no hay salidas publicadas para esta excursión. No se puede reservar online
+            hasta que se carguen fecha y hora con cupos.
+          </p>
+        ) : bookable.length === 0 ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            No hay salidas con cupos disponibles en este momento.
+          </p>
+        ) : (
+          <>
+            <div>
+              <label className="mb-1.5 block text-xs text-meru-muted">Fecha</label>
+              <select
+                className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-sm text-meru-charcoal"
+                value={selectedDate || dates[0] || ""}
+                onChange={(e) => onPickDate(e.target.value)}
+              >
+                {dates.map((date) => (
+                  <option key={date} value={date}>
+                    {formatDepartureLabel({ date, time: "00:00" }).split("·")[0].trim()}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs text-meru-muted">Hora</label>
+              <select
+                className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-sm text-meru-charcoal"
+                value={selected?.id ?? ""}
+                onChange={(e) => onPickTime(e.target.value)}
+              >
+                {timesForDate.map((slot) => (
+                  <option key={slot.id} value={slot.id} disabled={slotRemaining(slot) < 1}>
+                    {slot.time} · {slotRemaining(slot)} lugar
+                    {slotRemaining(slot) === 1 ? "" : "es"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+      </div>
 
-        <PassengerRow
-          label="Adulto"
-          unitLabel={formatCurrencyARS(adultPrice)}
-          count={adult}
-          onChange={(n) => {
-            setAdult(clamp(n));
-            setError(null);
-          }}
-        />
+      {canBook ? (
+        <>
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-meru-charcoal">¿Quiénes viajan?</p>
 
-        {discountOptions.map((opt) => {
-          const unit = applyDiscountPercent(adultPrice, opt.percent);
-          return (
             <PassengerRow
-              key={opt.id}
-              label={opt.label}
-              unitLabel={`${formatCurrencyARS(unit)} c/u (−${opt.percent}%)`}
-              count={discountQty[opt.id] ?? 0}
+              label="Adulto"
+              unitLabel={formatCurrencyARS(adultPrice)}
+              count={adult}
               onChange={(n) => {
-                setDiscountQty((prev) => ({ ...prev, [opt.id]: clamp(n) }));
+                setAdult(clamp(n));
                 setError(null);
               }}
             />
-          );
-        })}
 
-        <PassengerRow
-          label="Infante"
-          unitLabel="Gratis"
-          count={infant}
-          onChange={(n) => {
-            setInfant(clamp(n));
-            setError(null);
-          }}
-        />
-      </div>
+            {discountOptions.map((opt) => {
+              const unit = applyDiscountPercent(adultPrice, opt.percent);
+              return (
+                <PassengerRow
+                  key={opt.id}
+                  label={opt.label}
+                  unitLabel={`${formatCurrencyARS(unit)} c/u (−${opt.percent}%)`}
+                  count={discountQty[opt.id] ?? 0}
+                  onChange={(n) => {
+                    setDiscountQty((prev) => ({ ...prev, [opt.id]: clamp(n) }));
+                    setError(null);
+                  }}
+                />
+              );
+            })}
 
-      <div className="rounded-lg bg-meru-sand/80 px-4 py-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-meru-muted">
-            {seats} pasajero{seats === 1 ? "" : "s"}
-          </span>
-          <span className="font-semibold text-meru-charcoal">
-            Total {formatCurrencyARS(lineTotal)}
-          </span>
-        </div>
-      </div>
+            <PassengerRow
+              label="Infante"
+              unitLabel="Gratis"
+              count={infant}
+              onChange={(n) => {
+                setInfant(clamp(n));
+                setError(null);
+              }}
+            />
+          </div>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="lg"
-        className="w-full"
-        disabled={!inStock || seats < 1}
-        onClick={handleAdd}
-      >
-        <ShoppingCart className="h-5 w-5" aria-hidden />
-        {inStock ? "Agregar al carrito" : "Sin cupos"}
-      </Button>
+          <div className="rounded-lg bg-meru-sand/80 px-4 py-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-meru-muted">
+                {seats} pasajero{seats === 1 ? "" : "s"}
+                {selected ? ` · ${formatDepartureLabel(selected)}` : ""}
+              </span>
+              <span className="font-semibold text-meru-charcoal">
+                Total {formatCurrencyARS(lineTotal)}
+              </span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            disabled={seats < 1 || seats > maxStock}
+            onClick={handleAdd}
+          >
+            <ShoppingCart className="h-5 w-5" aria-hidden />
+            Agregar al carrito
+          </Button>
+        </>
+      ) : null}
 
       {error ? (
         <p className="text-sm text-red-600" role="alert">

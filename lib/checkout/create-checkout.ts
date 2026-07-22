@@ -2,7 +2,7 @@ import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import type { CheckoutItemInput } from "@/schemas/checkout";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { getAdminFirestore } from "@/lib/firebase/admin";
-import type { OrderItem, PaymentStatus } from "@/types";
+import type { DepartureSlot, OrderItem, PaymentStatus } from "@/types";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
 import { mapFirestoreService } from "@/features/excursions/lib/firestore-mapper";
 import {
@@ -13,6 +13,11 @@ import {
   type CartPassengers,
 } from "@/features/excursions/lib/pricing";
 import { computeHoldExpiresAt } from "@/lib/checkout/release-order-stock";
+import {
+  parseDepartureDateTime,
+  serviceUsesDepartures,
+  slotRemaining,
+} from "@/features/excursions/lib/departures";
 
 export type CheckoutResult = {
   orderId: string;
@@ -33,12 +38,14 @@ type BookingDraft = {
   lineTotal: number;
   packageId?: string;
   passengers?: CartPassengers;
+  departureId?: string;
+  departureDate?: string;
+  departureTime?: string;
 };
 
-type StockUpdate = {
-  ref: DocumentReference;
-  nextStock: number;
-};
+type StockUpdate =
+  | { kind: "stock"; ref: DocumentReference; nextStock: number }
+  | { kind: "departures"; ref: DocumentReference; departures: DepartureSlot[] };
 
 function requireProfileFields(profile: {
   name?: string;
@@ -83,12 +90,27 @@ export async function createCheckout(
   const customerEmail = String(userData.email ?? "").trim();
   const customerPhone = String(userData.phone).trim();
   const paymentStatus: PaymentStatus = "pendiente";
-  const holdExpiresAt = await computeHoldExpiresAt();
+
+  let earliestDeparture: Date | null = null;
+  for (const item of items) {
+    if ((item.kind ?? "service") !== "service") continue;
+    if (!item.departureDate || !item.departureTime) continue;
+    const dt = parseDepartureDateTime({
+      date: item.departureDate,
+      time: item.departureTime,
+    });
+    if (dt && (!earliestDeparture || dt < earliestDeparture)) {
+      earliestDeparture = dt;
+    }
+  }
+  const holdExpiresAt = await computeHoldExpiresAt(new Date(), earliestDeparture);
 
   return db.runTransaction(async (tx) => {
     const orderItems: OrderLine[] = [];
     const bookingDrafts: BookingDraft[] = [];
     const stockUpdates: StockUpdate[] = [];
+    /** Acumula cambios de turnos por serviceId dentro de la misma tx. */
+    const pendingDepartures = new Map<string, DepartureSlot[]>();
 
     // 1) Todas las lecturas primero (regla de transacciones Firestore).
     for (const item of items) {
@@ -166,7 +188,7 @@ export async function createCheckout(
           });
         }
 
-        stockUpdates.push({ ref: packageRef, nextStock: stock - item.quantity });
+        stockUpdates.push({ kind: "stock", ref: packageRef, nextStock: stock - item.quantity });
         continue;
       }
 
@@ -179,13 +201,11 @@ export async function createCheckout(
 
       const data = serviceSnap.data()!;
       const title = String(data.title ?? "Excursión");
-      const stock = Number(data.stock ?? 0);
+      const service = mapFirestoreService(item.serviceId, data);
+      const usesDepartures = serviceUsesDepartures(service.departures);
 
       if (data.active !== true) {
         throw new CheckoutError(`"${title}" ya no está publicada.`, 400);
-      }
-      if (stock <= 0) {
-        throw new CheckoutError(`"${title}" no tiene cupos disponibles.`, 409);
       }
 
       if (!item.passengers) {
@@ -201,14 +221,56 @@ export async function createCheckout(
       if (seats < 1) {
         throw new CheckoutError(`Seleccioná al menos un pasajero para "${title}".`, 400);
       }
-      if (seats > stock) {
+
+      if (!usesDepartures) {
         throw new CheckoutError(
-          `No hay suficientes lugares para "${title}".`,
+          `"${title}" no tiene salidas cargadas. No se puede reservar sin fecha y hora.`,
           409
         );
       }
 
-      const service = mapFirestoreService(item.serviceId, data);
+      if (!item.departureId) {
+        throw new CheckoutError(`Elegí fecha y hora para "${title}".`, 400);
+      }
+
+      const working =
+        pendingDepartures.get(item.serviceId) ??
+        (service.departures ?? []).map((d) => ({ ...d }));
+      const idx = working.findIndex((d) => d.id === item.departureId);
+      if (idx < 0) {
+        throw new CheckoutError(`El turno elegido para "${title}" ya no existe.`, 404);
+      }
+
+      const slot = working[idx];
+      if (slot.active === false) {
+        throw new CheckoutError(`El turno de "${title}" no está disponible.`, 400);
+      }
+      const remaining = slotRemaining(slot);
+      if (remaining < 1) {
+        throw new CheckoutError(`El turno de "${title}" no tiene cupos disponibles.`, 409);
+      }
+      if (seats > remaining) {
+        throw new CheckoutError(
+          `Solo quedan ${remaining} lugar${remaining === 1 ? "" : "es"} en ese turno de "${title}".`,
+          409
+        );
+      }
+
+      const slotAt = parseDepartureDateTime(slot);
+      if (!slotAt || slotAt.getTime() <= Date.now()) {
+        throw new CheckoutError(`El turno de "${title}" ya pasó o no es válido.`, 400);
+      }
+
+      working[idx] = {
+        ...slot,
+        booked: Number(slot.booked || 0) + seats,
+      };
+      pendingDepartures.set(item.serviceId, working);
+
+      const departureId = slot.id;
+      const departureDate = slot.date;
+      const departureTime = slot.time;
+
       const unitPrice = getEffectiveAdultPrice(service);
       if (unitPrice <= 0) {
         throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
@@ -224,6 +286,9 @@ export async function createCheckout(
         unitPrice,
         lineTotal,
         passengers,
+        departureId,
+        departureDate,
+        departureTime,
       });
 
       bookingDrafts.push({
@@ -233,17 +298,33 @@ export async function createCheckout(
         unitPrice,
         lineTotal,
         passengers,
+        departureId,
+        departureDate,
+        departureTime,
       });
+    }
 
-      stockUpdates.push({ ref: serviceRef, nextStock: stock - seats });
+    for (const [serviceId, departures] of pendingDepartures) {
+      stockUpdates.push({
+        kind: "departures",
+        ref: db.collection("services").doc(serviceId),
+        departures,
+      });
     }
 
     // 2) Escrituras
     for (const update of stockUpdates) {
-      tx.update(update.ref, {
-        stock: update.nextStock,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+      if (update.kind === "stock") {
+        tx.update(update.ref, {
+          stock: update.nextStock,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } else {
+        tx.update(update.ref, {
+          departures: update.departures,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
     }
 
     const total = orderItems.reduce((sum, line) => sum + line.lineTotal, 0);
@@ -283,6 +364,9 @@ export async function createCheckout(
         lineTotal: draft.lineTotal,
         packageId: draft.packageId ?? null,
         passengers: draft.passengers ?? null,
+        departureId: draft.departureId ?? null,
+        departureDate: draft.departureDate ?? null,
+        departureTime: draft.departureTime ?? null,
         DNI_Personal: customerDni,
         bookingDate: now,
         active: true,

@@ -47,5 +47,17 @@ export interface SiteSettings {
   booking?: {
     /** Horas que se sostiene el cupo sin pago (24–336). */
     orderHoldHours: number;
+    /**
+     * Si está activo, las reservas nuevas usan shortHoldHours
+     * (útil para último momento).
+     */
+    shortHoldEnabled?: boolean;
+    /** Plazo corto en horas (1–23), ej. 2. */
+    shortHoldHours?: number;
+    /**
+     * Advertencia al cliente. Usá {horas} para insertar el plazo vigente.
+     * Vacío = texto por defecto.
+     */
+    holdWarningMessage?: string;
   };
 }

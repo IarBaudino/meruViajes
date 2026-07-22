@@ -30,6 +30,9 @@ type OrderItem = {
   packageId?: string;
   packageTitle?: string;
   passengers?: CartPassengers | null;
+  departureId?: string;
+  departureDate?: string;
+  departureTime?: string;
 };
 
 type Booking = {
@@ -361,6 +364,12 @@ export default function AdminOrderDetailPage() {
                         Cantidad: {item.quantity ?? 1}
                       </p>
                     )}
+                    {item.departureDate && item.departureTime ? (
+                      <p className="mt-1 text-sm text-meru-secondary">
+                        Salida: {item.departureDate.split("-").reverse().join("/")} ·{" "}
+                        {item.departureTime}
+                      </p>
+                    ) : null}
                     {typeof item.unitPrice === "number" ? (
                       <p className="text-xs text-meru-muted">
                         Precio ref. adulto: {formatCurrencyARS(item.unitPrice)}

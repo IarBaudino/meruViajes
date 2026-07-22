@@ -57,6 +57,15 @@ export const servicePromotionSchema = z
     }
   });
 
+export const departureSlotSchema = z.object({
+  id: z.string().min(1),
+  date: z.string().min(1),
+  time: z.string().min(1),
+  capacity: z.number().int().positive(),
+  booked: z.number().int().nonnegative(),
+  active: z.boolean(),
+});
+
 export const serviceSchema = z
   .object({
     title: z.string().min(3),
@@ -88,6 +97,7 @@ export const serviceSchema = z
     discountOptions: z.array(discountOptionSchema).default([]),
     promotion: servicePromotionSchema.optional().nullable(),
     stock: z.number().int().nonnegative(),
+    departures: z.array(departureSlotSchema).default([]),
     active: z.boolean(),
   })
   .superRefine((data, ctx) => {

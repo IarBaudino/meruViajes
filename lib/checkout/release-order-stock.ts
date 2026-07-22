@@ -1,34 +1,41 @@
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
+import { resolveActiveHoldHours } from "@/lib/checkout/hold-warning";
+import type { DepartureSlot } from "@/types";
 
-function clampHoldHours(raw: number): number {
-  if (!Number.isFinite(raw) || raw < 24) return 48;
-  return Math.min(Math.floor(raw), 24 * 14);
-}
-
-/** Horas de hold: admin (Contenido web) → env ORDER_HOLD_HOURS → 48. */
-export async function resolveOrderHoldHours(): Promise<number> {
+/** Horas de hold vigentes (plazo normal, corto forzado, o corto por cercanía a la salida). */
+export async function resolveOrderHoldHours(
+  departureAt?: Date | null
+): Promise<number> {
   try {
     const settings = await getSiteSettings();
-    const fromAdmin = settings.booking?.orderHoldHours;
-    if (typeof fromAdmin === "number" && fromAdmin >= 1) {
-      return clampHoldHours(fromAdmin);
-    }
+    return resolveActiveHoldHours(settings.booking, departureAt);
   } catch {
     // fallback abajo
   }
 
   const fromEnv = Number(process.env.ORDER_HOLD_HOURS ?? "48");
-  return clampHoldHours(fromEnv);
+  if (Number.isFinite(fromEnv) && fromEnv >= 24) {
+    return Math.min(Math.floor(fromEnv), 336);
+  }
+  return 48;
 }
 
-export async function computeHoldExpiresAt(from: Date = new Date()): Promise<Date> {
-  const hours = await resolveOrderHoldHours();
+export async function computeHoldExpiresAt(
+  from: Date = new Date(),
+  departureAt?: Date | null
+): Promise<Date> {
+  const hours = await resolveOrderHoldHours(departureAt);
   return new Date(from.getTime() + hours * 60 * 60 * 1000);
 }
 
-type StockDelta = { collection: "services" | "packages"; id: string; quantity: number };
+type StockDelta = {
+  collection: "services" | "packages";
+  id: string;
+  quantity: number;
+  departureId?: string;
+};
 
 function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
   if (!Array.isArray(items)) return [];
@@ -48,6 +55,10 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
       typeof item.serviceId === "string" && item.serviceId.trim()
         ? item.serviceId.trim()
         : null;
+    const departureId =
+      typeof item.departureId === "string" && item.departureId.trim()
+        ? item.departureId.trim()
+        : undefined;
 
     if (packageId) {
       const key = `packages:${packageId}`;
@@ -61,12 +72,15 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
     }
 
     if (serviceId) {
-      const key = `services:${serviceId}`;
+      const key = departureId
+        ? `services:${serviceId}:dep:${departureId}`
+        : `services:${serviceId}`;
       const prev = map.get(key);
       map.set(key, {
         collection: "services",
         id: serviceId,
         quantity: (prev?.quantity ?? 0) + quantity,
+        departureId,
       });
     }
   }
@@ -113,17 +127,64 @@ export async function cancelOrderAndReleaseStock(
 
       const deltas = stockDeltasFromOrderItems(data.items);
 
+      // Agrupar por documento para no pisar actualizaciones de varios turnos.
+      const byDoc = new Map<
+        string,
+        { collection: "services" | "packages"; id: string; stockQty: number; departureQty: Map<string, number> }
+      >();
+
       for (const delta of deltas) {
+        const key = `${delta.collection}:${delta.id}`;
+        const prev = byDoc.get(key) ?? {
+          collection: delta.collection,
+          id: delta.id,
+          stockQty: 0,
+          departureQty: new Map<string, number>(),
+        };
+        if (delta.departureId) {
+          prev.departureQty.set(
+            delta.departureId,
+            (prev.departureQty.get(delta.departureId) ?? 0) + delta.quantity
+          );
+        } else {
+          prev.stockQty += delta.quantity;
+        }
+        byDoc.set(key, prev);
+      }
+
+      for (const group of byDoc.values()) {
         const collection =
-          delta.collection === "packages" ? PACKAGES_COLLECTION : "services";
-        const ref = db.collection(collection).doc(delta.id);
+          group.collection === "packages" ? PACKAGES_COLLECTION : "services";
+        const ref = db.collection(collection).doc(group.id);
         const stockSnap = await tx.get(ref);
         if (!stockSnap.exists) continue;
-        const current = Number(stockSnap.data()?.stock ?? 0);
-        tx.update(ref, {
-          stock: current + delta.quantity,
+        const snapData = stockSnap.data()!;
+
+        const patch: Record<string, unknown> = {
           updatedAt: FieldValue.serverTimestamp(),
-        });
+        };
+
+        if (group.departureQty.size > 0) {
+          const departures = Array.isArray(snapData.departures)
+            ? (snapData.departures as DepartureSlot[]).map((d) => ({ ...d }))
+            : [];
+          for (const [departureId, qty] of group.departureQty) {
+            const idx = departures.findIndex((d) => d.id === departureId);
+            if (idx >= 0) {
+              departures[idx] = {
+                ...departures[idx],
+                booked: Math.max(0, Number(departures[idx].booked || 0) - qty),
+              };
+            }
+          }
+          patch.departures = departures;
+        }
+
+        if (group.stockQty > 0) {
+          patch.stock = Number(snapData.stock ?? 0) + group.stockQty;
+        }
+
+        tx.update(ref, patch);
       }
 
       const bookingsSnap = await tx.get(

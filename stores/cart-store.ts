@@ -22,7 +22,7 @@ interface CartState {
   items: CartItem[];
   addItem: (item: AddItemInput) => boolean;
   updateQuantity: (serviceId: string, quantity: number, maxStock?: number) => boolean;
-  removeItem: (serviceId: string) => void;
+  removeItem: (serviceId: string, departureId?: string) => void;
   clearCart: () => void;
   totalItems: () => number;
   totalPrice: () => number;
@@ -37,6 +37,14 @@ function emptyPassengersFromQty(quantity: number): CartPassengers {
   return { adult: quantity, infant: 0, discounted: [] };
 }
 
+function sameServiceLine(a: CartItem, serviceId: string, departureId?: string) {
+  return (
+    a.serviceId === serviceId &&
+    (a.kind ?? "service") === "service" &&
+    (a.departureId ?? "") === (departureId ?? "")
+  );
+}
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
@@ -47,11 +55,10 @@ export const useCartStore = create<CartState>()(
         let added = false;
 
         set((state) => {
-          const existing = state.items.find(
-            (i) => i.serviceId === item.serviceId && (i.kind ?? "service") === kind
-          );
-
           if (kind === "package") {
+            const existing = state.items.find(
+              (i) => i.serviceId === item.serviceId && (i.kind ?? "service") === "package"
+            );
             const quantityToAdd = item.quantity ?? 1;
             const currentQty = existing?.quantity ?? 0;
             if (maxStock !== undefined && !canAddQuantity(currentQty, quantityToAdd, maxStock)) {
@@ -90,11 +97,13 @@ export const useCartStore = create<CartState>()(
           }
 
           const passengers =
-            item.passengers ??
-            emptyPassengersFromQty(item.quantity ?? 1);
+            item.passengers ?? emptyPassengersFromQty(item.quantity ?? 1);
           const seats = totalPassengers(passengers);
           if (seats < 1) return state;
 
+          const existing = state.items.find((i) =>
+            sameServiceLine(i, item.serviceId, item.departureId)
+          );
           const currentSeats = existing?.quantity ?? 0;
           if (maxStock !== undefined && !canAddQuantity(currentSeats, seats, maxStock)) {
             return state;
@@ -113,13 +122,16 @@ export const useCartStore = create<CartState>()(
 
             return {
               items: state.items.map((i) =>
-                i.serviceId === item.serviceId && (i.kind ?? "service") === "service"
+                sameServiceLine(i, item.serviceId, item.departureId)
                   ? {
                       ...i,
                       passengers: mergedPassengers,
                       discountOptions: item.discountOptions ?? existing.discountOptions,
                       promotionApplied: item.promotionApplied ?? existing.promotionApplied,
                       unitAdultPrice: adultPrice,
+                      departureId: item.departureId ?? existing.departureId,
+                      departureDate: item.departureDate ?? existing.departureDate,
+                      departureTime: item.departureTime ?? existing.departureTime,
                       quantity: nextQty,
                       price: adultPrice,
                       lineTotal: nextTotal,
@@ -146,6 +158,9 @@ export const useCartStore = create<CartState>()(
                 discountOptions: item.discountOptions,
                 promotionApplied: item.promotionApplied,
                 unitAdultPrice: adultPrice,
+                departureId: item.departureId,
+                departureDate: item.departureDate,
+                departureTime: item.departureTime,
                 quantity: seats,
                 lineTotal,
               },
@@ -183,14 +198,20 @@ export const useCartStore = create<CartState>()(
         }));
         return true;
       },
-      removeItem: (serviceId) =>
+      removeItem: (serviceId, departureId) =>
         set((state) => ({
-          items: state.items.filter((i) => i.serviceId !== serviceId),
+          items: state.items.filter((i) => {
+            if (i.serviceId !== serviceId) return true;
+            if (departureId !== undefined) {
+              return (i.departureId ?? "") !== departureId;
+            }
+            return false;
+          }),
         })),
       clearCart: () => set({ items: [] }),
       totalItems: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
-    { name: "meru-cart-v3" }
+    { name: "meru-cart-v4" }
   )
 );

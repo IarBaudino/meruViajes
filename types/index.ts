@@ -59,6 +59,10 @@ export interface CartItem {
   promotionApplied?: boolean;
   /** Precio adulto usado (habitual o promo). */
   unitAdultPrice?: number;
+  /** Turno elegido (excursiones con salidas). */
+  departureId?: string;
+  departureDate?: string;
+  departureTime?: string;
   /** @deprecated */
   discounts?: ServiceDiscounts;
   /** Total de la línea ya calculado con descuentos. */
@@ -90,6 +94,17 @@ export interface Service {
   discounts?: ServiceDiscounts;
   guides?: Record<string, unknown>;
   stock: number;
+  /** Salidas / turnos con cupo propio. Si hay turnos, el cliente elige fecha y hora. */
+  departures?: DepartureSlot[];
+  active: boolean;
+}
+
+export interface DepartureSlot {
+  id: string;
+  date: string;
+  time: string;
+  capacity: number;
+  booked: number;
   active: boolean;
 }
 
@@ -123,6 +138,9 @@ export interface OrderItem {
     minor?: number;
     senior?: number;
   };
+  departureId?: string;
+  departureDate?: string;
+  departureTime?: string;
 }
 
 export interface Order {

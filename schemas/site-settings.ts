@@ -52,6 +52,13 @@ export const siteSettingsSchema = z.object({
       .int("Usá horas enteras")
       .min(24, "Mínimo 24 horas (1 día)")
       .max(336, "Máximo 14 días (336 horas)"),
+    shortHoldEnabled: z.boolean(),
+    shortHoldHours: z
+      .number()
+      .int()
+      .min(1, "Mínimo 1 hora")
+      .max(23, "Máximo 23 horas en plazo corto"),
+    holdWarningMessage: z.string().max(600),
   }),
 });
 

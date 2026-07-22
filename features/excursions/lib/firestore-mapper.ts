@@ -1,4 +1,4 @@
-import type { Service, SeasonalPhoto, DiscountOption, ServicePromotion } from "@/types";
+import type { Service, SeasonalPhoto, DiscountOption, ServicePromotion, DepartureSlot } from "@/types";
 import { legacyDiscountsToOptions } from "@/types/discounts";
 import type { DocumentData } from "firebase-admin/firestore";
 
@@ -96,6 +96,29 @@ function mapSeasonalPhotos(value: unknown): SeasonalPhoto[] | undefined {
   return photos.length > 0 ? photos : undefined;
 }
 
+function mapDepartures(value: unknown): DepartureSlot[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const o = item as Record<string, unknown>;
+      const id = asString(o.id);
+      const date = asString(o.date);
+      const time = asString(o.time);
+      const capacity = asNumber(o.capacity, NaN);
+      if (!id || !date || !time || Number.isNaN(capacity) || capacity < 1) return null;
+      return {
+        id,
+        date,
+        time,
+        capacity,
+        booked: Math.max(0, asNumber(o.booked, 0)),
+        active: o.active !== false,
+      } as DepartureSlot;
+    })
+    .filter((d): d is DepartureSlot => d !== null);
+}
+
 export function mapFirestoreService(id: string, data: DocumentData): Service {
   const discountOptions = mapDiscountOptions(data);
   return {
@@ -118,6 +141,7 @@ export function mapFirestoreService(id: string, data: DocumentData): Service {
     discountOptions,
     promotion: mapPromotion(data),
     stock: asNumber(data.stock, 0),
+    departures: mapDepartures(data.departures),
     active: asBool(data.active, true),
   };
 }
@@ -141,6 +165,7 @@ export function serviceToFirestore(data: {
   discountOptions?: DiscountOption[];
   promotion?: ServicePromotion | null;
   stock: number;
+  departures?: DepartureSlot[];
   active: boolean;
 }): DocumentData {
   const promotion =
@@ -153,6 +178,15 @@ export function serviceToFirestore(data: {
           appliesToDiscountIds: data.promotion.appliesToDiscountIds ?? [],
         }
       : null;
+
+  const departures = (data.departures ?? []).map((d) => ({
+    id: d.id,
+    date: d.date,
+    time: d.time,
+    capacity: d.capacity,
+    booked: Math.max(0, d.booked ?? 0),
+    active: d.active !== false,
+  }));
 
   return {
     title: data.title,
@@ -174,6 +208,7 @@ export function serviceToFirestore(data: {
     promotion,
     discounts: null,
     stock: data.stock,
+    departures,
     active: data.active,
   };
 }

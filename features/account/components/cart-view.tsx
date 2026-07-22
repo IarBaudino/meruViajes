@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrencyARS } from "@/lib/format";
 import { formatPassengersSummary, normalizeCartPassengers } from "@/features/excursions/lib/pricing";
+import { formatDepartureLabel } from "@/features/excursions/lib/departures";
 
 type ProfileCheck = {
   ok: boolean;
@@ -50,6 +51,7 @@ export function CartView() {
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [pendingLoading, setPendingLoading] = useState(true);
   const [justReserved, setJustReserved] = useState(false);
+  const [holdWarning, setHoldWarning] = useState("");
 
   const loadPending = useCallback(async () => {
     setPendingLoading(true);
@@ -71,6 +73,22 @@ export function CartView() {
       const params = new URLSearchParams(window.location.search);
       setJustReserved(params.get("reserva") === "pendiente");
     }
+  }, []);
+
+  useEffect(() => {
+    async function loadHoldWarning() {
+      try {
+        const res = await fetch("/api/booking-settings");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data.warningMessage === "string" && data.warningMessage.trim()) {
+          setHoldWarning(data.warningMessage.trim());
+        }
+      } catch {
+        // silencioso: el checkout igual funciona
+      }
+    }
+    void loadHoldWarning();
   }, []);
 
   useEffect(() => {
@@ -106,6 +124,15 @@ export function CartView() {
     setCheckingOut(true);
 
     try {
+      const missingDeparture = items.some(
+        (item) => (item.kind ?? "service") === "service" && !item.departureId
+      );
+      if (missingDeparture) {
+        throw new Error(
+          "Hay ítems sin fecha y hora. Quitálos del carrito y volvé a reservar eligiendo una salida."
+        );
+      }
+
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,6 +144,9 @@ export function CartView() {
             packageId: item.packageId,
             quantity: item.quantity,
             passengers: item.passengers,
+            departureId: item.departureId,
+            departureDate: item.departureDate,
+            departureTime: item.departureTime,
           })),
         }),
       });
@@ -287,6 +317,14 @@ export function CartView() {
                       <Link href={href} className="text-meru-charcoal hover:text-meru-secondary">
                         {item.title}
                       </Link>
+                      {item.departureDate && item.departureTime ? (
+                        <p className="mt-1 text-sm text-meru-secondary">
+                          {formatDepartureLabel({
+                            date: item.departureDate,
+                            time: item.departureTime,
+                          })}
+                        </p>
+                      ) : null}
                       {item.passengers ? (
                         <p className="mt-1 text-sm text-meru-muted">
                           {formatPassengersSummary(
@@ -309,7 +347,7 @@ export function CartView() {
                     <button
                       type="button"
                       className="text-sm text-red-600 hover:underline"
-                      onClick={() => removeItem(item.serviceId)}
+                      onClick={() => removeItem(item.serviceId, item.departureId)}
                     >
                       Quitar
                     </button>
@@ -317,6 +355,13 @@ export function CartView() {
                 );
               })}
             </ul>
+
+            {holdWarning ? (
+              <div className="mt-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <p>{holdWarning}</p>
+              </div>
+            ) : null}
 
             <fieldset className="mt-6 rounded-xl border border-meru-border bg-white p-5">
               <legend className="px-1 text-sm font-medium text-meru-charcoal">
