@@ -42,6 +42,8 @@ export async function GET() {
         items: Array.isArray(data.items) ? data.items : [],
         createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
         holdExpiresAt: data.holdExpiresAt?.toDate?.()?.toISOString?.() ?? null,
+        cancelReason: data.cancelReason ?? null,
+        cancelledAt: data.cancelledAt?.toDate?.()?.toISOString?.() ?? null,
       };
     }) ?? [];
 

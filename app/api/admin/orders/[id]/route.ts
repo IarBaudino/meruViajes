@@ -109,9 +109,28 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (parsed.data.paymentStatus === "cancelado") {
+    const before = await db.collection("orders").doc(id).get();
+    const beforeData = before.data();
     const result = await cancelOrderAndReleaseStock(db, id, "admin");
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    if (!result.alreadyReleased && beforeData) {
+      try {
+        const { sendOrderCancelledEmail } = await import(
+          "@/lib/checkout/send-checkout-emails"
+        );
+        await sendOrderCancelledEmail({
+          orderId: id,
+          customerName: String(beforeData.customerName ?? ""),
+          customerEmail: String(beforeData.customerEmail ?? ""),
+          total: Number(beforeData.total ?? 0),
+          items: Array.isArray(beforeData.items) ? beforeData.items : [],
+          reason: "admin",
+        });
+      } catch (err) {
+        console.error("[admin/orders] cancel email", err);
+      }
     }
     return NextResponse.json({
       ok: true,

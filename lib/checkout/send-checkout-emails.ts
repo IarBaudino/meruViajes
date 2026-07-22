@@ -68,3 +68,49 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
     `,
   });
 }
+
+type CancelEmailParams = CheckoutEmailParams & {
+  reason: "admin" | "expired";
+};
+
+export async function sendOrderCancelledEmail(params: CancelEmailParams): Promise<void> {
+  if (!isResendConfigured()) return;
+
+  const resend = getResend();
+  if (!resend || !params.customerEmail) return;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar";
+  const logoUrl = `${appUrl.replace(/\/$/, "")}/logo.png`;
+  const logoHtml = `<img src="${logoUrl}" alt="Meru Viajes y Turismo" width="120" style="display:block;margin:0 0 20px 0" />`;
+  const orderRef = params.orderId.slice(0, 8).toUpperCase();
+
+  const reasonText =
+    params.reason === "expired"
+      ? "el plazo para confirmar el pago venció y el cupo se liberó"
+      : "la agencia canceló la reserva y liberó el cupo";
+
+  const itemsHtml = params.items
+    .map((item) => {
+      const departure =
+        item.departureDate && item.departureTime
+          ? ` · ${item.departureDate} ${item.departureTime}`
+          : "";
+      return `<li><strong>${item.serviceTitle}</strong> × ${item.quantity}${departure}</li>`;
+    })
+    .join("");
+
+  await resend.emails.send({
+    from: resendDefaults.from,
+    to: params.customerEmail,
+    subject: `Reserva cancelada — Meru Viajes (#${orderRef})`,
+    html: `
+      ${logoHtml}
+      <p>Hola ${params.customerName},</p>
+      <p>Te avisamos que tu reserva <strong>#${orderRef}</strong> fue <strong>cancelada</strong>: ${reasonText}.</p>
+      <ul>${itemsHtml}</ul>
+      <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
+      <p>Podés volver a reservar desde el sitio cuando quieras.</p>
+      <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
+    `,
+  });
+}

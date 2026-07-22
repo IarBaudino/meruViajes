@@ -19,6 +19,27 @@ export async function GET(request: Request) {
     const data = doc.data();
     const orderDate = data.orderDate?.toDate?.() ?? data.orderDate;
     const createdAt = data.createdAt?.toDate?.() ?? data.createdAt;
+    const items = Array.isArray(data.items) ? data.items : [];
+    const departures = items
+      .filter(
+        (item: { departureDate?: unknown; departureTime?: unknown }) =>
+          typeof item.departureDate === "string" &&
+          typeof item.departureTime === "string" &&
+          item.departureDate &&
+          item.departureTime
+      )
+      .map(
+        (item: {
+          serviceTitle?: string;
+          departureDate: string;
+          departureTime: string;
+        }) => ({
+          title: String(item.serviceTitle ?? "Ítem"),
+          date: item.departureDate,
+          time: item.departureTime,
+        })
+      );
+
     return {
       id: doc.id,
       userId: data.userId ?? "",
@@ -28,7 +49,8 @@ export async function GET(request: Request) {
       customerName: data.customerName ?? "",
       customerEmail: data.customerEmail ?? "",
       customerPhone: data.customerPhone ?? "",
-      itemCount: Array.isArray(data.items) ? data.items.length : 0,
+      itemCount: items.length,
+      departures,
       holdExpiresAt:
         data.holdExpiresAt?.toDate?.() instanceof Date
           ? data.holdExpiresAt.toDate().toISOString()

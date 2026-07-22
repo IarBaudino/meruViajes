@@ -294,7 +294,24 @@ export async function releaseExpiredOrderHolds(db: Firestore): Promise<{
 
     const result = await cancelOrderAndReleaseStock(db, doc.id, "expired");
     if (result.ok) {
-      if (!result.alreadyReleased) released += 1;
+      if (!result.alreadyReleased) {
+        released += 1;
+        try {
+          const { sendOrderCancelledEmail } = await import(
+            "@/lib/checkout/send-checkout-emails"
+          );
+          await sendOrderCancelledEmail({
+            orderId: doc.id,
+            customerName: String(data.customerName ?? ""),
+            customerEmail: String(data.customerEmail ?? ""),
+            total: Number(data.total ?? 0),
+            items: Array.isArray(data.items) ? data.items : [],
+            reason: "expired",
+          });
+        } catch (err) {
+          console.error("[release-expired] email", doc.id, err);
+        }
+      }
     } else {
       errors.push(`${doc.id}: ${result.error}`);
     }

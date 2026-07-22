@@ -27,7 +27,10 @@ interface CartState {
   removeItem: (serviceId: string, departureId?: string) => void;
   clearCart: () => void;
   setHoldOrderId: (orderId: string | null) => void;
-  releaseHoldIfPaid: (pendingOrderIds: string[]) => void;
+  /** Solo limpia el carrito si la orden retenida ya está paga o cancelada. */
+  syncHoldWithOrders: (
+    orders: Array<{ id: string; paymentStatus: string }>
+  ) => void;
   totalItems: () => number;
   totalPrice: () => number;
 }
@@ -228,16 +231,19 @@ export const useCartStore = create<CartState>()(
       },
       clearCart: () => set({ items: [], holdOrderId: null }),
       setHoldOrderId: (orderId) => set({ holdOrderId: orderId }),
-      releaseHoldIfPaid: (pendingOrderIds) => {
+      syncHoldWithOrders: (orders) => {
         const holdOrderId = get().holdOrderId;
         if (!holdOrderId) return;
-        if (!pendingOrderIds.includes(holdOrderId)) {
+        const order = orders.find((o) => o.id === holdOrderId);
+        // Si todavía no aparece en el listado, no tocar el carrito.
+        if (!order) return;
+        if (order.paymentStatus === "pagado" || order.paymentStatus === "cancelado") {
           set({ items: [], holdOrderId: null });
         }
       },
       totalItems: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
-    { name: "meru-cart-v5" }
+    { name: "meru-cart-v6" }
   )
 );

@@ -20,7 +20,7 @@ type ProfileCheck = {
 
 type PaymentMethod = "coordinar" | "getnet";
 
-type PendingOrderItem = {
+type OrderItemRow = {
   serviceTitle?: string;
   quantity?: number;
   lineTotal?: number;
@@ -28,14 +28,16 @@ type PendingOrderItem = {
   departureTime?: string;
 };
 
-type PendingOrder = {
+type UserOrder = {
   id: string;
   total: number;
   paymentStatus: string;
   paymentMethod?: string;
-  items: PendingOrderItem[];
+  items: OrderItemRow[];
   createdAt: string | null;
   holdExpiresAt?: string | null;
+  cancelReason?: string | null;
+  cancelledAt?: string | null;
 };
 
 export function CartView() {
@@ -45,7 +47,7 @@ export function CartView() {
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
   const setHoldOrderId = useCartStore((s) => s.setHoldOrderId);
-  const releaseHoldIfPaid = useCartStore((s) => s.releaseHoldIfPaid);
+  const syncHoldWithOrders = useCartStore((s) => s.syncHoldWithOrders);
   const total = useCartStore((s) => s.totalPrice());
 
   const [profileCheck, setProfileCheck] = useState<ProfileCheck | null>(null);
@@ -54,26 +56,30 @@ export function CartView() {
   const [checkoutError, setCheckoutError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("coordinar");
   const [getnetReady, setGetnetReady] = useState(false);
-  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<UserOrder[]>([]);
+  const [cancelledOrders, setCancelledOrders] = useState<UserOrder[]>([]);
   const [pendingLoading, setPendingLoading] = useState(true);
   const [justReserved, setJustReserved] = useState(false);
   const [holdWarning, setHoldWarning] = useState("");
 
-  const loadPending = useCallback(async () => {
+  const loadOrders = useCallback(async () => {
     setPendingLoading(true);
     try {
       const res = await fetch("/api/users/me/orders");
       if (!res.ok) return;
       const data = await res.json();
-      const pending = ((data.orders ?? []) as PendingOrder[]).filter(
-        (o) => o.paymentStatus === "pendiente"
+      const all = (data.orders ?? []) as UserOrder[];
+      setPendingOrders(all.filter((o) => o.paymentStatus === "pendiente"));
+      setCancelledOrders(
+        all
+          .filter((o) => o.paymentStatus === "cancelado")
+          .slice(0, 8)
       );
-      setPendingOrders(pending);
-      releaseHoldIfPaid(pending.map((o) => o.id));
+      syncHoldWithOrders(all);
     } finally {
       setPendingLoading(false);
     }
-  }, [releaseHoldIfPaid]);
+  }, [syncHoldWithOrders]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -113,8 +119,8 @@ export function CartView() {
       setProfileCheck({ ok: missing.length === 0, missing });
     }
     void loadProfile();
-    void loadPending();
-  }, [loadPending]);
+    void loadOrders();
+  }, [loadOrders]);
 
   useEffect(() => {
     async function checkGetnet() {
@@ -196,16 +202,18 @@ export function CartView() {
       }
 
       const orderId = String(json.orderId ?? "");
-      if (orderId) setHoldOrderId(orderId);
+      if (orderId) {
+        setHoldOrderId(orderId);
+      }
 
       setJustReserved(true);
-      await loadPending();
 
       if (paymentMethod === "getnet" && json.checkoutUrl) {
         window.location.href = json.checkoutUrl as string;
         return;
       }
 
+      await loadOrders();
       router.replace("/mi-cuenta/carrito?reserva=pendiente");
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Error al confirmar");
@@ -218,7 +226,7 @@ export function CartView() {
   const cartEmpty = items.length === 0;
   const reserved = Boolean(holdOrderId);
   const noPending = !pendingLoading && pendingOrders.length === 0;
-  const showEmpty = cartEmpty && noPending;
+  const showEmpty = cartEmpty && noPending && cancelledOrders.length === 0;
 
   return (
     <div>
@@ -338,6 +346,47 @@ export function CartView() {
         </section>
       ) : null}
 
+      {!pendingLoading && cancelledOrders.length > 0 ? (
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg text-meru-charcoal">Canceladas</h2>
+          <ul className="space-y-3">
+            {cancelledOrders.map((order) => (
+              <li
+                key={order.id}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-meru-charcoal">
+                      Pedido #{order.id.slice(0, 8).toUpperCase()}
+                    </p>
+                    <p className="mt-1 text-meru-muted">
+                      {order.cancelReason === "expired"
+                        ? "Se canceló porque venció el plazo de pago y el cupo se liberó."
+                        : "La reserva fue cancelada y el cupo quedó libre."}
+                    </p>
+                    <ul className="mt-2 space-y-0.5 text-meru-charcoal">
+                      {(order.items ?? []).map((item, idx) => (
+                        <li key={`${order.id}-c-${idx}`}>
+                          {item.serviceTitle ?? "Ítem"}
+                          {item.departureDate && item.departureTime
+                            ? ` · ${formatDepartureLabel({
+                                date: item.departureDate,
+                                time: item.departureTime,
+                              })}`
+                            : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Badge className="bg-slate-200 text-slate-700">Cancelada</Badge>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section>
         <h2 className="mb-4 text-lg text-meru-charcoal">
           {reserved ? "Tu reserva (en carrito)" : "Por confirmar"}
@@ -357,7 +406,7 @@ export function CartView() {
           </div>
         ) : cartEmpty ? (
           <p className="text-sm text-meru-muted">
-            No hay ítems nuevos. Pagá la reserva pendiente de arriba o explorá más excursiones.
+            No hay ítems nuevos por confirmar. Revisá las secciones de arriba.
           </p>
         ) : (
           <>
