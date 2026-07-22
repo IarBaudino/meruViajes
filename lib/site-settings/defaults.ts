@@ -54,4 +54,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     placeId: "",
     title: "Lo que dicen en Google",
   },
+  booking: {
+    orderHoldHours: 48,
+  },
 };

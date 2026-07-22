@@ -29,6 +29,10 @@ export async function GET(request: Request) {
       customerEmail: data.customerEmail ?? "",
       customerPhone: data.customerPhone ?? "",
       itemCount: Array.isArray(data.items) ? data.items.length : 0,
+      holdExpiresAt:
+        data.holdExpiresAt?.toDate?.() instanceof Date
+          ? data.holdExpiresAt.toDate().toISOString()
+          : null,
       orderDate: orderDate instanceof Date ? orderDate.toISOString() : null,
       createdAt: createdAt instanceof Date ? createdAt.toISOString() : null,
     };

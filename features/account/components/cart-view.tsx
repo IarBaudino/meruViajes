@@ -32,6 +32,7 @@ type PendingOrder = {
   paymentMethod?: string;
   items: PendingOrderItem[];
   createdAt: string | null;
+  holdExpiresAt?: string | null;
 };
 
 export function CartView() {
@@ -57,7 +58,7 @@ export function CartView() {
       if (!res.ok) return;
       const data = await res.json();
       const pending = ((data.orders ?? []) as PendingOrder[]).filter(
-        (o) => o.paymentStatus !== "pagado"
+        (o) => o.paymentStatus === "pendiente"
       );
       setPendingOrders(pending);
     } finally {
@@ -214,6 +215,16 @@ export function CartView() {
                     <p className="mt-2 font-semibold text-meru-primary">
                       {formatCurrencyARS(order.total)}
                     </p>
+                    {order.holdExpiresAt ? (
+                      <p className="mt-2 max-w-[14rem] text-xs text-meru-muted">
+                        Cupo reservado hasta{" "}
+                        {new Date(order.holdExpiresAt).toLocaleString("es-AR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                        . Si no se confirma el pago, se libera.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </li>
@@ -325,7 +336,7 @@ export function CartView() {
                       Coordinar con la agencia
                     </span>
                     <span className="text-xs text-meru-muted">
-                      Reservamos el cupo; el pago queda pendiente en este carrito.
+                      Reservamos el cupo por tiempo limitado; el pago queda pendiente acá.
                     </span>
                   </span>
                 </label>

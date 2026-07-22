@@ -41,6 +41,7 @@ export async function GET() {
         paymentMethod: data.paymentMethod ?? "coordinar",
         items: Array.isArray(data.items) ? data.items : [],
         createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
+        holdExpiresAt: data.holdExpiresAt?.toDate?.()?.toISOString?.() ?? null,
       };
     }) ?? [];
 

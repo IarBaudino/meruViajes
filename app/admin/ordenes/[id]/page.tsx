@@ -57,6 +57,10 @@ type OrderDetail = {
   customerDni: string;
   customerPhone: string;
   items: OrderItem[];
+  holdExpiresAt: string | null;
+  stockReleased: boolean;
+  cancelReason: string | null;
+  cancelledAt: string | null;
   orderDate: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -116,6 +120,35 @@ export default function AdminOrderDetailPage() {
         return;
       }
       setOrder({ ...order, paymentStatus: "pagado" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelAndRelease() {
+    if (!order) return;
+    setActionError("");
+    if (
+      !confirm(
+        "¿Cancelar esta reserva pendiente y liberar los cupos para que puedan venderse de nuevo?"
+      )
+    ) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus: "cancelado" }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setActionError(json.error ?? "No se pudo cancelar");
+        return;
+      }
+      await load();
     } finally {
       setSaving(false);
     }
@@ -215,7 +248,9 @@ export default function AdminOrderDetailPage() {
                   className={
                     order.paymentStatus === "pagado"
                       ? "bg-green-100 text-green-800"
-                      : "bg-amber-100 text-amber-900"
+                      : order.paymentStatus === "cancelado"
+                        ? "bg-slate-100 text-slate-600"
+                        : "bg-amber-100 text-amber-900"
                   }
                 >
                   {order.paymentStatus}
@@ -240,6 +275,30 @@ export default function AdminOrderDetailPage() {
                 {formatCurrencyARS(order.total)}
               </dd>
             </div>
+            {order.paymentStatus === "pendiente" && order.holdExpiresAt ? (
+              <div>
+                <dt className="text-meru-muted">Cupo reservado hasta</dt>
+                <dd className="text-meru-charcoal">
+                  {new Date(order.holdExpiresAt).toLocaleString("es-AR")}
+                </dd>
+              </div>
+            ) : null}
+            {order.paymentStatus === "cancelado" ? (
+              <div>
+                <dt className="text-meru-muted">Cancelación</dt>
+                <dd className="text-meru-charcoal">
+                  {order.cancelledAt
+                    ? new Date(order.cancelledAt).toLocaleString("es-AR")
+                    : "—"}
+                  {order.cancelReason === "expired"
+                    ? " · vencimiento automático"
+                    : order.cancelReason === "admin"
+                      ? " · cancelada por admin"
+                      : ""}
+                  {order.stockReleased ? " · cupos liberados" : ""}
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-meru-muted">Creada</dt>
               <dd className="text-meru-charcoal">
@@ -254,10 +313,20 @@ export default function AdminOrderDetailPage() {
             </div>
           </dl>
 
-          {order.paymentStatus !== "pagado" ? (
-            <Button type="button" onClick={() => void markPaid()} isLoading={saving}>
-              Marcar como pagado
-            </Button>
+          {order.paymentStatus === "pendiente" ? (
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => void markPaid()} isLoading={saving}>
+                Marcar como pagado
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void cancelAndRelease()}
+                isLoading={saving}
+              >
+                Cancelar y liberar cupos
+              </Button>
+            </div>
           ) : null}
         </section>
       </div>

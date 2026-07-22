@@ -39,6 +39,10 @@ function mergeSettings(partial: Partial<SiteSettings> & { hero?: Partial<HeroFir
       ...DEFAULT_SITE_SETTINGS.googleReviews!,
       ...partial.googleReviews,
     },
+    booking: {
+      ...DEFAULT_SITE_SETTINGS.booking!,
+      ...partial.booking,
+    },
   };
 }
 

@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/auth/require-admin-api";
 import { getAdminFirestore } from "@/lib/firebase/admin";
+import { cancelOrderAndReleaseStock } from "@/lib/checkout/release-order-stock";
 
 const patchSchema = z.object({
-  paymentStatus: z.enum(["pendiente", "pagado"]),
+  paymentStatus: z.enum(["pendiente", "pagado", "cancelado"]),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -77,6 +78,10 @@ export async function GET(request: Request, context: RouteContext) {
       customerDni: data.customerDni ?? "",
       customerPhone: data.customerPhone ?? "",
       items: Array.isArray(data.items) ? data.items : [],
+      holdExpiresAt: serializeTimestamp(data.holdExpiresAt),
+      stockReleased: data.stockReleased === true,
+      cancelReason: data.cancelReason ?? null,
+      cancelledAt: serializeTimestamp(data.cancelledAt),
       orderDate: serializeTimestamp(data.orderDate),
       createdAt: serializeTimestamp(data.createdAt),
       updatedAt: serializeTimestamp(data.updatedAt),
@@ -103,10 +108,31 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Servidor no configurado" }, { status: 503 });
   }
 
+  if (parsed.data.paymentStatus === "cancelado") {
+    const result = await cancelOrderAndReleaseStock(db, id, "admin");
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({
+      ok: true,
+      paymentStatus: "cancelado",
+      stockReleased: true,
+      alreadyReleased: result.alreadyReleased,
+    });
+  }
+
   const ref = db.collection("orders").doc(id);
   const snap = await ref.get();
   if (!snap.exists) {
     return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
+  }
+
+  const current = String(snap.data()?.paymentStatus ?? "pendiente");
+  if (current === "cancelado") {
+    return NextResponse.json(
+      { error: "La orden está cancelada; no se puede marcar como pagada." },
+      { status: 400 }
+    );
   }
 
   await ref.set(

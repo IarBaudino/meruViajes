@@ -16,13 +16,21 @@ type Order = {
   customerEmail?: string;
   customerPhone?: string;
   itemCount?: number;
+  holdExpiresAt?: string | null;
   createdAt: string | null;
 };
+
+function paymentBadgeClass(status: string) {
+  if (status === "pagado") return "bg-green-100 text-green-800";
+  if (status === "cancelado") return "bg-slate-100 text-slate-600";
+  return "bg-amber-100 text-amber-900";
+}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -38,30 +46,39 @@ export default function AdminOrdersPage() {
     void load();
   }, []);
 
-  async function markPaid(orderId: string) {
+  async function patchStatus(orderId: string, paymentStatus: "pagado" | "cancelado") {
     setActionError("");
-    if (!confirm("¿Marcar esta orden como pagada? Pasará a Reservas del cliente.")) return;
+    const confirmMsg =
+      paymentStatus === "pagado"
+        ? "¿Marcar esta orden como pagada? Pasará a Reservas del cliente."
+        : "¿Cancelar esta reserva pendiente y liberar los cupos?";
+    if (!confirm(confirmMsg)) return;
 
-    const res = await fetch(`/api/admin/orders/${orderId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentStatus: "pagado" }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setActionError(json.error ?? "No se pudo actualizar");
-      return;
+    setBusyId(orderId);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setActionError(json.error ?? "No se pudo actualizar");
+        return;
+      }
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, paymentStatus } : o))
+      );
+    } finally {
+      setBusyId(null);
     }
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: "pagado" } : o))
-    );
   }
 
   return (
     <div>
       <PageHeader
         title="Órdenes"
-        description="Pedidos web. Abrí el detalle para ver cliente, pasajeros y cupos."
+        description="Los cupos se reservan al confirmar. Si no pagan, podés cancelar y liberarlos (o se liberan solos al vencer)."
       />
 
       {actionError ? (
@@ -102,15 +119,18 @@ export default function AdminOrdersPage() {
                 <td className="px-4 py-3 text-meru-muted">{order.itemCount ?? "—"}</td>
                 <td className="px-4 py-3">{formatCurrencyARS(order.total)}</td>
                 <td className="px-4 py-3">
-                  <Badge
-                    className={
-                      order.paymentStatus === "pagado"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-amber-100 text-amber-900"
-                    }
-                  >
+                  <Badge className={paymentBadgeClass(order.paymentStatus)}>
                     {order.paymentStatus}
                   </Badge>
+                  {order.paymentStatus === "pendiente" && order.holdExpiresAt ? (
+                    <p className="mt-1 text-xs text-meru-muted">
+                      Cupo hasta{" "}
+                      {new Date(order.holdExpiresAt).toLocaleString("es-AR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3 text-meru-muted">
                   {order.createdAt
@@ -125,14 +145,25 @@ export default function AdminOrdersPage() {
                     >
                       Ver detalle
                     </Link>
-                    {order.paymentStatus !== "pagado" ? (
-                      <button
-                        type="button"
-                        className="text-amber-800 hover:underline"
-                        onClick={() => void markPaid(order.id)}
-                      >
-                        Marcar pagado
-                      </button>
+                    {order.paymentStatus === "pendiente" ? (
+                      <>
+                        <button
+                          type="button"
+                          className="text-amber-800 hover:underline disabled:opacity-50"
+                          disabled={busyId === order.id}
+                          onClick={() => void patchStatus(order.id, "pagado")}
+                        >
+                          Marcar pagado
+                        </button>
+                        <button
+                          type="button"
+                          className="text-red-700 hover:underline disabled:opacity-50"
+                          disabled={busyId === order.id}
+                          onClick={() => void patchStatus(order.id, "cancelado")}
+                        >
+                          Liberar cupos
+                        </button>
+                      </>
                     ) : null}
                   </div>
                 </td>

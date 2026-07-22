@@ -99,7 +99,7 @@ export interface SeasonalPhoto {
   label?: string;
 }
 
-export type PaymentStatus = "pendiente" | "pagado";
+export type PaymentStatus = "pendiente" | "pagado" | "cancelado";
 
 export interface OrderItem {
   serviceId: string;

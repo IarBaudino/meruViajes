@@ -12,6 +12,7 @@ import {
   totalPassengers,
   type CartPassengers,
 } from "@/features/excursions/lib/pricing";
+import { computeHoldExpiresAt } from "@/lib/checkout/release-order-stock";
 
 export type CheckoutResult = {
   orderId: string;
@@ -82,6 +83,7 @@ export async function createCheckout(
   const customerEmail = String(userData.email ?? "").trim();
   const customerPhone = String(userData.phone).trim();
   const paymentStatus: PaymentStatus = "pendiente";
+  const holdExpiresAt = await computeHoldExpiresAt();
 
   return db.runTransaction(async (tx) => {
     const orderItems: OrderLine[] = [];
@@ -259,6 +261,8 @@ export async function createCheckout(
       customerEmail,
       customerDni,
       customerPhone,
+      holdExpiresAt,
+      stockReleased: false,
       createdAt: now,
       updatedAt: now,
     });

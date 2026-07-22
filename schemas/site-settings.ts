@@ -46,6 +46,13 @@ export const siteSettingsSchema = z.object({
     placeId: z.string(),
     title: z.string().min(3),
   }),
+  booking: z.object({
+    orderHoldHours: z
+      .number()
+      .int("Usá horas enteras")
+      .min(1, "Mínimo 1 hora")
+      .max(336, "Máximo 14 días (336 horas)"),
+  }),
 });
 
 export type SiteSettingsFormData = z.infer<typeof siteSettingsSchema>;
