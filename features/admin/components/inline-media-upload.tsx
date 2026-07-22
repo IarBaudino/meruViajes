@@ -6,6 +6,7 @@ import { ImagePlus, Loader2, Trash2, X } from "lucide-react";
 import { uploadAdminMedia, type UploadProgress } from "@/lib/admin-media-upload";
 import type { StorageFolder } from "@/lib/storage/storage-folders";
 import { MAX_IMAGE_SOURCE_BYTES } from "@/lib/storage/storage-folders";
+import { isVideoFile } from "@/lib/media/detect-media-type";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -271,6 +272,188 @@ export function PhotoGalleryUpload({
           <>
             <ImagePlus className="h-4 w-4" aria-hidden />
             Agregar fotos
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+type MixedMediaGalleryProps = {
+  folder: StorageFolder;
+  items: Array<{ type: "image" | "video"; url: string }>;
+  onChange: (items: Array<{ type: "image" | "video"; url: string }>) => void;
+  label?: string;
+  hint?: string;
+  maxItems?: number;
+};
+
+export function MixedMediaGalleryUpload({
+  folder,
+  items,
+  onChange,
+  label = "Medios",
+  hint = "Podés subir solo imágenes, solo videos, o un mix. También un único video.",
+  maxItems = 15,
+}: MixedMediaGalleryProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<UploadProgressState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const uploadFiles = useCallback(
+    async (files: FileList) => {
+      if (items.length >= maxItems) {
+        setError(`Máximo ${maxItems} archivos`);
+        return;
+      }
+      setBusy(true);
+      setError(null);
+      const next = [...items];
+
+      for (let i = 0; i < files.length; i += 1) {
+        if (next.length >= maxItems) break;
+        const file = files[i]!;
+        setProgress({
+          phase: "uploading",
+          progress: Math.round((i / files.length) * 100),
+          message: `Subiendo ${i + 1} de ${files.length}…`,
+          fileName: file.name,
+        });
+
+        const result = await uploadAdminMedia(file, folder, (p) =>
+          setProgress({ ...p, fileName: file.name })
+        );
+
+        if (result.success && result.url) {
+          const type = isVideoFile(file) ? "video" : "image";
+          next.push({ type, url: result.url });
+        } else {
+          setError(result.error ?? `Error al subir ${file.name}`);
+          break;
+        }
+      }
+
+      onChange(next);
+      setBusy(false);
+      setProgress(null);
+    },
+    [folder, items, maxItems, onChange]
+  );
+
+  function removeAt(index: number) {
+    onChange(items.filter((_, i) => i !== index));
+  }
+
+  function move(index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const copy = [...items];
+    const [row] = copy.splice(index, 1);
+    copy.splice(target, 0, row!);
+    onChange(copy);
+  }
+
+  return (
+    <div className="space-y-4">
+      {label ? <p className="text-sm font-medium text-meru-charcoal">{label}</p> : null}
+      {hint ? <p className="text-xs text-meru-muted">{hint}</p> : null}
+
+      {items.length > 0 ? (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {items.map((item, index) => (
+            <li
+              key={`${item.url}-${index}`}
+              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-meru-border bg-meru-sand"
+            >
+              {item.type === "video" ? (
+                <video src={item.url} className="h-full w-full object-cover" muted playsInline />
+              ) : (
+                <Image src={item.url} alt="" fill className="object-cover" sizes="200px" />
+              )}
+              <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase text-white">
+                {item.type === "video" ? "Video" : "Foto"}
+              </span>
+              <div className="absolute bottom-1.5 left-1.5 flex gap-1">
+                <button
+                  type="button"
+                  className="rounded bg-white/95 px-1.5 py-0.5 text-xs shadow"
+                  onClick={() => move(index, -1)}
+                  aria-label="Subir"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-white/95 px-1.5 py-0.5 text-xs shadow"
+                  onClick={() => move(index, 1)}
+                  aria-label="Bajar"
+                >
+                  ↓
+                </button>
+              </div>
+              <button
+                type="button"
+                className="absolute right-1.5 top-1.5 rounded-full bg-white/95 p-1.5 shadow"
+                onClick={() => removeAt(index)}
+                aria-label="Quitar"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-red-600" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-meru-muted">Todavía no hay medios en el hero.</p>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        className="sr-only"
+        disabled={busy || items.length >= maxItems}
+        onChange={(e) => {
+          if (e.target.files?.length) void uploadFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
+
+      {progress ? (
+        <div className="max-w-md">
+          <p className="text-xs text-meru-muted">{progress.message}</p>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-meru-ice">
+            <div
+              className="h-full bg-meru-primary transition-all"
+              style={{ width: `${progress.progress}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={busy || items.length >= maxItems}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            {progress?.phase === "compressing" ? "Comprimiendo…" : "Subiendo…"}
+          </>
+        ) : (
+          <>
+            <ImagePlus className="h-4 w-4" aria-hidden />
+            Agregar imagen o video
           </>
         )}
       </Button>

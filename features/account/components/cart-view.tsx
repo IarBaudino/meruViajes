@@ -61,25 +61,28 @@ export function CartView() {
   const [pendingLoading, setPendingLoading] = useState(true);
   const [justReserved, setJustReserved] = useState(false);
   const [holdWarning, setHoldWarning] = useState("");
+  const [cartHydrated, setCartHydrated] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setPendingLoading(true);
     try {
-      const res = await fetch("/api/users/me/orders");
+      const res = await fetch("/api/users/me/orders", { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
       const all = (data.orders ?? []) as UserOrder[];
       setPendingOrders(all.filter((o) => o.paymentStatus === "pendiente"));
-      setCancelledOrders(
-        all
-          .filter((o) => o.paymentStatus === "cancelado")
-          .slice(0, 8)
-      );
+      setCancelledOrders(all.filter((o) => o.paymentStatus === "cancelado").slice(0, 8));
       syncHoldWithOrders(all);
     } finally {
       setPendingLoading(false);
     }
   }, [syncHoldWithOrders]);
+
+  useEffect(() => {
+    const unsub = useCartStore.persist.onFinishHydration(() => setCartHydrated(true));
+    if (useCartStore.persist.hasHydrated()) setCartHydrated(true);
+    return unsub;
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -119,8 +122,25 @@ export function CartView() {
       setProfileCheck({ ok: missing.length === 0, missing });
     }
     void loadProfile();
+  }, []);
+
+  useEffect(() => {
+    if (!cartHydrated) return;
     void loadOrders();
-  }, [loadOrders]);
+  }, [cartHydrated, loadOrders]);
+
+  useEffect(() => {
+    function onFocus() {
+      if (!cartHydrated) return;
+      void loadOrders();
+    }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [cartHydrated, loadOrders]);
 
   useEffect(() => {
     async function checkGetnet() {
@@ -168,12 +188,15 @@ export function CartView() {
         );
       }
 
-      const missingDeparture = items.some(
-        (item) => !item.departureDate || !item.departureTime
-      );
+      const missingDeparture = items.some((item) => {
+        if ((item.kind ?? "service") === "package") {
+          return !item.stayFrom || !item.stayTo;
+        }
+        return !item.departureDate || !item.departureTime || !item.departureId;
+      });
       if (missingDeparture) {
         throw new Error(
-          "Hay ítems sin fecha y hora. Quitálos del carrito y volvé a reservar eligiendo una salida."
+          "Hay ítems sin fechas. Quitálos del carrito y volvé a reservar."
         );
       }
 
@@ -191,6 +214,8 @@ export function CartView() {
             departureId: item.departureId,
             departureDate: item.departureDate,
             departureTime: item.departureTime,
+            stayFrom: item.stayFrom,
+            stayTo: item.stayTo,
           })),
         }),
       });
@@ -436,7 +461,21 @@ export function CartView() {
                       <Link href={href} className="text-meru-charcoal hover:text-meru-secondary">
                         {item.title}
                       </Link>
-                      {item.departureDate && item.departureTime ? (
+                      {item.kind === "package" && item.stayFrom && item.stayTo ? (
+                        <div className="mt-1 space-y-1 text-sm">
+                          <p className="text-meru-secondary">
+                            Estadía: {item.stayFrom.split("-").reverse().join("/")} →{" "}
+                            {item.stayTo.split("-").reverse().join("/")}
+                          </p>
+                          {item.includedServices?.length ? (
+                            <ul className="text-meru-muted">
+                              {item.includedServices.map((s) => (
+                                <li key={s.serviceId}>· {s.title}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      ) : item.departureDate && item.departureTime ? (
                         <p className="mt-1 text-sm text-meru-secondary">
                           {formatDepartureLabel({
                             date: item.departureDate,

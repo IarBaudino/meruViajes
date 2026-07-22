@@ -33,6 +33,15 @@ type OrderItem = {
   departureId?: string;
   departureDate?: string;
   departureTime?: string;
+  stayFrom?: string;
+  stayTo?: string;
+  fulfillmentMode?: "auto" | "manual";
+  includedServices?: Array<{
+    serviceId: string;
+    title: string;
+    slug?: string;
+    description?: string;
+  }>;
 };
 
 type Booking = {
@@ -190,6 +199,18 @@ export default function AdminOrderDetailPage() {
         <p className="mb-4 text-sm text-red-600" role="alert">
           {actionError}
         </p>
+      ) : null}
+
+      {order.items.some(
+        (item) => item.fulfillmentMode === "manual" || Boolean(item.packageId || item.packageTitle)
+      ) ? (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Recordatorio: paquete con armado manual</p>
+          <p className="mt-1">
+            Esta orden no descontó cupos de las excursiones. Armá el itinerario, descontá stock a
+            mano en cada salida y enviá el detalle al cliente por privado.
+          </p>
+        </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -364,15 +385,32 @@ export default function AdminOrderDetailPage() {
                         Cantidad: {item.quantity ?? 1}
                       </p>
                     )}
-                    {item.departureDate && item.departureTime ? (
+                    {item.stayFrom && item.stayTo ? (
+                      <p className="mt-1 text-sm text-meru-secondary">
+                        Estadía: {item.stayFrom.split("-").reverse().join("/")} →{" "}
+                        {item.stayTo.split("-").reverse().join("/")}
+                      </p>
+                    ) : item.departureDate && item.departureTime ? (
                       <p className="mt-1 text-sm text-meru-secondary">
                         Salida: {item.departureDate.split("-").reverse().join("/")} ·{" "}
                         {item.departureTime}
                       </p>
                     ) : null}
+                    {item.includedServices?.length ? (
+                      <ul className="mt-2 space-y-1 text-sm text-meru-muted">
+                        {item.includedServices.map((s) => (
+                          <li key={s.serviceId}>· {s.title}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {item.fulfillmentMode === "manual" ? (
+                      <p className="mt-2 text-xs font-medium text-amber-800">
+                        Armado y descuento de cupos: manual
+                      </p>
+                    ) : null}
                     {typeof item.unitPrice === "number" ? (
                       <p className="text-xs text-meru-muted">
-                        Precio ref. adulto: {formatCurrencyARS(item.unitPrice)}
+                        Precio ref.: {formatCurrencyARS(item.unitPrice)}
                       </p>
                     ) : null}
                   </div>

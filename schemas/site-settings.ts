@@ -5,6 +5,11 @@ const valueBlockSchema = z.object({
   text: z.string().min(10),
 });
 
+const heroMediaSchema = z.object({
+  type: z.enum(["image", "video"]),
+  url: z.string().url(),
+});
+
 export const siteSettingsSchema = z.object({
   hero: z.object({
     eyebrow: z.string().min(2),
@@ -14,9 +19,14 @@ export const siteSettingsSchema = z.object({
     ctaPrimaryHref: z.string().min(1),
     ctaSecondaryLabel: z.string().min(2),
     ctaSecondaryHref: z.string().min(1),
-    backgroundImages: z.array(z.string().url()).max(15),
+    backgroundImages: z.array(z.string().url()).max(15).default([]),
+    backgroundMedia: z.array(heroMediaSchema).max(15).default([]),
   }),
   excursionsPreview: z.object({
+    title: z.string().min(3),
+    description: z.string().min(10),
+  }),
+  packagesPreview: z.object({
     title: z.string().min(3),
     description: z.string().min(10),
   }),

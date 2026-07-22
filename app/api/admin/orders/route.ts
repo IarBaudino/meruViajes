@@ -20,25 +20,56 @@ export async function GET(request: Request) {
     const orderDate = data.orderDate?.toDate?.() ?? data.orderDate;
     const createdAt = data.createdAt?.toDate?.() ?? data.createdAt;
     const items = Array.isArray(data.items) ? data.items : [];
-    const departures = items
-      .filter(
-        (item: { departureDate?: unknown; departureTime?: unknown }) =>
-          typeof item.departureDate === "string" &&
-          typeof item.departureTime === "string" &&
-          item.departureDate &&
-          item.departureTime
-      )
-      .map(
-        (item: {
+    const departures: Array<{ title: string; date: string; time: string; label?: string }> = [];
+    let hasManualPackage = false;
+    for (const item of items) {
+      const row = item as {
+        serviceTitle?: string;
+        packageTitle?: string;
+        packageId?: string;
+        fulfillmentMode?: string;
+        stayFrom?: string;
+        stayTo?: string;
+        departureDate?: string;
+        departureTime?: string;
+        includedDepartures?: Array<{
           serviceTitle?: string;
-          departureDate: string;
-          departureTime: string;
-        }) => ({
-          title: String(item.serviceTitle ?? "Ítem"),
-          date: item.departureDate,
-          time: item.departureTime,
-        })
-      );
+          departureDate?: string;
+          departureTime?: string;
+        }>;
+      };
+      if (row.packageId || row.packageTitle || row.fulfillmentMode === "manual") {
+        if (row.fulfillmentMode === "manual") hasManualPackage = true;
+        if (row.stayFrom && row.stayTo) {
+          const from = row.stayFrom.split("-").reverse().join("/");
+          const to = row.stayTo.split("-").reverse().join("/");
+          departures.push({
+            title: String(row.packageTitle || row.serviceTitle || "Paquete"),
+            date: row.stayFrom,
+            time: "00:00",
+            label: `Estadía ${from} → ${to}`,
+          });
+        }
+        continue;
+      }
+      if (Array.isArray(row.includedDepartures) && row.includedDepartures.length > 0) {
+        for (const leg of row.includedDepartures) {
+          if (leg.departureDate && leg.departureTime) {
+            departures.push({
+              title: String(leg.serviceTitle ?? row.serviceTitle ?? "Ítem"),
+              date: leg.departureDate,
+              time: leg.departureTime,
+            });
+          }
+        }
+      } else if (row.departureDate && row.departureTime) {
+        departures.push({
+          title: String(row.serviceTitle ?? "Ítem"),
+          date: row.departureDate,
+          time: row.departureTime,
+        });
+      }
+    }
 
     return {
       id: doc.id,
@@ -51,6 +82,7 @@ export async function GET(request: Request) {
       customerPhone: data.customerPhone ?? "",
       itemCount: items.length,
       departures,
+      hasManualPackage,
       holdExpiresAt:
         data.holdExpiresAt?.toDate?.() instanceof Date
           ? data.holdExpiresAt.toDate().toISOString()

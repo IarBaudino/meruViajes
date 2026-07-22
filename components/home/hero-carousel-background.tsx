@@ -2,40 +2,72 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import type { HeroMediaItem } from "@/types/site-settings";
 
-const INTERVAL_MS = 6000;
+const IMAGE_INTERVAL_MS = 6000;
 const FADE_SECONDS = 1.2;
 
-type HeroCarouselBackgroundProps = {
-  images: string[];
+type Props = {
+  media: HeroMediaItem[];
 };
 
-export function HeroCarouselBackground({ images }: HeroCarouselBackgroundProps) {
+export function HeroCarouselBackground({ media }: Props) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    if (images.length <= 1) return;
-    const id = setInterval(() => {
-      setIndex((current) => (current + 1) % images.length);
-    }, INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [images.length]);
+    setIndex(0);
+  }, [media]);
 
-  if (images.length === 0) return null;
+  useEffect(() => {
+    if (media.length <= 1) return;
+    const current = media[index];
+    if (current?.type === "video") return;
+
+    const id = window.setInterval(() => {
+      setIndex((currentIndex) => (currentIndex + 1) % media.length);
+    }, IMAGE_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [index, media]);
+
+  if (media.length === 0) return null;
+
+  function goNext() {
+    setIndex((currentIndex) => (currentIndex + 1) % media.length);
+  }
 
   return (
     <div className="absolute inset-0 z-0" aria-hidden>
-      {images.map((src, i) => (
+      {media.map((item, i) => (
         <motion.div
-          key={src}
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url("${src}")` }}
+          key={`${item.type}-${item.url}-${i}`}
+          className="absolute inset-0 overflow-hidden bg-meru-charcoal"
           initial={{ opacity: i === 0 ? 1 : 0 }}
           animate={{ opacity: i === index ? 1 : 0 }}
           transition={{ duration: FADE_SECONDS, ease: "easeInOut" }}
-        />
+        >
+          {item.type === "video" ? (
+            i === index ? (
+              <video
+                key={`${item.url}-active`}
+                className="h-full w-full object-cover"
+                src={item.url}
+                muted
+                playsInline
+                autoPlay
+                loop={media.length === 1}
+                onEnded={media.length > 1 ? goNext : undefined}
+              />
+            ) : (
+              <div className="h-full w-full bg-meru-charcoal" />
+            )
+          ) : (
+            <div
+              className="h-full w-full bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url("${item.url}")` }}
+            />
+          )}
+        </motion.div>
       ))}
-      {/* Veladura fija: el texto del hero se lee sobre fotos claras u oscuras */}
       <div
         className="pointer-events-none absolute inset-0 z-[1]"
         style={{

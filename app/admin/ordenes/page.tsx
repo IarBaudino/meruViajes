@@ -12,6 +12,7 @@ type DepartureRow = {
   title: string;
   date: string;
   time: string;
+  label?: string;
 };
 
 type Order = {
@@ -25,6 +26,7 @@ type Order = {
   customerPhone?: string;
   itemCount?: number;
   departures?: DepartureRow[];
+  hasManualPackage?: boolean;
   holdExpiresAt?: string | null;
   createdAt: string | null;
 };
@@ -228,6 +230,9 @@ export default function AdminOrdersPage() {
                     <p className="text-xs text-meru-muted">{order.customerEmail || ""}</p>
                   </td>
                   <td className="px-4 py-3">
+                    {order.hasManualPackage ? (
+                      <Badge className="mb-1 bg-amber-100 text-amber-900">Paquete manual</Badge>
+                    ) : null}
                     {(order.departures ?? []).length === 0 ? (
                       <span className="text-meru-muted">—</span>
                     ) : (
@@ -235,7 +240,8 @@ export default function AdminOrdersPage() {
                         {(order.departures ?? []).slice(0, 3).map((dep, idx) => (
                           <li key={`${order.id}-dep-${idx}`} className="text-meru-charcoal">
                             <span className="font-medium">
-                              {formatDepartureLabel({ date: dep.date, time: dep.time })}
+                              {dep.label ??
+                                formatDepartureLabel({ date: dep.date, time: dep.time })}
                             </span>
                             <span className="block text-xs text-meru-muted">{dep.title}</span>
                           </li>

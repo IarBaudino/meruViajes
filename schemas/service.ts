@@ -98,6 +98,8 @@ export const serviceSchema = z
     promotion: servicePromotionSchema.optional().nullable(),
     stock: z.number().int().nonnegative(),
     departures: z.array(departureSlotSchema).default([]),
+    featuredOnHome: z.boolean().default(false),
+    homeOrder: z.number().int().min(0).max(999).default(100),
     active: z.boolean(),
   })
   .superRefine((data, ctx) => {

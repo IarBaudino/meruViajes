@@ -74,6 +74,9 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
         quantity,
       });
 
+      // Paquetes con armado manual no tocan cupos de excursiones.
+      if (item.fulfillmentMode === "manual") continue;
+
       const included = item.includedDepartures;
       if (Array.isArray(included)) {
         for (const row of included) {

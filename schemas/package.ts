@@ -12,6 +12,8 @@ export const packageSchema = z.object({
   serviceIds: z.array(z.string().min(1)).min(1, "Elegí al menos una excursión"),
   stock: z.number().int().nonnegative(),
   active: z.boolean(),
+  featuredOnHome: z.boolean().default(false),
+  homeOrder: z.number().int().min(0).max(999).default(100),
   category: z.string().optional(),
 });
 

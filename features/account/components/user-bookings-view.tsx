@@ -33,7 +33,7 @@ export function UserBookingsView() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/users/me/orders");
+      const res = await fetch("/api/users/me/orders", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         const all = (data.orders ?? []) as UserOrder[];
@@ -43,6 +43,16 @@ export function UserBookingsView() {
       setLoading(false);
     }
     void load();
+
+    function onFocus() {
+      void load();
+    }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
 
   return (

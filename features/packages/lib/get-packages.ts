@@ -22,6 +22,22 @@ export async function getActivePackages(): Promise<ExcursionPackage[]> {
     .sort((a, b) => a.title.localeCompare(b.title, "es"));
 }
 
+function byHomeOrderThenTitle(
+  a: ExcursionPackage,
+  b: ExcursionPackage
+) {
+  const orderA = Number.isFinite(a.homeOrder) ? Number(a.homeOrder) : 100;
+  const orderB = Number.isFinite(b.homeOrder) ? Number(b.homeOrder) : 100;
+  if (orderA !== orderB) return orderA - orderB;
+  return a.title.localeCompare(b.title, "es");
+}
+
+/** Paquetes activos destacados para el home. */
+export async function getHomeFeaturedPackages(limit = 6): Promise<ExcursionPackage[]> {
+  const all = await getActivePackages();
+  return all.filter((p) => p.featuredOnHome).sort(byHomeOrderThenTitle).slice(0, limit);
+}
+
 export async function getPackageBySlug(slug: string): Promise<ExcursionPackage | null> {
   if (!isFirebaseAdminConfigured()) return null;
   const db = getAdminFirestore();

@@ -10,11 +10,17 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     ctaSecondaryLabel: "Consultanos",
     ctaSecondaryHref: "/#consulta",
     backgroundImages: [],
+    backgroundMedia: [],
   },
   excursionsPreview: {
     title: "Nuestras Excursiones",
     description:
       "Descubrí experiencias en Ushuaia y Tierra del Fuego. Todas las excursiones se publican desde nuestro catálogo oficial.",
+  },
+  packagesPreview: {
+    title: "Nuestros Paquetes",
+    description:
+      "Combinaciones pensadas para aprovechar mejor tu estadía. Armamos el itinerario según tus fechas.",
   },
   about: {
     title: "Sobre Nosotros",

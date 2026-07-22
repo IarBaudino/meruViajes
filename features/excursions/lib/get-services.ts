@@ -26,6 +26,21 @@ export async function getActiveServices(): Promise<Service[]> {
   return fetchActiveFromFirestore();
 }
 
+function byHomeOrderThenTitle(a: Service, b: Service) {
+  const orderA = Number.isFinite(a.homeOrder) ? Number(a.homeOrder) : 100;
+  const orderB = Number.isFinite(b.homeOrder) ? Number(b.homeOrder) : 100;
+  if (orderA !== orderB) return orderA - orderB;
+  return a.title.localeCompare(b.title, "es");
+}
+
+/** Excursiones activas destacadas para el home, ordenadas por importancia. */
+export async function getHomeFeaturedServices(limit = 6): Promise<Service[]> {
+  const all = await getActiveServices();
+  const featured = all.filter((s) => s.featuredOnHome).sort(byHomeOrderThenTitle);
+  if (featured.length > 0) return featured.slice(0, limit);
+  return all.slice(0, Math.min(3, limit));
+}
+
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
   if (!isFirebaseAdminConfigured()) {
     return null;

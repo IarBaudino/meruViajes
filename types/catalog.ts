@@ -18,6 +18,10 @@ export interface ExcursionPackage {
   stock: number;
   active: boolean;
   category?: string;
+  /** Destacar en el home. */
+  featuredOnHome?: boolean;
+  /** Orden en el home (menor = primero). */
+  homeOrder?: number;
 }
 
 export interface GoogleReviewItem {

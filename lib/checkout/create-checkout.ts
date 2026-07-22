@@ -94,13 +94,17 @@ export async function createCheckout(
 
   let earliestDeparture: Date | null = null;
   for (const item of items) {
-    if (!item.departureDate || !item.departureTime) continue;
-    const dt = parseDepartureDateTime({
-      date: item.departureDate,
-      time: item.departureTime,
-    });
-    if (dt && (!earliestDeparture || dt < earliestDeparture)) {
-      earliestDeparture = dt;
+    const candidates: Array<{ date: string; time: string }> = [];
+    if ((item.kind ?? "service") === "package" && item.stayFrom) {
+      candidates.push({ date: item.stayFrom, time: "09:00" });
+    } else if (item.departureDate && item.departureTime) {
+      candidates.push({ date: item.departureDate, time: item.departureTime });
+    }
+    for (const slot of candidates) {
+      const dt = parseDepartureDateTime(slot);
+      if (dt && (!earliestDeparture || dt < earliestDeparture)) {
+        earliestDeparture = dt;
+      }
     }
   }
   const bookingSettings = (await getSiteSettings()).booking;
@@ -143,8 +147,17 @@ export async function createCheckout(
         if (pkg.active !== true) {
           throw new CheckoutError(`"${title}" ya no está publicado.`, 400);
         }
-        if (!item.departureDate || !item.departureTime) {
-          throw new CheckoutError(`Elegí fecha y hora para el paquete "${title}".`, 400);
+        if (!item.stayFrom || !item.stayTo) {
+          throw new CheckoutError(
+            `Indicá el rango de fechas para el paquete "${title}".`,
+            400
+          );
+        }
+        if (item.stayTo < item.stayFrom) {
+          throw new CheckoutError(
+            `El rango de fechas del paquete "${title}" no es válido.`,
+            400
+          );
         }
 
         const serviceIds = Array.isArray(pkg.serviceIds)
@@ -155,12 +168,12 @@ export async function createCheckout(
           throw new CheckoutError(`"${title}" no tiene excursiones asociadas.`, 400);
         }
 
-        const includedDepartures: Array<{
+        const includedServices: Array<{
           serviceId: string;
-          departureId: string;
-          quantity: number;
+          title: string;
+          slug?: string;
+          description?: string;
         }> = [];
-        const includedTitles: { id: string; title: string }[] = [];
 
         for (const serviceId of serviceIds) {
           const serviceRef = db.collection("services").doc(serviceId);
@@ -172,55 +185,12 @@ export async function createCheckout(
             );
           }
           const service = mapFirestoreService(serviceId, serviceSnap.data()!);
-          if (!serviceUsesDepartures(service.departures)) {
-            throw new CheckoutError(
-              `"${title}" incluye "${service.title}" sin salidas cargadas.`,
-              409
-            );
-          }
-
-          const working =
-            pendingDepartures.get(serviceId) ??
-            (service.departures ?? []).map((d) => ({ ...d }));
-          const idx = working.findIndex(
-            (d) =>
-              d.date === item.departureDate &&
-              d.time === item.departureTime &&
-              d.active !== false
-          );
-          if (idx < 0) {
-            throw new CheckoutError(
-              `No hay turno ${item.departureDate} ${item.departureTime} en todas las excursiones de "${title}".`,
-              409
-            );
-          }
-
-          const slot = working[idx]!;
-          const remaining = slotRemaining(slot);
-          if (item.quantity > remaining) {
-            throw new CheckoutError(
-              `No contamos con esa cantidad de lugares para esa fecha y hora en "${title}". Probá con otra salida.`,
-              409
-            );
-          }
-
-          const slotAt = parseDepartureDateTime(slot);
-          if (!slotAt || slotAt.getTime() <= Date.now()) {
-            throw new CheckoutError(`El turno del paquete "${title}" ya no es válido.`, 400);
-          }
-
-          working[idx] = {
-            ...slot,
-            booked: Number(slot.booked || 0) + item.quantity,
-          };
-          pendingDepartures.set(serviceId, working);
-
-          includedDepartures.push({
+          includedServices.push({
             serviceId,
-            departureId: slot.id,
-            quantity: item.quantity,
+            title: service.title,
+            slug: service.slug,
+            description: service.description?.slice(0, 400) || undefined,
           });
-          includedTitles.push({ id: serviceId, title: service.title });
         }
 
         if (stock > 0 && item.quantity > stock) {
@@ -235,6 +205,7 @@ export async function createCheckout(
           throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
         }
 
+        // No se tocan turnos/cupos de excursiones: el admin arma el itinerario a mano.
         orderItems.push({
           serviceId: packageId,
           serviceTitle: title,
@@ -244,25 +215,22 @@ export async function createCheckout(
           lineTotal: unitPrice * item.quantity,
           packageId,
           packageTitle: title,
-          departureDate: item.departureDate,
-          departureTime: item.departureTime,
-          includedDepartures,
+          stayFrom: item.stayFrom,
+          stayTo: item.stayTo,
+          includedServices,
+          fulfillmentMode: "manual",
         });
 
-        for (const included of includedTitles) {
-          const dep = includedDepartures.find((d) => d.serviceId === included.id);
-          bookingDrafts.push({
-            serviceId: included.id,
-            serviceTitle: `${title} → ${included.title}`,
-            quantity: item.quantity,
-            unitPrice: 0,
-            lineTotal: 0,
-            packageId,
-            departureId: dep?.departureId,
-            departureDate: item.departureDate,
-            departureTime: item.departureTime,
-          });
-        }
+        bookingDrafts.push({
+          serviceId: packageId,
+          serviceTitle: title,
+          quantity: item.quantity,
+          unitPrice,
+          lineTotal: unitPrice * item.quantity,
+          packageId,
+          departureDate: item.stayFrom,
+          departureTime: "00:00",
+        });
 
         if (stock > 0) {
           stockUpdates.push({

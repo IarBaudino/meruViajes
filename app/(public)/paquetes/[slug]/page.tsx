@@ -25,7 +25,7 @@ export default async function PackageDetailPage({ params }: Props) {
 
   const included = (
     await Promise.all(pkg.serviceIds.map((id) => getServiceByIdAdmin(id)))
-  ).filter(Boolean);
+  ).filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   const cover = pkg.photos[0];
 
@@ -57,22 +57,35 @@ export default async function PackageDetailPage({ params }: Props) {
             {pkg.description}
           </p>
 
-          <section className="mt-10">
-            <h2 className="text-xl text-meru-charcoal">Incluye</h2>
-            <ul className="mt-4 space-y-2">
-              {included.map((service) =>
-                service ? (
-                  <li key={service.id}>
+          <section className="mt-10 space-y-6">
+            <h2 className="text-xl text-meru-charcoal">Excursiones incluidas</h2>
+            {included.length === 0 ? (
+              <p className="text-sm text-meru-muted">Todavía no hay excursiones asociadas.</p>
+            ) : (
+              included.map((service) => (
+                <article
+                  key={service.id}
+                  className="rounded-xl border border-meru-border bg-white p-5"
+                >
+                  <h3 className="text-lg text-meru-charcoal">
                     <Link
                       href={`/excursiones/${service.slug}`}
-                      className="text-meru-secondary hover:underline"
+                      className="hover:text-meru-secondary"
                     >
                       {service.title}
                     </Link>
-                  </li>
-                ) : null
-              )}
-            </ul>
+                  </h3>
+                  {service.duration || service.location ? (
+                    <p className="mt-1 text-xs text-meru-muted">
+                      {[service.duration, service.location].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
+                  <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-meru-muted">
+                    {service.description}
+                  </p>
+                </article>
+              ))
+            )}
           </section>
         </div>
 
@@ -82,13 +95,11 @@ export default async function PackageDetailPage({ params }: Props) {
             {formatCurrencyARS(pkg.price)}
           </p>
           <p className="mt-2 text-sm text-meru-muted">
-            Elegí fecha y hora compartida por las excursiones del paquete.
+            Elegí el rango de fechas de tu estadía. Nosotros armamos el itinerario y te lo
+            enviamos por privado.
           </p>
           <div className="mt-6">
-            <AddPackageToCartButton
-              package={pkg}
-              services={included.filter((s): s is NonNullable<typeof s> => Boolean(s))}
-            />
+            <AddPackageToCartButton package={pkg} services={included} />
           </div>
         </aside>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { siteSettingsSchema, type SiteSettingsFormData } from "@/schemas/site-settings";
 import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings/defaults";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { MixedMediaGalleryUpload } from "@/features/admin/components/inline-media-upload";
 import { RefreshGoogleReviewsButton } from "@/features/admin/components/refresh-google-reviews-button";
 
 export function SiteSettingsForm() {
@@ -26,12 +26,12 @@ export function SiteSettingsForm() {
     setValue,
     formState: { isSubmitting },
   } = useForm<SiteSettingsFormData>({
-    resolver: zodResolver(siteSettingsSchema),
-    defaultValues: DEFAULT_SITE_SETTINGS,
+    resolver: zodResolver(siteSettingsSchema) as Resolver<SiteSettingsFormData>,
+    defaultValues: DEFAULT_SITE_SETTINGS as SiteSettingsFormData,
   });
 
   const { fields } = useFieldArray({ control, name: "about.values" });
-  const heroBackgrounds = watch("hero.backgroundImages") ?? [];
+  const heroMedia = watch("hero.backgroundMedia") ?? [];
 
   useEffect(() => {
     async function load() {
@@ -70,8 +70,8 @@ export function SiteSettingsForm() {
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
         <h2 className="text-lg text-meru-charcoal">Hero (inicio)</h2>
         <p className="text-sm text-meru-muted">
-          Textos e imágenes del encabezado. Sobre las fotos hay una veladura oscura automática
-          para que el título y los botones se lean siempre, sin importar los colores de la imagen.
+          Textos y fondo del encabezado. Podés usar solo fotos, solo videos, un mix, o un único
+          video. Sobre el medio hay una veladura oscura automática para leer el texto.
         </p>
         <Input label="Etiqueta superior" {...register("hero.eyebrow")} />
         <Input label="Título principal" {...register("hero.title")} />
@@ -82,21 +82,39 @@ export function SiteSettingsForm() {
           <Input label="Botón secundario — texto" {...register("hero.ctaSecondaryLabel")} />
           <Input label="Botón secundario — enlace" {...register("hero.ctaSecondaryHref")} />
         </div>
-        <PhotoGalleryUpload
+        <MixedMediaGalleryUpload
           folder="content"
-          photos={heroBackgrounds}
-          onChange={(urls) =>
-            setValue("hero.backgroundImages", urls, { shouldDirty: true })
-          }
-          label="Imágenes de fondo (carrusel)"
-          hint="Hasta 15 fotos. Se comprimen antes de subirlas a Supabase. La veladura oscura protege el contraste del texto."
+          items={heroMedia}
+          onChange={(items) => {
+            setValue("hero.backgroundMedia", items, { shouldDirty: true });
+            setValue(
+              "hero.backgroundImages",
+              items.filter((i) => i.type === "image").map((i) => i.url),
+              { shouldDirty: true }
+            );
+          }}
+          label="Fondos del hero (imágenes y/o videos)"
+          hint="Hasta 15. Orden = carrusel. Con un solo video queda en loop."
         />
       </section>
 
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
         <h2 className="text-lg text-meru-charcoal">Sección excursiones (home)</h2>
+        <p className="text-sm text-meru-muted">
+          Qué excursiones aparecen y en qué orden se define en cada excursión (Destacar en home +
+          orden).
+        </p>
         <Input label="Título" {...register("excursionsPreview.title")} />
         <Textarea label="Descripción" rows={3} {...register("excursionsPreview.description")} />
+      </section>
+
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Sección paquetes (home)</h2>
+        <p className="text-sm text-meru-muted">
+          Debajo de las excursiones. Marcá paquetes como destacados y su orden en cada paquete.
+        </p>
+        <Input label="Título" {...register("packagesPreview.title")} />
+        <Textarea label="Descripción" rows={3} {...register("packagesPreview.description")} />
       </section>
 
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">

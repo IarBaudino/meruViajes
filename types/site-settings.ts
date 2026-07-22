@@ -3,6 +3,11 @@ export interface SiteValueBlock {
   text: string;
 }
 
+export type HeroMediaItem = {
+  type: "image" | "video";
+  url: string;
+};
+
 export interface SiteSettings {
   hero: {
     eyebrow: string;
@@ -12,9 +17,16 @@ export interface SiteSettings {
     ctaPrimaryHref: string;
     ctaSecondaryLabel: string;
     ctaSecondaryHref: string;
+    /** @deprecated Preferir backgroundMedia. */
     backgroundImages?: string[];
+    /** Imágenes y/o videos del hero (orden = carrusel). */
+    backgroundMedia?: HeroMediaItem[];
   };
   excursionsPreview: {
+    title: string;
+    description: string;
+  };
+  packagesPreview: {
     title: string;
     description: string;
   };

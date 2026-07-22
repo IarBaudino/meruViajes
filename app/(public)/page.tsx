@@ -1,5 +1,6 @@
 import { HeroSection } from "@/components/home/hero-section";
 import { ExcursionsPreview } from "@/components/home/excursions-preview";
+import { PackagesPreview } from "@/components/home/packages-preview";
 import { AboutSection } from "@/components/home/about-section";
 import { InquiryForm } from "@/components/home/inquiry-form";
 import { GoogleReviewsSection } from "@/components/home/google-reviews-section";
@@ -18,6 +19,7 @@ export default async function HomePage() {
     <>
       <HeroSection hero={settings.hero} />
       <ExcursionsPreview section={settings.excursionsPreview} />
+      <PackagesPreview section={settings.packagesPreview} />
       <AboutSection about={settings.about} />
       {reviewsEnabled ? (
         <GoogleReviewsSection

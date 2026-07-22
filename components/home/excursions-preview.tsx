@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getActiveServices } from "@/features/excursions/lib/get-services";
+import { getHomeFeaturedServices } from "@/features/excursions/lib/get-services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrencyARS } from "@/lib/format";
@@ -11,8 +11,7 @@ type ExcursionsPreviewProps = {
 };
 
 export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
-  const services = await getActiveServices();
-  const preview = services.slice(0, 3);
+  const preview = await getHomeFeaturedServices(6);
 
   return (
     <section id="excursiones" className="scroll-mt-24 bg-white py-20">

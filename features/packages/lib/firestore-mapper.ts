@@ -19,6 +19,8 @@ export function mapFirestorePackage(id: string, data: DocumentData): ExcursionPa
     serviceIds: asStringArray(data.serviceIds),
     stock: typeof data.stock === "number" ? data.stock : 0,
     active: data.active !== false,
+    featuredOnHome: data.featuredOnHome === true,
+    homeOrder: typeof data.homeOrder === "number" ? data.homeOrder : 100,
     category: typeof data.category === "string" ? data.category : undefined,
   };
 }
@@ -35,6 +37,8 @@ export function packageToFirestore(
     serviceIds: data.serviceIds,
     stock: data.stock,
     active: data.active,
+    featuredOnHome: data.featuredOnHome === true,
+    homeOrder: Number.isFinite(data.homeOrder) ? Number(data.homeOrder) : 100,
     category: data.category ?? null,
   };
 }

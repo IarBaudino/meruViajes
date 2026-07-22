@@ -104,6 +104,7 @@ export function PackagesAdminList() {
               <th className="px-4 py-3 font-medium">Título</th>
               <th className="px-4 py-3 font-medium">Precio</th>
               <th className="px-4 py-3 font-medium">Excursiones</th>
+              <th className="px-4 py-3 font-medium">Home</th>
               <th className="px-4 py-3 font-medium">Estado</th>
               <th className="px-4 py-3 font-medium">Acciones</th>
             </tr>
@@ -117,6 +118,9 @@ export function PackagesAdminList() {
                 </td>
                 <td className="px-4 py-3">{formatCurrencyARS(pkg.price)}</td>
                 <td className="px-4 py-3 text-meru-muted">{pkg.serviceIds.length}</td>
+                <td className="px-4 py-3 text-meru-muted">
+                  {pkg.featuredOnHome ? `Sí · #${pkg.homeOrder ?? 100}` : "—"}
+                </td>
                 <td className="px-4 py-3">
                   <Badge
                     className={

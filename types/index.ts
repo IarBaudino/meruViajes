@@ -63,6 +63,16 @@ export interface CartItem {
   departureId?: string;
   departureDate?: string;
   departureTime?: string;
+  /** Paquetes: rango de fechas de estadía del viajero. */
+  stayFrom?: string;
+  stayTo?: string;
+  /** Snapshot de excursiones incluidas en el paquete (solo informativo). */
+  includedServices?: Array<{
+    serviceId: string;
+    title: string;
+    slug?: string;
+    description?: string;
+  }>;
   /** @deprecated */
   discounts?: ServiceDiscounts;
   /** Total de la línea ya calculado con descuentos. */
@@ -96,6 +106,10 @@ export interface Service {
   stock: number;
   /** Salidas / turnos con cupo propio. Si hay turnos, el cliente elige fecha y hora. */
   departures?: DepartureSlot[];
+  /** Destacar en el home. */
+  featuredOnHome?: boolean;
+  /** Orden en el home (menor = primero). */
+  homeOrder?: number;
   active: boolean;
 }
 
@@ -141,11 +155,26 @@ export interface OrderItem {
   departureId?: string;
   departureDate?: string;
   departureTime?: string;
-  /** Paquetes: turnos consumidos en cada excursión incluida. */
+  /** Paquetes: rango de fechas indicado por el cliente. */
+  stayFrom?: string;
+  stayTo?: string;
+  /** Excursiones del paquete (informativo; el armado es manual). */
+  includedServices?: Array<{
+    serviceId: string;
+    title: string;
+    slug?: string;
+    description?: string;
+  }>;
+  /** Si es true, el admin arma itinerario y descuenta cupos a mano. */
+  fulfillmentMode?: "auto" | "manual";
+  /** @deprecated Paquetes viejos con turnos automáticos. */
   includedDepartures?: Array<{
     serviceId: string;
     departureId: string;
     quantity: number;
+    departureDate?: string;
+    departureTime?: string;
+    serviceTitle?: string;
   }>;
 }
 

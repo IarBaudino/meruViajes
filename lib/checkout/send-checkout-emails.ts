@@ -28,15 +28,26 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
     .map((item) => {
       const normalized = normalizeCartPassengers(item.passengers);
       const summary = normalized ? formatPassengersSummary(normalized) : "";
-      const passengers = summary
-        ? `<br><small>${summary}</small>`
-        : "";
-      return `<li><strong>${item.serviceTitle}</strong> × ${item.quantity} — ${formatCurrencyARS(item.lineTotal)}${passengers}</li>`;
+      const passengers = summary ? `<br><small>${summary}</small>` : "";
+      const stay =
+        item.stayFrom && item.stayTo
+          ? `<br><small>Estadía: ${item.stayFrom} → ${item.stayTo}</small>`
+          : "";
+      const included =
+        item.includedServices?.length
+          ? `<br><small>Incluye: ${item.includedServices.map((s) => s.title).join(", ")}</small>`
+          : "";
+      const manual =
+        item.fulfillmentMode === "manual"
+          ? `<br><small><strong>Armado manual:</strong> itinerario + descuento de cupos a cargo de la agencia.</small>`
+          : "";
+      return `<li><strong>${item.serviceTitle}</strong> × ${item.quantity} — ${formatCurrencyARS(item.lineTotal)}${passengers}${stay}${included}${manual}</li>`;
     })
     .join("");
 
 
   const orderRef = params.orderId.slice(0, 8).toUpperCase();
+  const hasManualPackage = params.items.some((i) => i.fulfillmentMode === "manual");
 
   await resend.emails.send({
     from: resendDefaults.from,
@@ -45,7 +56,9 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
     html: `
       ${logoHtml}
       <p>Hola ${params.customerName},</p>
-      <p>Recibimos tu reserva. Te contactaremos para coordinar el pago y los detalles.</p>
+      <p>Recibimos tu reserva. Te contactaremos para coordinar el pago y los detalles${
+        hasManualPackage ? " del itinerario del paquete" : ""
+      }.</p>
       <p><strong>Nº de pedido:</strong> ${params.orderId}</p>
       <ul>${itemsHtml}</ul>
       <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
@@ -57,10 +70,17 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
   await resend.emails.send({
     from: resendDefaults.from,
     to: resendDefaults.to,
-    subject: `[Meru] Nueva reserva de ${params.customerName}`,
+    subject: `[Meru] Nueva reserva de ${params.customerName}${
+      hasManualPackage ? " · PAQUETE MANUAL" : ""
+    }`,
     html: `
       ${logoHtml}
       <h2>Nueva reserva web</h2>
+      ${
+        hasManualPackage
+          ? `<p style="background:#fff7ed;border:1px solid #fdba74;padding:12px;border-radius:8px"><strong>Recordatorio:</strong> hay un paquete con armado manual. Armar itinerario, descontar cupos a mano y enviar detalle al cliente por privado.</p>`
+          : ""
+      }
       <p><strong>Cliente:</strong> ${params.customerName} (${params.customerEmail})</p>
       <p><strong>Pedido:</strong> ${params.orderId}</p>
       <ul>${itemsHtml}</ul>

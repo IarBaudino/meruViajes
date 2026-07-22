@@ -15,15 +15,21 @@ type HeroSectionProps = {
 };
 
 export function HeroSection({ hero }: HeroSectionProps) {
-  const backgroundImages = hero.backgroundImages ?? [];
+  const backgroundMedia =
+    hero.backgroundMedia && hero.backgroundMedia.length > 0
+      ? hero.backgroundMedia
+      : (hero.backgroundImages ?? []).map((url) => ({
+          type: "image" as const,
+          url,
+        }));
 
   return (
     <section
       className="relative flex min-h-[85vh] items-center justify-center overflow-hidden bg-meru-charcoal"
       aria-label="Presentación"
     >
-      {backgroundImages.length > 0 ? (
-        <HeroCarouselBackground images={backgroundImages} />
+      {backgroundMedia.length > 0 ? (
+        <HeroCarouselBackground media={backgroundMedia} />
       ) : (
         <div
           className="pointer-events-none absolute inset-0 z-[1]"

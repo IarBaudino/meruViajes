@@ -142,6 +142,8 @@ export function mapFirestoreService(id: string, data: DocumentData): Service {
     promotion: mapPromotion(data),
     stock: asNumber(data.stock, 0),
     departures: mapDepartures(data.departures),
+    featuredOnHome: asBool(data.featuredOnHome, false),
+    homeOrder: asNumber(data.homeOrder, 100),
     active: asBool(data.active, true),
   };
 }
@@ -166,6 +168,8 @@ export function serviceToFirestore(data: {
   promotion?: ServicePromotion | null;
   stock: number;
   departures?: DepartureSlot[];
+  featuredOnHome?: boolean;
+  homeOrder?: number;
   active: boolean;
 }): DocumentData {
   const promotion =
@@ -209,6 +213,8 @@ export function serviceToFirestore(data: {
     discounts: null,
     stock: data.stock,
     departures,
+    featuredOnHome: data.featuredOnHome === true,
+    homeOrder: Number.isFinite(data.homeOrder) ? Number(data.homeOrder) : 100,
     active: data.active,
   };
 }

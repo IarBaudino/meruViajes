@@ -39,7 +39,10 @@ export async function PATCH(request: Request) {
     ...parsed.data,
     hero: {
       ...parsed.data.hero,
-      backgroundImages: parsed.data.hero.backgroundImages ?? [],
+      backgroundMedia: parsed.data.hero.backgroundMedia ?? [],
+      backgroundImages: (parsed.data.hero.backgroundMedia ?? [])
+        .filter((item) => item.type === "image")
+        .map((item) => item.url),
       backgroundImageUrl: null,
     },
     updatedAt: new Date(),

@@ -52,6 +52,10 @@ function sameServiceLine(a: CartItem, serviceId: string, departureId?: string) {
   );
 }
 
+function packageStayKey(from?: string, to?: string) {
+  return `${from ?? ""}|${to ?? ""}`;
+}
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
@@ -65,12 +69,12 @@ export const useCartStore = create<CartState>()(
 
         set((state) => {
           if (kind === "package") {
+            const stayKey = packageStayKey(item.stayFrom, item.stayTo);
             const existing = state.items.find(
               (i) =>
                 i.serviceId === item.serviceId &&
                 (i.kind ?? "service") === "package" &&
-                (i.departureDate ?? "") === (item.departureDate ?? "") &&
-                (i.departureTime ?? "") === (item.departureTime ?? "")
+                packageStayKey(i.stayFrom, i.stayTo) === stayKey
             );
             const quantityToAdd = item.quantity ?? 1;
             const currentQty = existing?.quantity ?? 0;
@@ -83,8 +87,7 @@ export const useCartStore = create<CartState>()(
                 items: state.items.map((i) =>
                   i.serviceId === item.serviceId &&
                   (i.kind ?? "service") === "package" &&
-                  (i.departureDate ?? "") === (item.departureDate ?? "") &&
-                  (i.departureTime ?? "") === (item.departureTime ?? "")
+                  packageStayKey(i.stayFrom, i.stayTo) === stayKey
                     ? {
                         ...i,
                         quantity: i.quantity + quantityToAdd,
@@ -106,8 +109,9 @@ export const useCartStore = create<CartState>()(
                   price: item.price,
                   image: item.image,
                   quantity: quantityToAdd,
-                  departureDate: item.departureDate,
-                  departureTime: item.departureTime,
+                  stayFrom: item.stayFrom,
+                  stayTo: item.stayTo,
+                  includedServices: item.includedServices,
                   lineTotal: item.price * quantityToAdd,
                 },
               ],
@@ -233,9 +237,12 @@ export const useCartStore = create<CartState>()(
       setHoldOrderId: (orderId) => set({ holdOrderId: orderId }),
       syncHoldWithOrders: (orders) => {
         const holdOrderId = get().holdOrderId;
-        if (!holdOrderId) return;
+        if (!holdOrderId) {
+          // Carritos viejos sin holdOrderId: si no hay pendientes y hay ítems,
+          // y existe al menos una orden paga reciente, no auto-limpiamos a ciegas.
+          return;
+        }
         const order = orders.find((o) => o.id === holdOrderId);
-        // Si todavía no aparece en el listado, no tocar el carrito.
         if (!order) return;
         if (order.paymentStatus === "pagado" || order.paymentStatus === "cancelado") {
           set({ items: [], holdOrderId: null });
@@ -244,6 +251,12 @@ export const useCartStore = create<CartState>()(
       totalItems: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
-    { name: "meru-cart-v6" }
+    {
+      name: "meru-cart-v8",
+      partialize: (state) => ({
+        items: state.items,
+        holdOrderId: state.holdOrderId,
+      }),
+    }
   )
 );

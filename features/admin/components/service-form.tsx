@@ -64,6 +64,8 @@ function toFormDefaults(service?: Service): ServiceFormData {
     },
     stock: service?.stock ?? 0,
     departures: service?.departures ?? [],
+    featuredOnHome: service?.featuredOnHome ?? false,
+    homeOrder: service?.homeOrder ?? 100,
     active: service?.active ?? true,
   };
 }
@@ -266,6 +268,17 @@ export function ServiceForm({ service }: ServiceFormProps) {
           <input type="checkbox" className="rounded" {...register("active")} />
           Publicada (visible en el catálogo)
         </label>
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+          <input type="checkbox" className="rounded" {...register("featuredOnHome")} />
+          Destacar en el home
+        </label>
+        <Input
+          label="Orden en el home (menor = primero)"
+          type="number"
+          min={0}
+          max={999}
+          {...register("homeOrder", { valueAsNumber: true })}
+        />
       </section>
 
       <ServiceDeparturesFields

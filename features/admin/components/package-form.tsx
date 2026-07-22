@@ -28,6 +28,8 @@ function toDefaults(pkg?: ExcursionPackage): PackageFormData {
     serviceIds: pkg?.serviceIds ?? [],
     stock: pkg?.stock ?? 0,
     active: pkg?.active ?? true,
+    featuredOnHome: pkg?.featuredOnHome ?? false,
+    homeOrder: pkg?.homeOrder ?? 100,
     category: pkg?.category ?? "",
   };
 }
@@ -107,7 +109,9 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
         <h2 className="text-lg text-meru-charcoal">Datos del paquete</h2>
         <p className="text-sm text-meru-muted">
-          Un paquete es una combinación de excursiones existentes, con su propio precio y cupos.
+          Combiná 2, 3 o más excursiones existentes a un precio único. El cliente indica un rango
+          de fechas; ustedes arman el itinerario y descuentan cupos a mano. El sistema no toca el
+          stock de las excursiones.
         </p>
         <Input label="Título" error={errors.title?.message} {...register("title")} />
         <Input label="Slug (URL)" error={errors.slug?.message} {...register("slug")} />
@@ -130,7 +134,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
             </p>
           ) : null}
           <Input
-            label="Cupos del paquete"
+            label="Tope opcional de paquetes (0 = sin tope extra)"
             type="number"
             {...register("stock", { valueAsNumber: true })}
           />
@@ -139,6 +143,17 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           <input type="checkbox" className="rounded" {...register("active")} />
           Publicado (visible en /paquetes)
         </label>
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+          <input type="checkbox" className="rounded" {...register("featuredOnHome")} />
+          Destacar en el home
+        </label>
+        <Input
+          label="Orden en el home (menor = primero)"
+          type="number"
+          min={0}
+          max={999}
+          {...register("homeOrder", { valueAsNumber: true })}
+        />
       </section>
 
       <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
