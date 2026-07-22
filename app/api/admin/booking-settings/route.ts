@@ -12,7 +12,7 @@ const patchSchema = z.object({
   orderHoldHours: z
     .number()
     .int("Usá horas enteras")
-    .min(1, "Mínimo 1 hora")
+    .min(24, "Mínimo 24 horas (1 día)")
     .max(336, "Máximo 14 días (336 horas)"),
 });
 

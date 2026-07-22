@@ -45,7 +45,7 @@ export interface SiteSettings {
   };
   /** Configuración de reservas / cupos. */
   booking?: {
-    /** Horas que se sostiene el cupo sin pago (1–336). */
+    /** Horas que se sostiene el cupo sin pago (24–336). */
     orderHoldHours: number;
   };
 }

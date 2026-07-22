@@ -19,7 +19,8 @@ export function BookingHoldSettingsCard() {
         const res = await fetch("/api/admin/booking-settings");
         if (!res.ok) throw new Error("No se pudo cargar");
         const data = await res.json();
-        setHours(Number(data.orderHoldHours) || 48);
+        const value = Number(data.orderHoldHours) || 48;
+        setHours(Math.max(24, value));
       } catch {
         setError("No se pudo cargar el tiempo de reserva");
       } finally {
@@ -45,7 +46,7 @@ export function BookingHoldSettingsCard() {
         return;
       }
       setHours(json.orderHoldHours ?? hours);
-      setMessage("Tiempo de reserva guardado. Aplica a las reservas nuevas.");
+      setMessage("Guardado. Las próximas reservas usarán este plazo.");
     } catch {
       setError("Error de red al guardar");
     } finally {
@@ -59,12 +60,12 @@ export function BookingHoldSettingsCard() {
         Tiempo de reserva sin pago
       </h2>
       <p className="mt-1 text-sm text-meru-muted">
-        Al confirmar una reserva, el cupo queda sostenido este tiempo. Si no se paga, se libera
-        solo (o lo liberás antes desde Órdenes).
+        Cuánto tiempo se sostiene el cupo después de reservar, hasta que se confirme el pago. Si
+        vence sin pagar, el cupo vuelve a estar disponible. También podés liberarlo antes desde
+        Órdenes.
       </p>
-      <p className="mt-2 rounded-lg bg-meru-sand/70 px-3 py-2 text-sm text-meru-charcoal">
-        <strong>Rango permitido:</strong> entre <strong>1</strong> y <strong>336</strong> horas
-        (máximo 14 días). Ejemplos: 24 = 1 día · 48 = 2 días · 72 = 3 días.
+      <p className="mt-2 text-sm text-meru-charcoal">
+        Mínimo <strong>24 horas</strong> (1 día) · Máximo <strong>336 horas</strong> (14 días).
       </p>
 
       {loading ? (
@@ -75,8 +76,9 @@ export function BookingHoldSettingsCard() {
             <Input
               label="Horas"
               type="number"
-              min={1}
+              min={24}
               max={336}
+              step={24}
               value={hours}
               onChange={(e) => setHours(Number(e.target.value))}
             />
@@ -86,11 +88,6 @@ export function BookingHoldSettingsCard() {
           </Button>
         </div>
       )}
-
-      <p className="mt-2 text-xs text-meru-muted">
-        La liberación automática de cupos vencidos se revisa una vez al día. Mientras tanto podés
-        liberarlos a mano en Órdenes.
-      </p>
 
       {message ? (
         <p className="mt-3 flex items-start gap-2 text-sm text-green-700" role="status">

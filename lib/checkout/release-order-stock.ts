@@ -3,7 +3,7 @@ import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 
 function clampHoldHours(raw: number): number {
-  if (!Number.isFinite(raw) || raw < 1) return 48;
+  if (!Number.isFinite(raw) || raw < 24) return 48;
   return Math.min(Math.floor(raw), 24 * 14);
 }
 
