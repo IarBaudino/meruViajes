@@ -261,16 +261,6 @@ export function ServiceForm({ service }: ServiceFormProps) {
               .
             </p>
           </div>
-          <div>
-            <Input
-              label="Stock / cupos"
-              type="number"
-              {...register("stock", { valueAsNumber: true })}
-            />
-            <p className="mt-1 text-xs text-meru-muted">
-              Ya no se usa para reserva online. La venta exige turnos con fecha, hora y cupos.
-            </p>
-          </div>
         </div>
         <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("active")} />

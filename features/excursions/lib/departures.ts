@@ -69,6 +69,63 @@ export function serviceUsesDepartures(departures: DepartureSlot[] | undefined): 
   return (departures?.length ?? 0) > 0;
 }
 
+export type CommonPackageSlot = {
+  date: string;
+  time: string;
+  remaining: number;
+  /** departureId por serviceId */
+  byService: Record<string, string>;
+};
+
+/** Turnos en común (misma fecha y hora) entre todas las excursiones del paquete. */
+export function getCommonPackageSlots(
+  services: Array<{ id: string; departures?: DepartureSlot[] }>,
+  now: Date = new Date()
+): CommonPackageSlot[] {
+  if (services.length === 0) return [];
+  if (services.some((s) => !serviceUsesDepartures(s.departures))) return [];
+
+  const maps = services.map((service) => {
+    const map = new Map<string, { departureId: string; remaining: number }>();
+    for (const slot of getBookableDepartures(service.departures, now)) {
+      const key = `${slot.date}|${slot.time}`;
+      map.set(key, {
+        departureId: slot.id,
+        remaining: slotRemaining(slot),
+      });
+    }
+    return { serviceId: service.id, map };
+  });
+
+  const first = maps[0]!;
+  const common: CommonPackageSlot[] = [];
+
+  for (const [key, firstSlot] of first.map) {
+    if (firstSlot.remaining < 1) continue;
+    let remaining = firstSlot.remaining;
+    const byService: Record<string, string> = {
+      [first.serviceId]: firstSlot.departureId,
+    };
+    let ok = true;
+
+    for (let i = 1; i < maps.length; i++) {
+      const entry = maps[i]!.map.get(key);
+      if (!entry || entry.remaining < 1) {
+        ok = false;
+        break;
+      }
+      remaining = Math.min(remaining, entry.remaining);
+      byService[maps[i]!.serviceId] = entry.departureId;
+    }
+
+    if (!ok || remaining < 1) continue;
+    const [date, time] = key.split("|");
+    common.push({ date: date!, time: time!, remaining, byService });
+  }
+
+  return common.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+}
+
 type GenerateInput = {
   fromDate: string;
   toDate: string;

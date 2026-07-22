@@ -82,10 +82,13 @@ export default async function PackageDetailPage({ params }: Props) {
             {formatCurrencyARS(pkg.price)}
           </p>
           <p className="mt-2 text-sm text-meru-muted">
-            {pkg.stock > 0 ? "Disponible para reservar" : "Sin cupos por el momento"}
+            Elegí fecha y hora compartida por las excursiones del paquete.
           </p>
           <div className="mt-6">
-            <AddPackageToCartButton package={pkg} />
+            <AddPackageToCartButton
+              package={pkg}
+              services={included.filter((s): s is NonNullable<typeof s> => Boolean(s))}
+            />
           </div>
         </aside>
       </div>

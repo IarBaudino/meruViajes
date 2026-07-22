@@ -12,12 +12,13 @@ import {
   totalPassengers,
   type CartPassengers,
 } from "@/features/excursions/lib/pricing";
-import { computeHoldExpiresAt } from "@/lib/checkout/release-order-stock";
 import {
   parseDepartureDateTime,
   serviceUsesDepartures,
   slotRemaining,
 } from "@/features/excursions/lib/departures";
+import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
+import { computeHoldExpiresAtDate } from "@/lib/checkout/hold-warning";
 
 export type CheckoutResult = {
   orderId: string;
@@ -93,7 +94,6 @@ export async function createCheckout(
 
   let earliestDeparture: Date | null = null;
   for (const item of items) {
-    if ((item.kind ?? "service") !== "service") continue;
     if (!item.departureDate || !item.departureTime) continue;
     const dt = parseDepartureDateTime({
       date: item.departureDate,
@@ -103,7 +103,18 @@ export async function createCheckout(
       earliestDeparture = dt;
     }
   }
-  const holdExpiresAt = await computeHoldExpiresAt(new Date(), earliestDeparture);
+  const bookingSettings = (await getSiteSettings()).booking;
+  const holdExpiresAt = computeHoldExpiresAtDate(
+    bookingSettings,
+    new Date(),
+    earliestDeparture
+  );
+  if (earliestDeparture && holdExpiresAt.getTime() <= Date.now()) {
+    throw new CheckoutError(
+      "Esa salida está demasiado cerca: ya no se puede reservar sin pago a tiempo. Elegí otra fecha u hora.",
+      400
+    );
+  }
 
   return db.runTransaction(async (tx) => {
     const orderItems: OrderLine[] = [];
@@ -132,10 +143,87 @@ export async function createCheckout(
         if (pkg.active !== true) {
           throw new CheckoutError(`"${title}" ya no está publicado.`, 400);
         }
-        if (stock <= 0) {
-          throw new CheckoutError(`"${title}" no tiene cupos disponibles.`, 409);
+        if (!item.departureDate || !item.departureTime) {
+          throw new CheckoutError(`Elegí fecha y hora para el paquete "${title}".`, 400);
         }
-        if (item.quantity > stock) {
+
+        const serviceIds = Array.isArray(pkg.serviceIds)
+          ? pkg.serviceIds.filter((id: unknown): id is string => typeof id === "string")
+          : [];
+
+        if (serviceIds.length === 0) {
+          throw new CheckoutError(`"${title}" no tiene excursiones asociadas.`, 400);
+        }
+
+        const includedDepartures: Array<{
+          serviceId: string;
+          departureId: string;
+          quantity: number;
+        }> = [];
+        const includedTitles: { id: string; title: string }[] = [];
+
+        for (const serviceId of serviceIds) {
+          const serviceRef = db.collection("services").doc(serviceId);
+          const serviceSnap = await tx.get(serviceRef);
+          if (!serviceSnap.exists) {
+            throw new CheckoutError(
+              `Una excursión del paquete "${title}" ya no está disponible.`,
+              404
+            );
+          }
+          const service = mapFirestoreService(serviceId, serviceSnap.data()!);
+          if (!serviceUsesDepartures(service.departures)) {
+            throw new CheckoutError(
+              `"${title}" incluye "${service.title}" sin salidas cargadas.`,
+              409
+            );
+          }
+
+          const working =
+            pendingDepartures.get(serviceId) ??
+            (service.departures ?? []).map((d) => ({ ...d }));
+          const idx = working.findIndex(
+            (d) =>
+              d.date === item.departureDate &&
+              d.time === item.departureTime &&
+              d.active !== false
+          );
+          if (idx < 0) {
+            throw new CheckoutError(
+              `No hay turno ${item.departureDate} ${item.departureTime} en todas las excursiones de "${title}".`,
+              409
+            );
+          }
+
+          const slot = working[idx]!;
+          const remaining = slotRemaining(slot);
+          if (item.quantity > remaining) {
+            throw new CheckoutError(
+              `No contamos con esa cantidad de lugares para esa fecha y hora en "${title}". Probá con otra salida.`,
+              409
+            );
+          }
+
+          const slotAt = parseDepartureDateTime(slot);
+          if (!slotAt || slotAt.getTime() <= Date.now()) {
+            throw new CheckoutError(`El turno del paquete "${title}" ya no es válido.`, 400);
+          }
+
+          working[idx] = {
+            ...slot,
+            booked: Number(slot.booked || 0) + item.quantity,
+          };
+          pendingDepartures.set(serviceId, working);
+
+          includedDepartures.push({
+            serviceId,
+            departureId: slot.id,
+            quantity: item.quantity,
+          });
+          includedTitles.push({ id: serviceId, title: service.title });
+        }
+
+        if (stock > 0 && item.quantity > stock) {
           throw new CheckoutError(
             `Solo quedan ${stock} cupo${stock === 1 ? "" : "s"} para "${title}".`,
             409
@@ -147,25 +235,6 @@ export async function createCheckout(
           throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
         }
 
-        const serviceIds = Array.isArray(pkg.serviceIds)
-          ? pkg.serviceIds.filter((id: unknown): id is string => typeof id === "string")
-          : [];
-
-        if (serviceIds.length === 0) {
-          throw new CheckoutError(`"${title}" no tiene excursiones asociadas.`, 400);
-        }
-
-        const includedTitles: { id: string; title: string }[] = [];
-        for (const serviceId of serviceIds) {
-          const serviceSnap = await tx.get(db.collection("services").doc(serviceId));
-          includedTitles.push({
-            id: serviceId,
-            title: serviceSnap.exists
-              ? String(serviceSnap.data()?.title ?? "Excursión")
-              : "Excursión",
-          });
-        }
-
         orderItems.push({
           serviceId: packageId,
           serviceTitle: title,
@@ -175,9 +244,13 @@ export async function createCheckout(
           lineTotal: unitPrice * item.quantity,
           packageId,
           packageTitle: title,
+          departureDate: item.departureDate,
+          departureTime: item.departureTime,
+          includedDepartures,
         });
 
         for (const included of includedTitles) {
+          const dep = includedDepartures.find((d) => d.serviceId === included.id);
           bookingDrafts.push({
             serviceId: included.id,
             serviceTitle: `${title} → ${included.title}`,
@@ -185,10 +258,19 @@ export async function createCheckout(
             unitPrice: 0,
             lineTotal: 0,
             packageId,
+            departureId: dep?.departureId,
+            departureDate: item.departureDate,
+            departureTime: item.departureTime,
           });
         }
 
-        stockUpdates.push({ kind: "stock", ref: packageRef, nextStock: stock - item.quantity });
+        if (stock > 0) {
+          stockUpdates.push({
+            kind: "stock",
+            ref: packageRef,
+            nextStock: stock - item.quantity,
+          });
+        }
         continue;
       }
 
@@ -246,12 +328,9 @@ export async function createCheckout(
         throw new CheckoutError(`El turno de "${title}" no está disponible.`, 400);
       }
       const remaining = slotRemaining(slot);
-      if (remaining < 1) {
-        throw new CheckoutError(`El turno de "${title}" no tiene cupos disponibles.`, 409);
-      }
-      if (seats > remaining) {
+      if (remaining < 1 || seats > remaining) {
         throw new CheckoutError(
-          `Solo quedan ${remaining} lugar${remaining === 1 ? "" : "es"} en ese turno de "${title}".`,
+          `No contamos con esa cantidad de lugares para esa fecha y hora en "${title}". Probá con otra salida o menos pasajeros.`,
           409
         );
       }
@@ -259,6 +338,14 @@ export async function createCheckout(
       const slotAt = parseDepartureDateTime(slot);
       if (!slotAt || slotAt.getTime() <= Date.now()) {
         throw new CheckoutError(`El turno de "${title}" ya pasó o no es válido.`, 400);
+      }
+      if (
+        computeHoldExpiresAtDate(bookingSettings, new Date(), slotAt).getTime() <= Date.now()
+      ) {
+        throw new CheckoutError(
+          `El turno de "${title}" está demasiado cerca de la salida para reservarlo ahora.`,
+          400
+        );
       }
 
       working[idx] = {

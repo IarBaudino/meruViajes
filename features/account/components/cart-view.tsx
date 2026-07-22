@@ -125,7 +125,7 @@ export function CartView() {
 
     try {
       const missingDeparture = items.some(
-        (item) => (item.kind ?? "service") === "service" && !item.departureId
+        (item) => !item.departureDate || !item.departureTime
       );
       if (missingDeparture) {
         throw new Error(

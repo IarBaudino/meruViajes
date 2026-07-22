@@ -23,6 +23,8 @@ const WEEKDAYS = [
   { value: 0, label: "Dom" },
 ];
 
+const PAGE_SIZE = 12;
+
 type Props = {
   control: Control<ServiceFormData>;
   register: UseFormRegister<ServiceFormData>;
@@ -44,12 +46,39 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
   const [genCapacity, setGenCapacity] = useState(12);
   const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [genError, setGenError] = useState("");
+  const [genOk, setGenOk] = useState("");
+  const [filter, setFilter] = useState<"upcoming" | "all" | "past">("upcoming");
+  const [page, setPage] = useState(0);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const sortedPreview = useMemo(() => {
-    return [...departures].sort((a, b) =>
-      `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)
-    );
-  }, [departures]);
+  const today = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const indexed = useMemo(
+    () =>
+      departures.map((d, index) => ({
+        ...d,
+        index,
+        sortKey: `${d.date || ""}|${d.time || ""}`,
+      })),
+    [departures]
+  );
+
+  const filtered = useMemo(() => {
+    const list = [...indexed].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    if (filter === "all") return list;
+    if (filter === "past") return list.filter((d) => d.date && d.date < today);
+    return list.filter((d) => !d.date || d.date >= today);
+  }, [indexed, filter, today]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageItems = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   function toggleWeekday(day: number) {
     setWeekdays((prev) =>
@@ -59,6 +88,7 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
 
   function generate() {
     setGenError("");
+    setGenOk("");
     const generated = generateDepartureSlots({
       fromDate,
       toDate,
@@ -71,15 +101,16 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
       return;
     }
 
-    const existingKeys = new Set(
-      departures.map((d) => `${d.date}|${d.time}`)
-    );
+    const existingKeys = new Set(departures.map((d) => `${d.date}|${d.time}`));
     const toAdd = generated.filter((d) => !existingKeys.has(`${d.date}|${d.time}`));
     if (toAdd.length === 0) {
       setGenError("Esos turnos ya estaban cargados.");
       return;
     }
     setValue("departures", [...departures, ...toAdd], { shouldDirty: true });
+    setFilter("upcoming");
+    setPage(0);
+    setGenOk(`Se agregaron ${toAdd.length} turno${toAdd.length === 1 ? "" : "s"}.`);
   }
 
   return (
@@ -87,8 +118,8 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
       <div>
         <h2 className="text-lg text-meru-charcoal">Salidas (fecha y hora)</h2>
         <p className="mt-1 text-sm text-meru-muted">
-          Obligatorio para vender online: sin turnos no se puede reservar (así no hay sobreventa).
-          El cliente elige fecha y hora, y el cupo se descuenta solo de ese turno.
+          Obligatorio para vender online. Generá por rango (semana/mes) y revisá solo los próximos
+          turnos.
         </p>
       </div>
 
@@ -147,69 +178,206 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
           Generar turnos
         </Button>
         {genError ? <p className="text-sm text-red-600">{genError}</p> : null}
+        {genOk ? <p className="text-sm text-green-700">{genOk}</p> : null}
       </div>
 
-      <div className="space-y-3">
-        {fields.length === 0 ? (
-          <p className="text-sm text-meru-muted">Todavía no hay turnos cargados.</p>
-        ) : (
-          fields.map((field, index) => {
-            const current = departures[index];
-            const remaining = current
-              ? slotRemaining(current)
-              : 0;
-            return (
-              <div
-                key={field.id}
-                className="grid gap-3 rounded-lg border border-meru-border p-3 sm:grid-cols-[1fr_1fr_100px_100px_auto] sm:items-end"
-              >
-                <input type="hidden" {...register(`departures.${index}.id`)} />
-                <input type="hidden" {...register(`departures.${index}.booked`, { valueAsNumber: true })} />
-                <Input
-                  label="Fecha"
-                  type="date"
-                  {...register(`departures.${index}.date`)}
-                />
-                <Input
-                  label="Hora"
-                  type="time"
-                  {...register(`departures.${index}.time`)}
-                />
-                <Input
-                  label="Cupos"
-                  type="number"
-                  min={1}
-                  {...register(`departures.${index}.capacity`, { valueAsNumber: true })}
-                />
-                <div className="pb-2 text-xs text-meru-muted">
-                  Libres: {remaining}
-                  {current ? (
-                    <span className="block">{formatDepartureLabel(current)}</span>
-                  ) : null}
-                </div>
-                <div className="flex flex-col gap-2 pb-1">
-                  <label className="flex items-center gap-2 text-xs text-meru-charcoal">
-                    <input
-                      type="checkbox"
-                      className="rounded"
-                      {...register(`departures.${index}.active`)}
-                    />
-                    Activo
-                  </label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => remove(index)}>
-                    Quitar
-                  </Button>
-                </div>
-              </div>
-            );
-          })
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["upcoming", "Próximos"],
+              ["all", "Todos"],
+              ["past", "Pasados"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={`rounded-lg border px-3 py-1.5 text-sm ${
+                filter === key
+                  ? "border-meru-primary bg-meru-ice text-meru-primary"
+                  : "border-meru-border text-meru-muted"
+              }`}
+              onClick={() => {
+                setFilter(key);
+                setPage(0);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-meru-muted">
+          {filtered.length} en esta vista · {departures.length} en total
+        </p>
       </div>
+
+      {/* Campos RHF ocultos para que no se pierdan al paginar */}
+      <div className="hidden">
+        {fields.map((field, index) => (
+          <div key={field.id}>
+            <input type="hidden" {...register(`departures.${index}.id`)} />
+            <input
+              type="hidden"
+              {...register(`departures.${index}.booked`, { valueAsNumber: true })}
+            />
+            <input type="hidden" {...register(`departures.${index}.date`)} />
+            <input type="hidden" {...register(`departures.${index}.time`)} />
+            <input
+              type="hidden"
+              {...register(`departures.${index}.capacity`, { valueAsNumber: true })}
+            />
+            <input type="hidden" {...register(`departures.${index}.active`)} />
+          </div>
+        ))}
+      </div>
+
+      {pageItems.length === 0 ? (
+        <p className="text-sm text-meru-muted">No hay turnos en esta vista.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-meru-border">
+          <table className="min-w-full text-sm">
+            <thead className="bg-meru-sand/50 text-left text-meru-muted">
+              <tr>
+                <th className="px-3 py-2 font-medium">Salida</th>
+                <th className="px-3 py-2 font-medium">Cupos</th>
+                <th className="px-3 py-2 font-medium">Libres</th>
+                <th className="px-3 py-2 font-medium">Estado</th>
+                <th className="px-3 py-2 font-medium">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((item) => {
+                const remaining = slotRemaining(item);
+                const isEditing = editingIndex === item.index;
+                return (
+                  <tr key={fields[item.index]?.id ?? item.index} className="border-t border-meru-border/70">
+                    <td className="px-3 py-2 text-meru-charcoal">
+                      {isEditing ? (
+                        <div className="flex flex-wrap gap-2">
+                          <input
+                            type="date"
+                            className="rounded border border-meru-border px-2 py-1"
+                            value={item.date}
+                            onChange={(e) =>
+                              setValue(`departures.${item.index}.date`, e.target.value, {
+                                shouldDirty: true,
+                              })
+                            }
+                          />
+                          <input
+                            type="time"
+                            className="rounded border border-meru-border px-2 py-1"
+                            value={item.time}
+                            onChange={(e) =>
+                              setValue(`departures.${item.index}.time`, e.target.value, {
+                                shouldDirty: true,
+                              })
+                            }
+                          />
+                        </div>
+                      ) : item.date && item.time ? (
+                        formatDepartureLabel(item)
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          min={1}
+                          className="w-20 rounded border border-meru-border px-2 py-1"
+                          value={item.capacity}
+                          onChange={(e) =>
+                            setValue(
+                              `departures.${item.index}.capacity`,
+                              Number(e.target.value),
+                              { shouldDirty: true }
+                            )
+                          }
+                        />
+                      ) : (
+                        item.capacity
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-meru-muted">{remaining}</td>
+                    <td className="px-3 py-2">
+                      <label className="inline-flex items-center gap-1.5 text-xs">
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={item.active !== false}
+                          onChange={(e) =>
+                            setValue(`departures.${item.index}.active`, e.target.checked, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                        Activo
+                      </label>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="text-meru-secondary hover:underline"
+                          onClick={() =>
+                            setEditingIndex(isEditing ? null : item.index)
+                          }
+                        >
+                          {isEditing ? "Listo" : "Editar"}
+                        </button>
+                        <button
+                          type="button"
+                          className="text-red-700 hover:underline"
+                          onClick={() => {
+                            remove(item.index);
+                            setEditingIndex(null);
+                          }}
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {pageCount > 1 ? (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={safePage <= 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Anterior
+          </Button>
+          <span className="text-meru-muted">
+            Página {safePage + 1} de {pageCount}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={safePage >= pageCount - 1}
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+          >
+            Siguiente
+          </Button>
+        </div>
+      ) : null}
 
       <Button
         type="button"
         variant="outline"
-        onClick={() =>
+        onClick={() => {
           append({
             id: newDepartureId(),
             date: "",
@@ -217,18 +385,13 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
             capacity: 12,
             booked: 0,
             active: true,
-          })
-        }
+          });
+          setFilter("all");
+          setEditingIndex(departures.length);
+        }}
       >
         Agregar un turno
       </Button>
-
-      {sortedPreview.length > 0 ? (
-        <p className="text-xs text-meru-muted">
-          {sortedPreview.length} turno{sortedPreview.length === 1 ? "" : "s"} cargado
-          {sortedPreview.length === 1 ? "" : "s"}.
-        </p>
-      ) : null}
     </section>
   );
 }

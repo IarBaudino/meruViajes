@@ -12,21 +12,15 @@ import {
 
 type BookingSettings = {
   orderHoldHours: number;
-  shortHoldEnabled: boolean;
-  shortHoldHours: number;
+  hoursBeforeDeparture: number;
   holdWarningMessage: string;
-  activeHoldHours: number;
-  warningPreview: string;
 };
 
 export function BookingHoldSettingsCard() {
   const [settings, setSettings] = useState<BookingSettings>({
     orderHoldHours: 48,
-    shortHoldEnabled: false,
-    shortHoldHours: 2,
+    hoursBeforeDeparture: 2,
     holdWarningMessage: "",
-    activeHoldHours: 48,
-    warningPreview: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,14 +36,15 @@ export function BookingHoldSettingsCard() {
         const data = await res.json();
         setSettings({
           orderHoldHours: Math.max(24, Number(data.orderHoldHours) || 48),
-          shortHoldEnabled: Boolean(data.shortHoldEnabled),
-          shortHoldHours: Math.min(23, Math.max(1, Number(data.shortHoldHours) || 2)),
-          holdWarningMessage: typeof data.holdWarningMessage === "string" ? data.holdWarningMessage : "",
-          activeHoldHours: Number(data.activeHoldHours) || 48,
-          warningPreview: data.warningPreview ?? "",
+          hoursBeforeDeparture: Math.min(
+            72,
+            Math.max(1, Number(data.hoursBeforeDeparture) || 2)
+          ),
+          holdWarningMessage:
+            typeof data.holdWarningMessage === "string" ? data.holdWarningMessage : "",
         });
       } catch {
-        setError("No se pudo cargar el tiempo de reserva");
+        setError("No se pudo cargar la configuración de plazos");
       } finally {
         setLoading(false);
       }
@@ -57,15 +52,11 @@ export function BookingHoldSettingsCard() {
     void load();
   }, []);
 
-  const previewHours = settings.shortHoldEnabled
-    ? settings.shortHoldHours
-    : settings.orderHoldHours;
-
   const livePreview = useMemo(() => {
     const template = settings.holdWarningMessage.trim() || DEFAULT_HOLD_WARNING;
-    const label = formatHoldHoursLabel(previewHours);
+    const label = formatHoldHoursLabel(settings.orderHoldHours);
     return template.replaceAll("{horas}", label).replaceAll("{hours}", label);
-  }, [settings.holdWarningMessage, previewHours]);
+  }, [settings.holdWarningMessage, settings.orderHoldHours]);
 
   async function save() {
     setSaving(true);
@@ -75,28 +66,19 @@ export function BookingHoldSettingsCard() {
       const res = await fetch("/api/admin/booking-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderHoldHours: settings.orderHoldHours,
-          shortHoldEnabled: settings.shortHoldEnabled,
-          shortHoldHours: settings.shortHoldHours,
-          holdWarningMessage: settings.holdWarningMessage,
-        }),
+        body: JSON.stringify(settings),
       });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? "No se pudo guardar");
         return;
       }
-      setSettings((prev) => ({
-        ...prev,
-        orderHoldHours: json.orderHoldHours ?? prev.orderHoldHours,
-        shortHoldEnabled: Boolean(json.shortHoldEnabled),
-        shortHoldHours: json.shortHoldHours ?? prev.shortHoldHours,
-        holdWarningMessage: json.holdWarningMessage ?? prev.holdWarningMessage,
-        activeHoldHours: json.activeHoldHours ?? prev.activeHoldHours,
-        warningPreview: json.warningPreview ?? prev.warningPreview,
-      }));
-      setMessage("Guardado. Las próximas reservas usarán esta configuración.");
+      setSettings({
+        orderHoldHours: json.orderHoldHours ?? settings.orderHoldHours,
+        hoursBeforeDeparture: json.hoursBeforeDeparture ?? settings.hoursBeforeDeparture,
+        holdWarningMessage: json.holdWarningMessage ?? settings.holdWarningMessage,
+      });
+      setMessage("Guardado.");
     } catch {
       setError("Error de red al guardar");
     } finally {
@@ -108,11 +90,10 @@ export function BookingHoldSettingsCard() {
     <section className="mb-8 rounded-xl border border-meru-border bg-white p-5 sm:p-6 space-y-5">
       <div>
         <h2 className="text-base font-semibold text-meru-charcoal">
-          Tiempo de reserva sin pago
+          Plazo para pagar una reserva
         </h2>
         <p className="mt-1 text-sm text-meru-muted">
-          Cuánto tiempo se sostiene el cupo después de reservar, hasta confirmar el pago. Si vence
-          sin pagar, el cupo se libera. También podés liberarlo antes desde Órdenes.
+          Si no pagan a tiempo, la reserva se cancela y el cupo del turno vuelve a estar libre.
         </p>
       </div>
 
@@ -120,14 +101,10 @@ export function BookingHoldSettingsCard() {
         <p className="text-sm text-meru-muted">Cargando…</p>
       ) : (
         <>
-          <div>
-            <p className="text-sm text-meru-charcoal">
-              Plazo normal: mínimo <strong>24 horas</strong> · máximo <strong>336 horas</strong>{" "}
-              (14 días).
-            </p>
-            <div className="mt-3 sm:max-w-[200px]">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
               <Input
-                label="Horas (plazo normal)"
+                label="Máximo después de reservar (horas)"
                 type="number"
                 min={24}
                 max={336}
@@ -140,51 +117,35 @@ export function BookingHoldSettingsCard() {
                   }))
                 }
               />
+              <p className="mt-1 text-xs text-meru-muted">
+                Tope general. Ej.: 24 = 1 día, 48 = 2 días.
+              </p>
             </div>
-          </div>
-
-          <div className="rounded-lg border border-meru-border bg-meru-sand/40 p-4 space-y-3">
-            <label className="flex items-start gap-2 text-sm text-meru-charcoal">
-              <input
-                type="checkbox"
-                className="mt-0.5 rounded"
-                checked={settings.shortHoldEnabled}
+            <div>
+              <Input
+                label="Horas antes de la salida"
+                type="number"
+                min={1}
+                max={72}
+                value={settings.hoursBeforeDeparture}
                 onChange={(e) =>
                   setSettings((prev) => ({
                     ...prev,
-                    shortHoldEnabled: e.target.checked,
+                    hoursBeforeDeparture: Number(e.target.value),
                   }))
                 }
               />
-              <span>
-                <strong>Activar plazo corto forzado</strong>. Mientras esté activo, <em>todas</em>{" "}
-                las reservas nuevas usan este plazo. Si no lo activás, el plazo corto se aplica solo
-                cuando la salida elegida está cerca (faltan menos horas que el plazo normal).
-              </span>
-            </label>
-            {settings.shortHoldEnabled ? (
-              <div className="sm:max-w-[200px]">
-                <Input
-                  label="Horas (plazo corto)"
-                  type="number"
-                  min={1}
-                  max={23}
-                  value={settings.shortHoldHours}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      shortHoldHours: Number(e.target.value),
-                    }))
-                  }
-                />
-              </div>
-            ) : null}
+              <p className="mt-1 text-xs text-meru-muted">
+                Siempre se libera el cupo esta cantidad de horas antes del turno. Ej.: salida 9:00
+                y valor 2 → si no pagó, cae a las 7:00.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Textarea
-              label="Advertencia para el cliente"
-              rows={4}
+              label="Texto de aviso al cliente (opcional)"
+              rows={3}
               placeholder={DEFAULT_HOLD_WARNING}
               value={settings.holdWarningMessage}
               onChange={(e) =>
@@ -195,8 +156,8 @@ export function BookingHoldSettingsCard() {
               }
             />
             <p className="text-xs text-meru-muted">
-              Escribí el texto que verá al reservar. Usá <code className="text-meru-charcoal">{"{horas}"}</code>{" "}
-              para insertar el plazo vigente. Si lo dejás vacío, se usa el mensaje por defecto.
+              Usá <code className="text-meru-charcoal">{"{horas}"}</code> para el plazo (ej. “1 día”
+              o “48 horas”). Si está vacío, se usa el mensaje por defecto.
             </p>
             <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
               <p className="text-xs font-medium uppercase tracking-wide text-amber-800">

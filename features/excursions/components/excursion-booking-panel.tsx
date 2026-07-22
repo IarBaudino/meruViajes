@@ -22,6 +22,7 @@ import {
   serviceUsesDepartures,
   slotRemaining,
 } from "@/features/excursions/lib/departures";
+import { DepartureSchedulePicker } from "@/features/excursions/components/departure-schedule-picker";
 
 type Props = {
   service: Service;
@@ -119,7 +120,7 @@ export function ExcursionBookingPanel({ service }: Props) {
     }
     if (!canAddQuantity(cartQuantity, seats, maxStock)) {
       setError(
-        `Solo quedan ${maxStock} lugar${maxStock === 1 ? "" : "es"} en ese turno.`
+        "No contamos con esa cantidad de lugares para esa fecha y hora. Probá con otra salida o menos pasajeros."
       );
       return;
     }
@@ -189,7 +190,6 @@ export function ExcursionBookingPanel({ service }: Props) {
       </div>
 
       <div className="space-y-3">
-        <p className="text-sm font-medium text-meru-charcoal">Fecha y hora</p>
         {!hasDeparturesConfigured ? (
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
             Por ahora no hay salidas publicadas para esta excursión. No se puede reservar online
@@ -200,37 +200,18 @@ export function ExcursionBookingPanel({ service }: Props) {
             No hay salidas con cupos disponibles en este momento.
           </p>
         ) : (
-          <>
-            <div>
-              <label className="mb-1.5 block text-xs text-meru-muted">Fecha</label>
-              <select
-                className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-sm text-meru-charcoal"
-                value={selectedDate || dates[0] || ""}
-                onChange={(e) => onPickDate(e.target.value)}
-              >
-                {dates.map((date) => (
-                  <option key={date} value={date}>
-                    {formatDepartureLabel({ date, time: "00:00" }).split("·")[0].trim()}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs text-meru-muted">Hora</label>
-              <select
-                className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-sm text-meru-charcoal"
-                value={selected?.id ?? ""}
-                onChange={(e) => onPickTime(e.target.value)}
-              >
-                {timesForDate.map((slot) => (
-                  <option key={slot.id} value={slot.id} disabled={slotRemaining(slot) < 1}>
-                    {slot.time} · {slotRemaining(slot)} lugar
-                    {slotRemaining(slot) === 1 ? "" : "es"}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
+          <DepartureSchedulePicker
+            availableDates={dates}
+            selectedDate={effectiveDate}
+            onSelectDate={onPickDate}
+            timeOptions={timesForDate.map((slot) => ({
+              id: slot.id,
+              time: slot.time,
+              disabled: slotRemaining(slot) < 1,
+            }))}
+            selectedTimeId={selected?.id ?? ""}
+            onSelectTime={onPickTime}
+          />
         )}
       </div>
 
@@ -293,7 +274,7 @@ export function ExcursionBookingPanel({ service }: Props) {
             variant="secondary"
             size="lg"
             className="w-full"
-            disabled={seats < 1 || seats > maxStock}
+            disabled={seats < 1}
             onClick={handleAdd}
           >
             <ShoppingCart className="h-5 w-5" aria-hidden />

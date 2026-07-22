@@ -57,7 +57,11 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           if (kind === "package") {
             const existing = state.items.find(
-              (i) => i.serviceId === item.serviceId && (i.kind ?? "service") === "package"
+              (i) =>
+                i.serviceId === item.serviceId &&
+                (i.kind ?? "service") === "package" &&
+                (i.departureDate ?? "") === (item.departureDate ?? "") &&
+                (i.departureTime ?? "") === (item.departureTime ?? "")
             );
             const quantityToAdd = item.quantity ?? 1;
             const currentQty = existing?.quantity ?? 0;
@@ -68,7 +72,10 @@ export const useCartStore = create<CartState>()(
             if (existing) {
               return {
                 items: state.items.map((i) =>
-                  i.serviceId === item.serviceId && (i.kind ?? "service") === "package"
+                  i.serviceId === item.serviceId &&
+                  (i.kind ?? "service") === "package" &&
+                  (i.departureDate ?? "") === (item.departureDate ?? "") &&
+                  (i.departureTime ?? "") === (item.departureTime ?? "")
                     ? {
                         ...i,
                         quantity: i.quantity + quantityToAdd,
@@ -90,6 +97,8 @@ export const useCartStore = create<CartState>()(
                   price: item.price,
                   image: item.image,
                   quantity: quantityToAdd,
+                  departureDate: item.departureDate,
+                  departureTime: item.departureTime,
                   lineTotal: item.price * quantityToAdd,
                 },
               ],

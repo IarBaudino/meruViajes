@@ -25,7 +25,17 @@ export const checkoutItemSchema = z
     departureTime: z.string().optional(),
   })
   .superRefine((item, ctx) => {
-    if ((item.kind ?? "service") !== "service") return;
+    const kind = item.kind ?? "service";
+    if (!item.departureDate || !item.departureTime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Elegí fecha y hora de la salida",
+        path: ["departureDate"],
+      });
+    }
+
+    if (kind === "package") return;
+
     if (!item.passengers) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

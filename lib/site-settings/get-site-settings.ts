@@ -39,10 +39,24 @@ function mergeSettings(partial: Partial<SiteSettings> & { hero?: Partial<HeroFir
       ...DEFAULT_SITE_SETTINGS.googleReviews!,
       ...partial.googleReviews,
     },
-    booking: {
-      ...DEFAULT_SITE_SETTINGS.booking!,
-      ...partial.booking,
-    },
+    booking: (() => {
+      const merged = {
+        ...DEFAULT_SITE_SETTINGS.booking!,
+        ...partial.booking,
+      };
+      if (
+        (merged.hoursBeforeDeparture == null ||
+          !Number.isFinite(merged.hoursBeforeDeparture)) &&
+        typeof partial.booking?.shortHoldHours === "number"
+      ) {
+        merged.hoursBeforeDeparture = partial.booking.shortHoldHours;
+      }
+      return {
+        orderHoldHours: merged.orderHoldHours,
+        hoursBeforeDeparture: merged.hoursBeforeDeparture,
+        holdWarningMessage: merged.holdWarningMessage ?? "",
+      };
+    })(),
   };
 }
 

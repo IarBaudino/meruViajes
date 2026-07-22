@@ -45,18 +45,23 @@ export interface SiteSettings {
   };
   /** Configuración de reservas / cupos. */
   booking?: {
-    /** Horas que se sostiene el cupo sin pago (24–336). */
+    /** Máximo de horas después de reservar sin pagar. */
     orderHoldHours: number;
     /**
-     * Si está activo, las reservas nuevas usan shortHoldHours
-     * (útil para último momento).
+     * Horas antes de la salida en que cae una reserva sin pago
+     * (y se liberan los cupos). Ej. 2 = martes 9:00 → cae a las 7:00.
      */
-    shortHoldEnabled?: boolean;
-    /** Plazo corto en horas (1–23), ej. 2. */
+    hoursBeforeDeparture: number;
+    /**
+     * @deprecated Usar hoursBeforeDeparture.
+     */
     shortHoldHours?: number;
     /**
-     * Advertencia al cliente. Usá {horas} para insertar el plazo vigente.
-     * Vacío = texto por defecto.
+     * @deprecated Ya no se fuerza plazo corto global.
+     */
+    shortHoldEnabled?: boolean;
+    /**
+     * Advertencia al cliente. Usá {horas} para el plazo vigente.
      */
     holdWarningMessage?: string;
   };

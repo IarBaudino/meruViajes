@@ -1,33 +1,29 @@
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
-import { resolveActiveHoldHours } from "@/lib/checkout/hold-warning";
+import { computeHoldExpiresAtDate } from "@/lib/checkout/hold-warning";
 import type { DepartureSlot } from "@/types";
 
-/** Horas de hold vigentes (plazo normal, corto forzado, o corto por cercanía a la salida). */
-export async function resolveOrderHoldHours(
-  departureAt?: Date | null
-): Promise<number> {
-  try {
-    const settings = await getSiteSettings();
-    return resolveActiveHoldHours(settings.booking, departureAt);
-  } catch {
-    // fallback abajo
-  }
-
-  const fromEnv = Number(process.env.ORDER_HOLD_HOURS ?? "48");
-  if (Number.isFinite(fromEnv) && fromEnv >= 24) {
-    return Math.min(Math.floor(fromEnv), 336);
-  }
-  return 48;
-}
-
+/** Calcula vencimiento del hold (máx. post-reserva y/o antes de la salida). */
 export async function computeHoldExpiresAt(
   from: Date = new Date(),
   departureAt?: Date | null
 ): Promise<Date> {
-  const hours = await resolveOrderHoldHours(departureAt);
-  return new Date(from.getTime() + hours * 60 * 60 * 1000);
+  try {
+    const settings = await getSiteSettings();
+    return computeHoldExpiresAtDate(settings.booking, from, departureAt);
+  } catch {
+    const hours = Number(process.env.ORDER_HOLD_HOURS ?? "48");
+    const safe = Number.isFinite(hours) && hours >= 24 ? Math.min(hours, 336) : 48;
+    return new Date(from.getTime() + safe * 60 * 60 * 1000);
+  }
+}
+
+export async function resolveOrderHoldHours(
+  departureAt?: Date | null
+): Promise<number> {
+  const expires = await computeHoldExpiresAt(new Date(), departureAt);
+  return Math.max(0, (expires.getTime() - Date.now()) / (1000 * 60 * 60));
 }
 
 type StockDelta = {
@@ -40,6 +36,17 @@ type StockDelta = {
 function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
   if (!Array.isArray(items)) return [];
   const map = new Map<string, StockDelta>();
+
+  function addDelta(delta: StockDelta) {
+    const key = delta.departureId
+      ? `${delta.collection}:${delta.id}:dep:${delta.departureId}`
+      : `${delta.collection}:${delta.id}`;
+    const prev = map.get(key);
+    map.set(key, {
+      ...delta,
+      quantity: (prev?.quantity ?? 0) + delta.quantity,
+    });
+  }
 
   for (const raw of items) {
     if (!raw || typeof raw !== "object") continue;
@@ -61,25 +68,37 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
         : undefined;
 
     if (packageId) {
-      const key = `packages:${packageId}`;
-      const prev = map.get(key);
-      map.set(key, {
+      addDelta({
         collection: "packages",
         id: packageId,
-        quantity: (prev?.quantity ?? 0) + quantity,
+        quantity,
       });
+
+      const included = item.includedDepartures;
+      if (Array.isArray(included)) {
+        for (const row of included) {
+          if (!row || typeof row !== "object") continue;
+          const r = row as Record<string, unknown>;
+          const sid = typeof r.serviceId === "string" ? r.serviceId : "";
+          const did = typeof r.departureId === "string" ? r.departureId : "";
+          const qty = Math.max(0, Number(r.quantity) || quantity);
+          if (!sid || !did) continue;
+          addDelta({
+            collection: "services",
+            id: sid,
+            quantity: qty,
+            departureId: did,
+          });
+        }
+      }
       continue;
     }
 
     if (serviceId) {
-      const key = departureId
-        ? `services:${serviceId}:dep:${departureId}`
-        : `services:${serviceId}`;
-      const prev = map.get(key);
-      map.set(key, {
+      addDelta({
         collection: "services",
         id: serviceId,
-        quantity: (prev?.quantity ?? 0) + quantity,
+        quantity,
         departureId,
       });
     }

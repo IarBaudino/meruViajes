@@ -141,6 +141,12 @@ export interface OrderItem {
   departureId?: string;
   departureDate?: string;
   departureTime?: string;
+  /** Paquetes: turnos consumidos en cada excursión incluida. */
+  includedDepartures?: Array<{
+    serviceId: string;
+    departureId: string;
+    quantity: number;
+  }>;
 }
 
 export interface Order {
