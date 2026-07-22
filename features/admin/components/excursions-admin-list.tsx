@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrencyARS } from "@/lib/format";
+import { BookingHoldSettingsCard } from "@/features/admin/components/booking-hold-settings-card";
 
 export function ExcursionsAdminList() {
   const [services, setServices] = useState<Service[]>([]);
@@ -87,6 +88,8 @@ export function ExcursionsAdminList() {
           </Link>
         }
       />
+
+      <BookingHoldSettingsCard />
 
       {!loading && services.length > 0 ? (
         <p className="mb-4 text-sm text-meru-muted">

@@ -154,25 +154,6 @@ export function SiteSettingsForm() {
         <RefreshGoogleReviewsButton />
       </section>
 
-      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-meru-charcoal">Reservas y cupos</h2>
-        <p className="text-sm text-meru-muted">
-          Cuando alguien confirma una reserva sin pagar, el cupo queda sostenido este tiempo. Si no
-          se marca como pagada, se libera solo (o podés liberarlo antes desde Órdenes).
-        </p>
-        <Input
-          label="Horas de reserva sin pago"
-          type="number"
-          min={1}
-          max={336}
-          {...register("booking.orderHoldHours", { valueAsNumber: true })}
-        />
-        <p className="text-xs text-meru-muted">
-          Ejemplos: 24 = 1 día, 48 = 2 días, 72 = 3 días. Máximo 336 (14 días). Aplica a las
-          reservas nuevas desde que guardás.
-        </p>
-      </section>
-
       {saveOk ? (
         <p className="flex items-center gap-2 text-sm text-green-700">
           <CheckCircle className="h-4 w-4" /> Contenido guardado. Los cambios se ven en la home al recargar.
