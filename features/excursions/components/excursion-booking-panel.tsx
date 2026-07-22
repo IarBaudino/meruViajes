@@ -144,7 +144,9 @@ export function ExcursionBookingPanel({ service }: Props) {
     });
 
     if (!ok) {
-      setError("No hay suficientes lugares en ese turno.");
+      setError(
+        "No se pudo agregar. Si ya tenés una reserva pendiente de pago, completala desde el carrito antes de armar otra."
+      );
       return;
     }
 

@@ -20,10 +20,14 @@ type AddItemInput = Omit<CartItem, "quantity" | "lineTotal"> & {
 
 interface CartState {
   items: CartItem[];
+  /** Orden creada al confirmar: el carrito se mantiene hasta que esté paga. */
+  holdOrderId: string | null;
   addItem: (item: AddItemInput) => boolean;
   updateQuantity: (serviceId: string, quantity: number, maxStock?: number) => boolean;
   removeItem: (serviceId: string, departureId?: string) => void;
   clearCart: () => void;
+  setHoldOrderId: (orderId: string | null) => void;
+  releaseHoldIfPaid: (pendingOrderIds: string[]) => void;
   totalItems: () => number;
   totalPrice: () => number;
 }
@@ -49,7 +53,9 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      holdOrderId: null,
       addItem: (item) => {
+        if (get().holdOrderId) return false;
         const kind = item.kind ?? "service";
         const maxStock = item.maxStock;
         let added = false;
@@ -180,6 +186,7 @@ export const useCartStore = create<CartState>()(
         return added;
       },
       updateQuantity: (serviceId, quantity, maxStock) => {
+        if (get().holdOrderId) return false;
         if (quantity < 1) {
           set((state) => ({
             items: state.items.filter((i) => i.serviceId !== serviceId),
@@ -207,7 +214,8 @@ export const useCartStore = create<CartState>()(
         }));
         return true;
       },
-      removeItem: (serviceId, departureId) =>
+      removeItem: (serviceId, departureId) => {
+        if (get().holdOrderId) return;
         set((state) => ({
           items: state.items.filter((i) => {
             if (i.serviceId !== serviceId) return true;
@@ -216,11 +224,20 @@ export const useCartStore = create<CartState>()(
             }
             return false;
           }),
-        })),
-      clearCart: () => set({ items: [] }),
+        }));
+      },
+      clearCart: () => set({ items: [], holdOrderId: null }),
+      setHoldOrderId: (orderId) => set({ holdOrderId: orderId }),
+      releaseHoldIfPaid: (pendingOrderIds) => {
+        const holdOrderId = get().holdOrderId;
+        if (!holdOrderId) return;
+        if (!pendingOrderIds.includes(holdOrderId)) {
+          set({ items: [], holdOrderId: null });
+        }
+      },
       totalItems: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
-    { name: "meru-cart-v4" }
+    { name: "meru-cart-v5" }
   )
 );

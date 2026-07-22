@@ -24,6 +24,8 @@ type PendingOrderItem = {
   serviceTitle?: string;
   quantity?: number;
   lineTotal?: number;
+  departureDate?: string;
+  departureTime?: string;
 };
 
 type PendingOrder = {
@@ -39,12 +41,16 @@ type PendingOrder = {
 export function CartView() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
+  const holdOrderId = useCartStore((s) => s.holdOrderId);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
+  const setHoldOrderId = useCartStore((s) => s.setHoldOrderId);
+  const releaseHoldIfPaid = useCartStore((s) => s.releaseHoldIfPaid);
   const total = useCartStore((s) => s.totalPrice());
 
   const [profileCheck, setProfileCheck] = useState<ProfileCheck | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("coordinar");
   const [getnetReady, setGetnetReady] = useState(false);
@@ -63,10 +69,11 @@ export function CartView() {
         (o) => o.paymentStatus === "pendiente"
       );
       setPendingOrders(pending);
+      releaseHoldIfPaid(pending.map((o) => o.id));
     } finally {
       setPendingLoading(false);
     }
-  }, []);
+  }, [releaseHoldIfPaid]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -85,7 +92,7 @@ export function CartView() {
           setHoldWarning(data.warningMessage.trim());
         }
       } catch {
-        // silencioso: el checkout igual funciona
+        // silencioso
       }
     }
     void loadHoldWarning();
@@ -119,11 +126,42 @@ export function CartView() {
     void checkGetnet();
   }, []);
 
+  useEffect(() => {
+    if (getnetReady) setPaymentMethod("getnet");
+  }, [getnetReady]);
+
+  async function handlePayOrder(orderId: string) {
+    setCheckoutError("");
+    setPayingOrderId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/pay`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "No se pudo iniciar el pago");
+      }
+      if (json.checkoutUrl) {
+        window.location.href = json.checkoutUrl as string;
+        return;
+      }
+      throw new Error("No recibimos el enlace de pago");
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Error al ir a pagar");
+    } finally {
+      setPayingOrderId(null);
+    }
+  }
+
   async function handleCheckout() {
     setCheckoutError("");
     setCheckingOut(true);
 
     try {
+      if (holdOrderId) {
+        throw new Error(
+          "Ya tenés una reserva pendiente de pago. Usá «Ir a pagar» o esperá la confirmación."
+        );
+      }
+
       const missingDeparture = items.some(
         (item) => !item.departureDate || !item.departureTime
       );
@@ -157,15 +195,17 @@ export function CartView() {
         throw new Error(json.error ?? "No se pudo confirmar la reserva");
       }
 
+      const orderId = String(json.orderId ?? "");
+      if (orderId) setHoldOrderId(orderId);
+
+      setJustReserved(true);
+      await loadPending();
+
       if (paymentMethod === "getnet" && json.checkoutUrl) {
-        clearCart();
         window.location.href = json.checkoutUrl as string;
         return;
       }
 
-      clearCart();
-      setJustReserved(true);
-      await loadPending();
       router.replace("/mi-cuenta/carrito?reserva=pendiente");
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Error al confirmar");
@@ -176,20 +216,28 @@ export function CartView() {
 
   const profileIncomplete = profileCheck && !profileCheck.ok;
   const cartEmpty = items.length === 0;
+  const reserved = Boolean(holdOrderId);
   const noPending = !pendingLoading && pendingOrders.length === 0;
+  const showEmpty = cartEmpty && noPending;
 
   return (
     <div>
       <PageHeader
         title="Carrito"
-        description="Acá ves lo que vas a reservar y las reservas todavía pendientes de pago."
+        description="Tus excursiones quedan en el carrito hasta que el pago esté confirmado."
       />
 
-      {justReserved ? (
-        <p className="mb-6 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <CheckCircle className="h-4 w-4 shrink-0" aria-hidden />
-          Reserva registrada. Queda pendiente de pago acá en el carrito. Cuando esté paga, pasa a
-          Reservas.
+      {justReserved || reserved ? (
+        <p className="mb-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            Cupo reservado. El carrito se mantiene hasta que esté pago. Cuando se confirme el
+            pago, pasa a{" "}
+            <Link href="/mi-cuenta/reservas" className="font-semibold underline">
+              Reservas
+            </Link>
+            .
+          </span>
         </p>
       ) : null}
 
@@ -198,8 +246,7 @@ export function CartView() {
           <p className="flex items-start gap-2">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
-              Completá tu{" "}
-              {profileCheck.missing.join(", ")} en{" "}
+              Completá tu {profileCheck.missing.join(", ")} en{" "}
               <Link href="/mi-cuenta/perfil" className="font-semibold underline">
                 Mi perfil
               </Link>{" "}
@@ -211,15 +258,15 @@ export function CartView() {
 
       {!pendingLoading && pendingOrders.length > 0 ? (
         <section className="mb-10">
-          <h2 className="mb-4 text-lg text-meru-charcoal">Pendientes de pago</h2>
+          <h2 className="mb-4 text-lg text-meru-charcoal">Pendiente de pago</h2>
           <ul className="space-y-4">
             {pendingOrders.map((order) => (
               <li
                 key={order.id}
                 className="rounded-xl border border-amber-200 bg-amber-50/60 p-5"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-meru-charcoal">
                       Pedido #{order.id.slice(0, 8).toUpperCase()}
                     </p>
@@ -233,20 +280,20 @@ export function CartView() {
                         <li key={`${order.id}-${idx}`}>
                           {item.serviceTitle ?? "Ítem"}
                           {item.quantity ? ` × ${item.quantity}` : ""}
+                          {item.departureDate && item.departureTime
+                            ? ` · ${formatDepartureLabel({
+                                date: item.departureDate,
+                                time: item.departureTime,
+                              })}`
+                            : ""}
                           {typeof item.lineTotal === "number"
                             ? ` — ${formatCurrencyARS(item.lineTotal)}`
                             : ""}
                         </li>
                       ))}
                     </ul>
-                  </div>
-                  <div className="text-right">
-                    <Badge className="bg-amber-100 text-amber-900">Pendiente de pago</Badge>
-                    <p className="mt-2 font-semibold text-meru-primary">
-                      {formatCurrencyARS(order.total)}
-                    </p>
                     {order.holdExpiresAt ? (
-                      <p className="mt-2 max-w-[14rem] text-xs text-meru-muted">
+                      <p className="mt-3 text-xs text-meru-muted">
                         Cupo reservado hasta{" "}
                         {new Date(order.holdExpiresAt).toLocaleString("es-AR", {
                           dateStyle: "short",
@@ -256,30 +303,49 @@ export function CartView() {
                       </p>
                     ) : null}
                   </div>
+                  <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                    <Badge className="w-fit bg-amber-100 text-amber-900">Pendiente de pago</Badge>
+                    <p className="font-semibold text-meru-primary">
+                      {formatCurrencyARS(order.total)}
+                    </p>
+                    {getnetReady ? (
+                      <Button
+                        type="button"
+                        size="lg"
+                        disabled={payingOrderId === order.id}
+                        onClick={() => void handlePayOrder(order.id)}
+                      >
+                        {payingOrderId === order.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                            Redirigiendo…
+                          </>
+                        ) : (
+                          "Ir a pagar"
+                        )}
+                      </Button>
+                    ) : (
+                      <p className="max-w-[14rem] text-xs text-meru-muted sm:text-right">
+                        Coordiná el pago con la agencia. Cuando esté confirmado, aparece en
+                        Reservas.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-meru-muted">
-            Cuando el pago se confirme, estas reservas aparecen automáticamente en{" "}
-            <Link href="/mi-cuenta/reservas" className="text-meru-secondary hover:underline">
-              Reservas
-            </Link>
-            .
-          </p>
         </section>
       ) : null}
 
       <section>
-        <h2 className="mb-4 text-lg text-meru-charcoal">Por confirmar</h2>
+        <h2 className="mb-4 text-lg text-meru-charcoal">
+          {reserved ? "Tu reserva (en carrito)" : "Por confirmar"}
+        </h2>
 
-        {cartEmpty ? (
+        {showEmpty ? (
           <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
-            <p className="text-meru-charcoal">
-              {noPending
-                ? "Tu carrito está vacío."
-                : "No tenés ítems nuevos por confirmar."}
-            </p>
+            <p className="text-meru-charcoal">Tu carrito está vacío.</p>
             <div className="mt-4 flex flex-wrap justify-center gap-3">
               <Link href="/excursiones">
                 <Button>Explorar excursiones</Button>
@@ -289,6 +355,10 @@ export function CartView() {
               </Link>
             </div>
           </div>
+        ) : cartEmpty ? (
+          <p className="text-sm text-meru-muted">
+            No hay ítems nuevos. Pagá la reserva pendiente de arriba o explorá más excursiones.
+          </p>
         ) : (
           <>
             <ul className="space-y-4">
@@ -300,7 +370,7 @@ export function CartView() {
                 const lineTotal = item.lineTotal ?? item.price * item.quantity;
                 return (
                   <li
-                    key={`${item.kind ?? "service"}-${item.serviceId}`}
+                    key={`${item.kind ?? "service"}-${item.serviceId}-${item.departureId ?? item.departureTime ?? ""}`}
                     className="flex gap-4 rounded-xl border border-meru-border bg-white p-4"
                   >
                     {item.image ? (
@@ -344,96 +414,141 @@ export function CartView() {
                         {formatCurrencyARS(lineTotal)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="text-sm text-red-600 hover:underline"
-                      onClick={() => removeItem(item.serviceId, item.departureId)}
-                    >
-                      Quitar
-                    </button>
+                    {!reserved ? (
+                      <button
+                        type="button"
+                        className="text-sm text-red-600 hover:underline"
+                        onClick={() => removeItem(item.serviceId, item.departureId)}
+                      >
+                        Quitar
+                      </button>
+                    ) : (
+                      <Badge className="h-fit bg-amber-100 text-amber-900">Reservado</Badge>
+                    )}
                   </li>
                 );
               })}
             </ul>
 
-            {holdWarning ? (
+            {holdWarning && !reserved ? (
               <div className="mt-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 <p>{holdWarning}</p>
               </div>
             ) : null}
 
-            <fieldset className="mt-6 rounded-xl border border-meru-border bg-white p-5">
-              <legend className="px-1 text-sm font-medium text-meru-charcoal">
-                Forma de pago
-              </legend>
-              <div className="mt-2 space-y-3">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    className="mt-1"
-                    checked={paymentMethod === "coordinar"}
-                    onChange={() => setPaymentMethod("coordinar")}
-                  />
-                  <span>
-                    <span className="block text-sm text-meru-charcoal">
-                      Coordinar con la agencia
-                    </span>
-                    <span className="text-xs text-meru-muted">
-                      Reservamos el cupo por tiempo limitado; el pago queda pendiente acá.
-                    </span>
-                  </span>
-                </label>
-                <label
-                  className={`flex items-start gap-3 ${getnetReady ? "cursor-pointer" : "opacity-60"}`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    className="mt-1"
-                    checked={paymentMethod === "getnet"}
-                    disabled={!getnetReady}
-                    onChange={() => setPaymentMethod("getnet")}
-                  />
-                  <span>
-                    <span className="block text-sm text-meru-charcoal">Pagar con Getnet</span>
-                    <span className="text-xs text-meru-muted">
-                      {getnetReady
-                        ? "Te redirigimos al checkout seguro de Getnet."
-                        : "Disponible cuando estén configuradas las credenciales de Getnet."}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </fieldset>
-
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
-              <p className="text-lg text-meru-charcoal">
-                Total: <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="outline" onClick={clearCart} disabled={checkingOut}>
-                  Vaciar carrito
-                </Button>
-                <Button
-                  type="button"
-                  disabled={checkingOut || profileIncomplete === true}
-                  onClick={() => void handleCheckout()}
-                >
-                  {checkingOut ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      Confirmando…
-                    </>
-                  ) : paymentMethod === "getnet" ? (
-                    "Pagar con Getnet"
+            {reserved ? (
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
+                <p className="text-lg text-meru-charcoal">
+                  Total:{" "}
+                  <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {holdOrderId && getnetReady ? (
+                    <Button
+                      type="button"
+                      size="lg"
+                      disabled={payingOrderId === holdOrderId}
+                      onClick={() => void handlePayOrder(holdOrderId)}
+                    >
+                      {payingOrderId === holdOrderId ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          Redirigiendo…
+                        </>
+                      ) : (
+                        "Ir a pagar"
+                      )}
+                    </Button>
                   ) : (
-                    "Confirmar reserva"
+                    <p className="text-sm text-meru-muted">
+                      Coordiná el pago con la agencia. El carrito se vacía cuando esté pago.
+                    </p>
                   )}
-                </Button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <fieldset className="mt-6 rounded-xl border border-meru-border bg-white p-5">
+                  <legend className="px-1 text-sm font-medium text-meru-charcoal">
+                    Forma de pago
+                  </legend>
+                  <div className="mt-2 space-y-3">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        className="mt-1"
+                        checked={paymentMethod === "coordinar"}
+                        onChange={() => setPaymentMethod("coordinar")}
+                      />
+                      <span>
+                        <span className="block text-sm text-meru-charcoal">
+                          Coordinar con la agencia
+                        </span>
+                        <span className="text-xs text-meru-muted">
+                          Reservamos el cupo; el pago queda pendiente y el carrito se mantiene.
+                        </span>
+                      </span>
+                    </label>
+                    <label
+                      className={`flex items-start gap-3 ${getnetReady ? "cursor-pointer" : "opacity-60"}`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        className="mt-1"
+                        checked={paymentMethod === "getnet"}
+                        disabled={!getnetReady}
+                        onChange={() => setPaymentMethod("getnet")}
+                      />
+                      <span>
+                        <span className="block text-sm text-meru-charcoal">Pagar con Getnet</span>
+                        <span className="text-xs text-meru-muted">
+                          {getnetReady
+                            ? "Confirmás la reserva y te llevamos a pagar."
+                            : "Disponible cuando estén configuradas las credenciales de Getnet."}
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
+                  <p className="text-lg text-meru-charcoal">
+                    Total:{" "}
+                    <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={clearCart}
+                      disabled={checkingOut}
+                    >
+                      Vaciar carrito
+                    </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      disabled={checkingOut || profileIncomplete === true}
+                      onClick={() => void handleCheckout()}
+                    >
+                      {checkingOut ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          Confirmando…
+                        </>
+                      ) : paymentMethod === "getnet" ? (
+                        "Confirmar e ir a pagar"
+                      ) : (
+                        "Confirmar reserva"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
 
             {checkoutError ? (
               <p className="mt-4 text-sm text-red-600" role="alert">
