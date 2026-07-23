@@ -312,7 +312,9 @@ export function CartView() {
                       {(order.items ?? []).map((item, idx) => (
                         <li key={`${order.id}-${idx}`}>
                           {item.serviceTitle ?? "Ítem"}
-                          {item.quantity ? ` × ${item.quantity}` : ""}
+                          {item.quantity
+                            ? ` · ${item.quantity} pasajero${item.quantity === 1 ? "" : "s"}`
+                            : ""}
                           {item.departureDate && item.departureTime
                             ? ` · ${formatDepartureLabel({
                                 date: item.departureDate,
@@ -467,6 +469,9 @@ export function CartView() {
                             Estadía: {item.stayFrom.split("-").reverse().join("/")} →{" "}
                             {item.stayTo.split("-").reverse().join("/")}
                           </p>
+                          <p className="text-meru-muted">
+                            {item.quantity} pasajero{item.quantity === 1 ? "" : "s"}
+                          </p>
                           {item.includedServices?.length ? (
                             <ul className="text-meru-muted">
                               {item.includedServices.map((s) => (
@@ -483,7 +488,7 @@ export function CartView() {
                           })}
                         </p>
                       ) : null}
-                      {item.passengers ? (
+                      {item.kind === "package" ? null : item.passengers ? (
                         <p className="mt-1 text-sm text-meru-muted">
                           {formatPassengersSummary(
                             normalizeCartPassengers(item.passengers) ?? {
@@ -495,7 +500,7 @@ export function CartView() {
                         </p>
                       ) : (
                         <p className="mt-1 text-sm text-meru-muted">
-                          Cantidad: {item.quantity}
+                          {item.quantity} pasajero{item.quantity === 1 ? "" : "s"}
                         </p>
                       )}
                       <p className="mt-1 text-sm font-semibold text-meru-primary">

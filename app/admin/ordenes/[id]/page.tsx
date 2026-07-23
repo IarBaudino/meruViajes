@@ -382,7 +382,8 @@ export default function AdminOrderDetailPage() {
                       </p>
                     ) : (
                       <p className="mt-1 text-sm text-meru-muted">
-                        Cantidad: {item.quantity ?? 1}
+                        {item.quantity ?? 1} pasajero
+                        {(item.quantity ?? 1) === 1 ? "" : "s"}
                       </p>
                     )}
                     {item.stayFrom && item.stayTo ? (

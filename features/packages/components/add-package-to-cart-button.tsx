@@ -22,12 +22,12 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
   const [error, setError] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [passengers, setPassengers] = useState(1);
   const [stayFrom, setStayFrom] = useState("");
   const [stayTo, setStayTo] = useState("");
 
   const minDate = useMemo(() => todayYmd(), []);
-  const maxStock = pkg.stock > 0 ? pkg.stock : 20;
+  const maxPassengers = 40;
 
   function handleAdd() {
     setError("");
@@ -44,12 +44,8 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
       setError("La fecha hasta no puede ser anterior a la fecha desde.");
       return;
     }
-    if (quantity < 1) {
-      setError("Indicá al menos 1 pasajero / paquete.");
-      return;
-    }
-    if (pkg.stock > 0 && quantity > pkg.stock) {
-      setError("No hay esa cantidad disponible para este paquete.");
+    if (passengers < 1) {
+      setError("Indicá al menos 1 pasajero.");
       return;
     }
 
@@ -61,7 +57,7 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
       title: pkg.title,
       price: pkg.price,
       image: pkg.photos[0],
-      quantity,
+      quantity: passengers,
       stayFrom,
       stayTo,
       includedServices: services.map((s) => ({
@@ -70,7 +66,7 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
         slug: s.slug,
         description: s.description?.slice(0, 280) || undefined,
       })),
-      maxStock,
+      maxStock: maxPassengers,
     });
 
     if (!ok) {
@@ -94,7 +90,7 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
   return (
     <div className="space-y-5">
       <p className="text-sm text-meru-muted">
-        Indicá el rango de fechas en las que vas a estar. La agencia arma el itinerario y te lo
+        Indicá el rango de fechas y cuántos pasajeros van. La agencia arma el itinerario y te lo
         envía por privado.
       </p>
 
@@ -125,26 +121,27 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs text-meru-muted">Cantidad</label>
+        <label className="mb-1.5 block text-xs text-meru-muted">Pasajeros</label>
         <div className="flex items-center gap-2">
           <button
             type="button"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border"
-            aria-label="Menos"
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            aria-label="Menos pasajeros"
+            onClick={() => setPassengers((q) => Math.max(1, q - 1))}
           >
             −
           </button>
-          <span className="w-8 text-center text-sm font-semibold tabular-nums">{quantity}</span>
+          <span className="w-8 text-center text-sm font-semibold tabular-nums">{passengers}</span>
           <button
             type="button"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border"
-            aria-label="Más"
-            onClick={() => setQuantity((q) => Math.min(maxStock, q + 1))}
+            aria-label="Más pasajeros"
+            onClick={() => setPassengers((q) => Math.min(maxPassengers, q + 1))}
           >
             +
           </button>
         </div>
+        <p className="mt-1 text-xs text-meru-muted">Sin desglose por descuentos.</p>
       </div>
 
       <Button type="button" onClick={handleAdd} className="w-full" size="lg">

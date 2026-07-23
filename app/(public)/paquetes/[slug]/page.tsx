@@ -94,9 +94,10 @@ export default async function PackageDetailPage({ params }: Props) {
           <p className="mt-1 text-3xl font-semibold text-meru-primary">
             {formatCurrencyARS(pkg.price)}
           </p>
+          <p className="mt-1 text-xs text-meru-muted">Por persona</p>
           <p className="mt-2 text-sm text-meru-muted">
-            Elegí el rango de fechas de tu estadía. Nosotros armamos el itinerario y te lo
-            enviamos por privado.
+            Elegí el rango de fechas y la cantidad de pasajeros. Nosotros armamos el itinerario y
+            te lo enviamos por privado.
           </p>
           <div className="mt-6">
             <AddPackageToCartButton package={pkg} services={included} />

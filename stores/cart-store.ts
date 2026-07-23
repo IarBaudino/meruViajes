@@ -248,11 +248,11 @@ export const useCartStore = create<CartState>()(
           set({ items: [], holdOrderId: null });
         }
       },
-      totalItems: () => get().items.reduce((acc, i) => acc + i.quantity, 0),
+      totalItems: () => get().items.length,
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
     {
-      name: "meru-cart-v8",
+      name: "meru-cart-v9",
       partialize: (state) => ({
         items: state.items,
         holdOrderId: state.holdOrderId,

@@ -28,7 +28,11 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
     .map((item) => {
       const normalized = normalizeCartPassengers(item.passengers);
       const summary = normalized ? formatPassengersSummary(normalized) : "";
-      const passengers = summary ? `<br><small>${summary}</small>` : "";
+      const passengers = summary
+        ? `<br><small>${summary}</small>`
+        : item.fulfillmentMode === "manual" || item.packageId
+          ? `<br><small>${item.quantity} pasajero${item.quantity === 1 ? "" : "s"}</small>`
+          : "";
       const stay =
         item.stayFrom && item.stayTo
           ? `<br><small>Estadía: ${item.stayFrom} → ${item.stayTo}</small>`
@@ -41,7 +45,7 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
         item.fulfillmentMode === "manual"
           ? `<br><small><strong>Armado manual:</strong> itinerario + descuento de cupos a cargo de la agencia.</small>`
           : "";
-      return `<li><strong>${item.serviceTitle}</strong> × ${item.quantity} — ${formatCurrencyARS(item.lineTotal)}${passengers}${stay}${included}${manual}</li>`;
+      return `<li><strong>${item.serviceTitle}</strong> — ${formatCurrencyARS(item.lineTotal)}${passengers}${stay}${included}${manual}</li>`;
     })
     .join("");
 
@@ -115,7 +119,11 @@ export async function sendOrderCancelledEmail(params: CancelEmailParams): Promis
         item.departureDate && item.departureTime
           ? ` · ${item.departureDate} ${item.departureTime}`
           : "";
-      return `<li><strong>${item.serviceTitle}</strong> × ${item.quantity}${departure}</li>`;
+      const pax =
+        item.quantity > 0
+          ? ` · ${item.quantity} pasajero${item.quantity === 1 ? "" : "s"}`
+          : "";
+      return `<li><strong>${item.serviceTitle}</strong>${pax}${departure}</li>`;
     })
     .join("");
 
