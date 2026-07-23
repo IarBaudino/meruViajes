@@ -162,5 +162,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     { merge: true }
   );
 
-  return NextResponse.json({ ok: true, paymentStatus: parsed.data.paymentStatus });
+  // Asegura lectura fresca en clientes (sin cache intermedio).
+  return NextResponse.json(
+    { ok: true, paymentStatus: parsed.data.paymentStatus },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }

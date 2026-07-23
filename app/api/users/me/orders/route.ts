@@ -1,7 +1,46 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { authOptions } from "@/lib/auth";
 import { getAdminFirestore } from "@/lib/firebase/admin";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type UserOrderDto = {
+  id: string;
+  total: number;
+  paymentStatus: string;
+  paymentMethod: string;
+  items: unknown[];
+  createdAt: string | null;
+  holdExpiresAt: string | null;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+};
+
+function normalizePaymentStatus(value: unknown): string {
+  const raw = String(value ?? "pendiente").trim().toLowerCase();
+  if (raw === "pagado" || raw === "cancelado" || raw === "pendiente") return raw;
+  return "pendiente";
+}
+
+function serializeOrders(docs: QueryDocumentSnapshot[]): UserOrderDto[] {
+  return docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      total: data.total ?? 0,
+      paymentStatus: normalizePaymentStatus(data.paymentStatus),
+      paymentMethod: data.paymentMethod ?? "coordinar",
+      items: Array.isArray(data.items) ? data.items : [],
+      createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
+      holdExpiresAt: data.holdExpiresAt?.toDate?.()?.toISOString?.() ?? null,
+      cancelReason: data.cancelReason ?? null,
+      cancelledAt: data.cancelledAt?.toDate?.()?.toISOString?.() ?? null,
+    };
+  });
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -14,60 +53,83 @@ export async function GET() {
     return NextResponse.json({ orders: [], bookings: [] });
   }
 
-  const [ordersSnap, bookingsSnap] = await Promise.all([
-    db
-      .collection("orders")
-      .where("userId", "==", session.user.id)
-      .orderBy("createdAt", "desc")
-      .limit(50)
-      .get()
-      .catch(() => null),
-    db
+  const userId = session.user.id;
+  const ordersRef = db.collection("orders").where("userId", "==", userId);
+
+  let orderDocs: QueryDocumentSnapshot[] = [];
+  try {
+    const snap = await ordersRef.orderBy("createdAt", "desc").limit(50).get();
+    orderDocs = snap.docs;
+  } catch (err) {
+    console.error("[users/me/orders] indexed query failed, falling back", err);
+    try {
+      const fallback = await ordersRef.limit(50).get();
+      orderDocs = [...fallback.docs].sort((a, b) => {
+        const aMs = a.data().createdAt?.toDate?.()?.getTime?.() ?? 0;
+        const bMs = b.data().createdAt?.toDate?.()?.getTime?.() ?? 0;
+        return bMs - aMs;
+      });
+    } catch (fallbackErr) {
+      console.error("[users/me/orders] fallback query failed", fallbackErr);
+      orderDocs = [];
+    }
+  }
+
+  let bookingDocs: QueryDocumentSnapshot[] = [];
+  try {
+    const snap = await db
       .collection("bookings")
-      .where("userId", "==", session.user.id)
+      .where("userId", "==", userId)
       .orderBy("bookingDate", "desc")
       .limit(50)
-      .get()
-      .catch(() => null),
-  ]);
+      .get();
+    bookingDocs = snap.docs;
+  } catch {
+    try {
+      const fallback = await db
+        .collection("bookings")
+        .where("userId", "==", userId)
+        .limit(50)
+        .get();
+      bookingDocs = [...fallback.docs].sort((a, b) => {
+        const aMs = a.data().bookingDate?.toDate?.()?.getTime?.() ?? 0;
+        const bMs = b.data().bookingDate?.toDate?.()?.getTime?.() ?? 0;
+        return bMs - aMs;
+      });
+    } catch {
+      bookingDocs = [];
+    }
+  }
 
-  const orders =
-    ordersSnap?.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        total: data.total ?? 0,
-        paymentStatus: data.paymentStatus ?? "pendiente",
-        paymentMethod: data.paymentMethod ?? "coordinar",
-        items: Array.isArray(data.items) ? data.items : [],
-        createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
-        holdExpiresAt: data.holdExpiresAt?.toDate?.()?.toISOString?.() ?? null,
-        cancelReason: data.cancelReason ?? null,
-        cancelledAt: data.cancelledAt?.toDate?.()?.toISOString?.() ?? null,
-      };
-    }) ?? [];
+  const orders = serializeOrders(orderDocs);
 
   const paymentByOrderId = new Map(
     orders.map((o) => [o.id, o.paymentStatus as string])
   );
 
-  const bookings =
-    bookingsSnap?.docs.map((doc) => {
-      const data = doc.data();
-      const orderId =
-        typeof data.serviceOrderId === "string" ? data.serviceOrderId : "";
-      return {
-        id: doc.id,
-        serviceTitle: data.serviceTitle ?? "",
-        bookingDate: data.bookingDate?.toDate?.()?.toISOString?.() ?? null,
-        quantity: data.quantity ?? 1,
-        lineTotal: typeof data.lineTotal === "number" ? data.lineTotal : undefined,
-        active: data.active !== false,
-        orderId,
-        paymentStatus: paymentByOrderId.get(orderId) ?? "pendiente",
-        passengers: data.passengers ?? null,
-      };
-    }) ?? [];
+  const bookings = bookingDocs.map((doc) => {
+    const data = doc.data();
+    const orderId =
+      typeof data.serviceOrderId === "string" ? data.serviceOrderId : "";
+    return {
+      id: doc.id,
+      serviceTitle: data.serviceTitle ?? "",
+      bookingDate: data.bookingDate?.toDate?.()?.toISOString?.() ?? null,
+      quantity: data.quantity ?? 1,
+      lineTotal: typeof data.lineTotal === "number" ? data.lineTotal : undefined,
+      active: data.active !== false,
+      orderId,
+      paymentStatus: paymentByOrderId.get(orderId) ?? "pendiente",
+      passengers: data.passengers ?? null,
+    };
+  });
 
-  return NextResponse.json({ orders, bookings });
+  return NextResponse.json(
+    { orders, bookings },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    }
+  );
 }

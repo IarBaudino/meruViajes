@@ -69,9 +69,31 @@ export function CartView() {
       const res = await fetch("/api/users/me/orders", { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
-      const all = (data.orders ?? []) as UserOrder[];
-      setPendingOrders(all.filter((o) => o.paymentStatus === "pendiente"));
-      setCancelledOrders(all.filter((o) => o.paymentStatus === "cancelado").slice(0, 8));
+      let all = (data.orders ?? []) as UserOrder[];
+
+      const currentHoldId = useCartStore.getState().holdOrderId;
+      if (currentHoldId && !all.some((o) => o.id === currentHoldId)) {
+        const holdRes = await fetch(`/api/users/me/orders/${currentHoldId}`, {
+          cache: "no-store",
+        });
+        if (holdRes.ok) {
+          const holdData = await holdRes.json();
+          if (holdData.order) {
+            all = [holdData.order as UserOrder, ...all];
+          }
+        } else if (holdRes.status === 404 || holdRes.status === 403) {
+          useCartStore.getState().clearCart();
+        }
+      }
+
+      setPendingOrders(
+        all.filter((o) => String(o.paymentStatus).toLowerCase() === "pendiente")
+      );
+      setCancelledOrders(
+        all
+          .filter((o) => String(o.paymentStatus).toLowerCase() === "cancelado")
+          .slice(0, 8)
+      );
       syncHoldWithOrders(all);
     } finally {
       setPendingLoading(false);
@@ -132,6 +154,7 @@ export function CartView() {
   useEffect(() => {
     function onFocus() {
       if (!cartHydrated) return;
+      if (document.visibilityState === "hidden") return;
       void loadOrders();
     }
     window.addEventListener("focus", onFocus);
@@ -141,6 +164,17 @@ export function CartView() {
       document.removeEventListener("visibilitychange", onFocus);
     };
   }, [cartHydrated, loadOrders]);
+
+  useEffect(() => {
+    if (!cartHydrated) return;
+    const shouldPoll = Boolean(holdOrderId) || pendingOrders.length > 0;
+    if (!shouldPoll) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void loadOrders();
+    }, 10000);
+    return () => window.clearInterval(id);
+  }, [cartHydrated, holdOrderId, pendingOrders.length, loadOrders]);
 
   useEffect(() => {
     async function checkGetnet() {

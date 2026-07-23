@@ -237,14 +237,11 @@ export const useCartStore = create<CartState>()(
       setHoldOrderId: (orderId) => set({ holdOrderId: orderId }),
       syncHoldWithOrders: (orders) => {
         const holdOrderId = get().holdOrderId;
-        if (!holdOrderId) {
-          // Carritos viejos sin holdOrderId: si no hay pendientes y hay ítems,
-          // y existe al menos una orden paga reciente, no auto-limpiamos a ciegas.
-          return;
-        }
+        if (!holdOrderId) return;
         const order = orders.find((o) => o.id === holdOrderId);
         if (!order) return;
-        if (order.paymentStatus === "pagado" || order.paymentStatus === "cancelado") {
+        const status = String(order.paymentStatus ?? "").trim().toLowerCase();
+        if (status === "pagado" || status === "cancelado") {
           set({ items: [], holdOrderId: null });
         }
       },

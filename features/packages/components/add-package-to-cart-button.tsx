@@ -141,7 +141,6 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
             +
           </button>
         </div>
-        <p className="mt-1 text-xs text-meru-muted">Sin desglose por descuentos.</p>
       </div>
 
       <Button type="button" onClick={handleAdd} className="w-full" size="lg">

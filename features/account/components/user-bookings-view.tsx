@@ -37,21 +37,33 @@ export function UserBookingsView() {
       if (res.ok) {
         const data = await res.json();
         const all = (data.orders ?? []) as UserOrder[];
-        setPaidOrders(all.filter((o) => o.paymentStatus === "pagado"));
-        setCancelledOrders(all.filter((o) => o.paymentStatus === "cancelado").slice(0, 12));
+        setPaidOrders(
+          all.filter((o) => String(o.paymentStatus).toLowerCase() === "pagado")
+        );
+        setCancelledOrders(
+          all
+            .filter((o) => String(o.paymentStatus).toLowerCase() === "cancelado")
+            .slice(0, 12)
+        );
       }
       setLoading(false);
     }
     void load();
 
     function onFocus() {
+      if (document.visibilityState === "hidden") return;
       void load();
     }
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 10000);
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onFocus);
+      window.clearInterval(pollId);
     };
   }, []);
 
