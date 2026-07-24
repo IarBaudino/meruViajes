@@ -191,6 +191,9 @@ export interface Order {
   customerEmail?: string;
   customerDni?: string;
   customerPhone?: string;
+  /** Oculta la orden del listado principal de admin. */
+  archived?: boolean;
+  archivedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

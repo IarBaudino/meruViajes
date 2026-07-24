@@ -399,6 +399,7 @@ export async function createCheckout(
       customerPhone,
       holdExpiresAt,
       stockReleased: false,
+      archived: false,
       createdAt: now,
       updatedAt: now,
     });

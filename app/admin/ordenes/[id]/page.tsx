@@ -69,6 +69,7 @@ type OrderDetail = {
   customerDni: string;
   customerPhone: string;
   items: OrderItem[];
+  archived?: boolean;
   holdExpiresAt: string | null;
   stockReleased: boolean;
   cancelReason: string | null;
@@ -161,6 +162,38 @@ export default function AdminOrderDetailPage() {
         return;
       }
       await load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleArchive() {
+    if (!order) return;
+    setActionError("");
+    const next = !order.archived;
+    if (
+      !confirm(
+        next
+          ? "¿Archivar esta orden? Se oculta del listado principal."
+          : "¿Restaurar esta orden al listado principal?"
+      )
+    ) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setActionError(json.error ?? "No se pudo archivar");
+        return;
+      }
+      setOrder({ ...order, archived: next });
     } finally {
       setSaving(false);
     }
@@ -267,7 +300,7 @@ export default function AdminOrderDetailPage() {
           <dl className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-meru-muted">Estado</dt>
-              <dd>
+              <dd className="flex flex-wrap items-center justify-end gap-2">
                 <Badge
                   className={
                     order.paymentStatus === "pagado"
@@ -279,6 +312,9 @@ export default function AdminOrderDetailPage() {
                 >
                   {order.paymentStatus}
                 </Badge>
+                {order.archived ? (
+                  <Badge className="bg-slate-100 text-slate-600">Archivada</Badge>
+                ) : null}
               </dd>
             </div>
             <div>
@@ -351,7 +387,18 @@ export default function AdminOrderDetailPage() {
                 Cancelar y liberar cupos
               </Button>
             </div>
-          ) : null}
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void toggleArchive()}
+                isLoading={saving}
+              >
+                {order.archived ? "Restaurar del archivo" : "Archivar orden"}
+              </Button>
+            </div>
+          )}
         </section>
       </div>
 

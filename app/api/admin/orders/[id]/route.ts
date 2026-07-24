@@ -4,9 +4,14 @@ import { requireAdminApi } from "@/lib/auth/require-admin-api";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import { cancelOrderAndReleaseStock } from "@/lib/checkout/release-order-stock";
 
-const patchSchema = z.object({
-  paymentStatus: z.enum(["pendiente", "pagado", "cancelado"]),
-});
+const patchSchema = z
+  .object({
+    paymentStatus: z.enum(["pendiente", "pagado", "cancelado"]).optional(),
+    archived: z.boolean().optional(),
+  })
+  .refine((data) => data.paymentStatus !== undefined || data.archived !== undefined, {
+    message: "Nada para actualizar",
+  });
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -78,6 +83,7 @@ export async function GET(request: Request, context: RouteContext) {
       customerDni: data.customerDni ?? "",
       customerPhone: data.customerPhone ?? "",
       items: Array.isArray(data.items) ? data.items : [],
+      archived: data.archived === true,
       holdExpiresAt: serializeTimestamp(data.holdExpiresAt),
       stockReleased: data.stockReleased === true,
       cancelReason: data.cancelReason ?? null,
@@ -100,7 +106,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json();
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Estado de pago inválido" }, { status: 400 });
+    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   }
 
   const db = getAdminFirestore();
@@ -108,9 +114,43 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Servidor no configurado" }, { status: 503 });
   }
 
+  const ref = db.collection("orders").doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
+  }
+
+  const current = String(snap.data()?.paymentStatus ?? "pendiente");
+
+  if (parsed.data.archived !== undefined) {
+    if (parsed.data.archived && current === "pendiente") {
+      return NextResponse.json(
+        {
+          error:
+            "No se puede archivar una orden pendiente. Primero marcá pagado o cancelá y liberá cupos.",
+        },
+        { status: 400 }
+      );
+    }
+    await ref.set(
+      {
+        archived: parsed.data.archived,
+        archivedAt: parsed.data.archived ? new Date() : null,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
+
+    if (parsed.data.paymentStatus === undefined) {
+      return NextResponse.json(
+        { ok: true, archived: parsed.data.archived },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
+  }
+
   if (parsed.data.paymentStatus === "cancelado") {
-    const before = await db.collection("orders").doc(id).get();
-    const beforeData = before.data();
+    const beforeData = snap.data();
     const result = await cancelOrderAndReleaseStock(db, id, "admin");
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
@@ -140,35 +180,27 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
   }
 
-  const ref = db.collection("orders").doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) {
-    return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
-  }
+  if (parsed.data.paymentStatus) {
+    if (current === "cancelado") {
+      return NextResponse.json(
+        { error: "La orden está cancelada; no se puede marcar como pagada." },
+        { status: 400 }
+      );
+    }
 
-  const current = String(snap.data()?.paymentStatus ?? "pendiente");
-  if (current === "cancelado") {
+    await ref.set(
+      {
+        paymentStatus: parsed.data.paymentStatus,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
+
     return NextResponse.json(
-      { error: "La orden está cancelada; no se puede marcar como pagada." },
-      { status: 400 }
+      { ok: true, paymentStatus: parsed.data.paymentStatus },
+      { headers: { "Cache-Control": "no-store" } }
     );
   }
 
-  await ref.set(
-    {
-      paymentStatus: parsed.data.paymentStatus,
-      updatedAt: new Date(),
-    },
-    { merge: true }
-  );
-
-  // Asegura lectura fresca en clientes (sin cache intermedio).
-  return NextResponse.json(
-    { ok: true, paymentStatus: parsed.data.paymentStatus },
-    {
-      headers: {
-        "Cache-Control": "no-store",
-      },
-    }
-  );
+  return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
 }
