@@ -1,4 +1,4 @@
-import { FieldValue, type Firestore } from "firebase-admin/firestore";
+import { FieldValue, type DocumentData, type DocumentReference, type Firestore } from "firebase-admin/firestore";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 import { computeHoldExpiresAtDate } from "@/lib/checkout/hold-warning";
@@ -174,14 +174,33 @@ export async function cancelOrderAndReleaseStock(
         byDoc.set(key, prev);
       }
 
+      // 1) Todas las lecturas primero (regla de transacciones Firestore).
+      const stockReads: Array<{
+        ref: DocumentReference;
+        group: {
+          collection: "services" | "packages";
+          id: string;
+          stockQty: number;
+          departureQty: Map<string, number>;
+        };
+        snapData: DocumentData;
+      }> = [];
+
       for (const group of byDoc.values()) {
         const collection =
           group.collection === "packages" ? PACKAGES_COLLECTION : "services";
         const ref = db.collection(collection).doc(group.id);
         const stockSnap = await tx.get(ref);
         if (!stockSnap.exists) continue;
-        const snapData = stockSnap.data()!;
+        stockReads.push({ ref, group, snapData: stockSnap.data()! });
+      }
 
+      const bookingsSnap = await tx.get(
+        db.collection("bookings").where("serviceOrderId", "==", orderId)
+      );
+
+      // 2) Escrituras
+      for (const { ref, group, snapData } of stockReads) {
         const patch: Record<string, unknown> = {
           updatedAt: FieldValue.serverTimestamp(),
         };
@@ -209,9 +228,6 @@ export async function cancelOrderAndReleaseStock(
         tx.update(ref, patch);
       }
 
-      const bookingsSnap = await tx.get(
-        db.collection("bookings").where("serviceOrderId", "==", orderId)
-      );
       for (const bookingDoc of bookingsSnap.docs) {
         tx.update(bookingDoc.ref, {
           active: false,
