@@ -48,11 +48,15 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Meru Viajes y Turismo | Ushuaia",
     description:
       "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia.",
     images: ["/logo.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

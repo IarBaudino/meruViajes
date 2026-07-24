@@ -82,7 +82,7 @@ schemas/          → Validación Zod
 - **Fase 4** ✅ Auth Firebase + next-auth + perfil
 - **Fase 5** ✅ Checkout, reservas, stock, emails confirmación
 - **Fase 6** ✅ Admin CRUD + Supabase Storage
-- **Fase 7** SEO, deploy, pulido
+- **Fase 7** ✅ SEO (sitemap, robots, Open Graph, JSON-LD), deploy y pulido
 
 ## Deploy (Vercel)
 

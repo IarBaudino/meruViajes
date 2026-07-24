@@ -78,8 +78,19 @@ export async function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-meru-sand/55">
-          © {year} {footer.brandName}. Todos los derechos reservados.
+        <div className="mt-10 flex flex-col items-center gap-1 border-t border-white/10 pt-6 text-center text-xs text-meru-sand/55">
+          <p>© {year} {footer.brandName}. Todos los derechos reservados.</p>
+          <p>
+            Desarrollado por{" "}
+            <a
+              href="https://www.iarabaudinodev.com.ar"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-meru-sand/80 underline underline-offset-2 hover:text-meru-secondary"
+            >
+              Iara Baudino
+            </a>
+          </p>
         </div>
       </div>
     </footer>

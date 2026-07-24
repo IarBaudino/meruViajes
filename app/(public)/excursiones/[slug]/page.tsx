@@ -6,10 +6,16 @@ import { getActiveServices, getServiceBySlug } from "@/features/excursions/lib/g
 import { ExcursionGallery } from "@/features/excursions/components/excursion-gallery";
 import { ExcursionBookingPanel } from "@/features/excursions/components/excursion-booking-panel";
 import { Badge } from "@/components/ui/badge";
+import { JsonLd } from "@/components/seo/json-ld";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export const revalidate = 60;
+
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+  /\/$/,
+  ""
+);
 
 export async function generateStaticParams() {
   const services = await getActiveServices();
@@ -22,13 +28,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!service) {
     return { title: "Excursión no encontrada" };
   }
+  const description = service.description.slice(0, 160);
+  const url = `${appUrl}/excursiones/${service.slug}`;
+  const image = service.photos[0];
   return {
     title: service.title,
-    description: service.description.slice(0, 160),
+    description,
+    alternates: { canonical: url },
     openGraph: {
+      type: "website",
+      locale: "es_AR",
+      url,
       title: service.title,
       description: service.description.slice(0, 180),
-      images: service.photos[0] ? [{ url: service.photos[0] }] : undefined,
+      siteName: "Meru Viajes y Turismo",
+      images: image ? [{ url: image, alt: service.title }] : undefined,
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title: service.title,
+      description,
+      images: image ? [image] : undefined,
     },
   };
 }
@@ -56,8 +76,25 @@ export default async function ExcursionDetailPage({ params }: Props) {
     notFound();
   }
 
+  const productLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: service.title,
+    description: service.description.slice(0, 300),
+    image: service.photos.slice(0, 5),
+    brand: { "@type": "Brand", name: "Meru Viajes y Turismo" },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "ARS",
+      price: service.price,
+      availability: "https://schema.org/InStock",
+      url: `${appUrl}/excursiones/${service.slug}`,
+    },
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+      <JsonLd data={productLd} />
       <nav aria-label="Migas de pan" className="text-sm text-meru-muted">
         <Link href="/" className="hover:text-meru-secondary">
           Inicio

@@ -1,7 +1,25 @@
+import type { Metadata } from "next";
 import { getActivePackages } from "@/features/packages/lib/get-packages";
 import { PackageCard } from "@/features/packages/components/package-card";
 
 export const revalidate = 60;
+
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+  /\/$/,
+  ""
+);
+
+export const metadata: Metadata = {
+  title: "Paquetes",
+  description:
+    "Paquetes de excursiones en Ushuaia con precio por persona. Combiná experiencias con Meru Viajes y Turismo.",
+  alternates: { canonical: `${appUrl}/paquetes` },
+  openGraph: {
+    title: "Paquetes | Meru Viajes y Turismo",
+    description: "Combinaciones de excursiones en Ushuaia con precio especial.",
+    url: `${appUrl}/paquetes`,
+  },
+};
 
 export default async function PackagesPage() {
   const packages = await getActivePackages();

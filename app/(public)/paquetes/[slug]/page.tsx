@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   getActivePackages,
   getPackageBySlug,
@@ -7,15 +9,51 @@ import {
 import { getServiceByIdAdmin } from "@/features/excursions/lib/get-services";
 import { AddPackageToCartButton } from "@/features/packages/components/add-package-to-cart-button";
 import { formatCurrencyARS } from "@/lib/format";
-import Link from "next/link";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export const revalidate = 60;
 
 type Props = { params: Promise<{ slug: string }> };
 
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+  /\/$/,
+  ""
+);
+
 export async function generateStaticParams() {
   const packages = await getActivePackages();
   return packages.map((pkg) => ({ slug: pkg.slug }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const pkg = await getPackageBySlug(slug);
+  if (!pkg) {
+    return { title: "Paquete no encontrado" };
+  }
+  const description = pkg.description.slice(0, 160);
+  const url = `${appUrl}/paquetes/${pkg.slug}`;
+  const image = pkg.photos[0];
+  return {
+    title: pkg.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      locale: "es_AR",
+      url,
+      title: pkg.title,
+      description: pkg.description.slice(0, 180),
+      siteName: "Meru Viajes y Turismo",
+      images: image ? [{ url: image, alt: pkg.title }] : undefined,
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title: pkg.title,
+      description,
+      images: image ? [image] : undefined,
+    },
+  };
 }
 
 export default async function PackageDetailPage({ params }: Props) {
@@ -29,8 +67,25 @@ export default async function PackageDetailPage({ params }: Props) {
 
   const cover = pkg.photos[0];
 
+  const productLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: pkg.title,
+    description: pkg.description.slice(0, 300),
+    image: pkg.photos.slice(0, 5),
+    brand: { "@type": "Brand", name: "Meru Viajes y Turismo" },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "ARS",
+      price: pkg.price,
+      availability: "https://schema.org/InStock",
+      url: `${appUrl}/paquetes/${pkg.slug}`,
+    },
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      <JsonLd data={productLd} />
       <p className="text-sm text-meru-muted">
         <Link href="/paquetes" className="hover:text-meru-secondary">
           Paquetes
@@ -80,16 +135,18 @@ export default async function PackageDetailPage({ params }: Props) {
                       {[service.duration, service.location].filter(Boolean).join(" · ")}
                     </p>
                   ) : null}
-                  <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-meru-muted">
-                    {service.description}
-                  </p>
+                  {service.description ? (
+                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-meru-muted">
+                      {service.description}
+                    </p>
+                  ) : null}
                 </article>
               ))
             )}
           </section>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-meru-border bg-white p-6 shadow-sm">
+        <aside className="h-fit rounded-2xl border border-meru-border bg-white p-6 shadow-sm lg:sticky lg:top-24">
           <p className="text-sm text-meru-muted">Precio del paquete</p>
           <p className="mt-1 text-3xl font-semibold text-meru-primary">
             {formatCurrencyARS(pkg.price)}
