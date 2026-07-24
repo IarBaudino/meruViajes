@@ -68,6 +68,7 @@ export default function AdminOrdersPage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [archiveView, setArchiveView] = useState<ArchiveView>("active");
+  const [releaseInfo, setReleaseInfo] = useState("");
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQuery(query.trim()), 300);
@@ -215,6 +216,44 @@ export default function AdminOrdersPage() {
     }
   }
 
+  async function releaseExpiredNow() {
+    setActionError("");
+    setReleaseInfo("");
+    if (
+      !confirm(
+        "¿Liberar ahora todos los cupos de órdenes pendientes con plazo vencido? Los clientes serán avisados por email."
+      )
+    ) {
+      return;
+    }
+
+    setBusyId("release-expired");
+    try {
+      const res = await fetch("/api/admin/orders/release-expired", {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setActionError(json.error ?? "No se pudieron liberar las vencidas");
+        return;
+      }
+      const released = Number(json.released ?? 0);
+      const checked = Number(json.checked ?? 0);
+      const errCount = Array.isArray(json.errors) ? json.errors.length : 0;
+      setReleaseInfo(
+        `Revisadas ${checked}: liberadas ${released}${
+          errCount > 0 ? `, con ${errCount} error(es)` : ""
+        }.`
+      );
+      if (errCount > 0) {
+        setActionError((json.errors as string[]).slice(0, 3).join(" · "));
+      }
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -316,11 +355,21 @@ export default function AdminOrdersPage() {
                   {alreadyExpiredPending.length === 1 ? "" : "s"} con plazo vencido
                 </p>
                 <p className="mt-1 text-red-900/80">
-                  Deberían liberarse con el cron o podés cancelarlas ahora:{" "}
-                  {alreadyExpiredPending
-                    .map((o) => `#${o.id.slice(0, 8).toUpperCase()}`)
-                    .join(", ")}
+                  El cron automático corre 1 vez al día (~9:00 AR). Si hace falta antes,
+                  liberálas ahora.
                 </p>
+                <button
+                  type="button"
+                  className="mt-3 rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-900 disabled:opacity-50"
+                  disabled={busyId === "release-expired"}
+                  onClick={() => void releaseExpiredNow()}
+                >
+                  {busyId === "release-expired"
+                    ? "Liberando…"
+                    : `Liberar ${alreadyExpiredPending.length} vencida${
+                        alreadyExpiredPending.length === 1 ? "" : "s"
+                      } ahora`}
+                </button>
               </div>
             </div>
           ) : null}
@@ -354,6 +403,12 @@ export default function AdminOrdersPage() {
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {releaseInfo ? (
+        <p className="mb-4 text-sm text-green-800" role="status">
+          {releaseInfo}
+        </p>
       ) : null}
 
       {actionError ? (

@@ -25,6 +25,14 @@ function serializeTimestamp(value: unknown): string | null {
     return (value as { toDate: () => Date }).toDate().toISOString();
   }
   if (value instanceof Date) return value.toISOString();
+  if (value && typeof value === "object" && "seconds" in value) {
+    const seconds = Number((value as { seconds: unknown }).seconds);
+    if (Number.isFinite(seconds)) return new Date(seconds * 1000).toISOString();
+  }
+  if (typeof value === "string") {
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) return d.toISOString();
+  }
   return null;
 }
 

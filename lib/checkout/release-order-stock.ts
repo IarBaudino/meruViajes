@@ -259,62 +259,110 @@ export async function cancelOrderAndReleaseStock(
 /**
  * Cancela órdenes pendientes cuyo holdExpiresAt ya pasó.
  */
+function parseFirestoreDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof (value as { toDate: () => Date }).toDate === "function"
+  ) {
+    try {
+      const d = (value as { toDate: () => Date }).toDate();
+      return Number.isNaN(d.getTime()) ? null : d;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value === "object" && value !== null && "seconds" in value) {
+    const seconds = Number((value as { seconds: unknown }).seconds);
+    if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+  }
+  if (typeof value === "object" && value !== null && "_seconds" in value) {
+    const seconds = Number((value as { _seconds: unknown })._seconds);
+    if (Number.isFinite(seconds)) return new Date(seconds * 1000);
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
 export async function releaseExpiredOrderHolds(db: Firestore): Promise<{
   checked: number;
   released: number;
+  skipped: number;
   errors: string[];
+  details: Array<{
+    orderId: string;
+    action: "released" | "already" | "skipped" | "error";
+    holdExpiresAt: string | null;
+    reason?: string;
+  }>;
 }> {
   const now = new Date();
   const snap = await db
     .collection("orders")
     .where("paymentStatus", "==", "pendiente")
-    .limit(100)
+    .limit(200)
     .get();
 
   let released = 0;
+  let skipped = 0;
   const errors: string[] = [];
+  const details: Array<{
+    orderId: string;
+    action: "released" | "already" | "skipped" | "error";
+    holdExpiresAt: string | null;
+    reason?: string;
+  }> = [];
 
   for (const doc of snap.docs) {
     const data = doc.data();
-    const expiresRaw = data.holdExpiresAt;
-    let expiresAt: Date | null = null;
-    if (
-      expiresRaw &&
-      typeof expiresRaw === "object" &&
-      "toDate" in expiresRaw &&
-      typeof (expiresRaw as { toDate: () => Date }).toDate === "function"
-    ) {
-      expiresAt = (expiresRaw as { toDate: () => Date }).toDate();
-    } else if (expiresRaw instanceof Date) {
-      expiresAt = expiresRaw;
-    } else if (typeof expiresRaw === "string") {
-      const parsed = new Date(expiresRaw);
-      if (!Number.isNaN(parsed.getTime())) expiresAt = parsed;
-    }
+    let expiresAt = parseFirestoreDate(data.holdExpiresAt);
 
     // Órdenes viejas sin holdExpiresAt: usar createdAt + hold hours
     if (!expiresAt) {
-      const created = data.createdAt;
-      let createdAt: Date | null = null;
-      if (
-        created &&
-        typeof created === "object" &&
-        "toDate" in created &&
-        typeof (created as { toDate: () => Date }).toDate === "function"
-      ) {
-        createdAt = (created as { toDate: () => Date }).toDate();
-      }
+      const createdAt = parseFirestoreDate(data.createdAt);
       if (createdAt) {
         expiresAt = await computeHoldExpiresAt(createdAt);
       }
     }
 
-    if (!expiresAt || expiresAt > now) continue;
+    const expiresIso = expiresAt ? expiresAt.toISOString() : null;
+
+    if (!expiresAt) {
+      skipped += 1;
+      details.push({
+        orderId: doc.id,
+        action: "skipped",
+        holdExpiresAt: null,
+        reason: "sin holdExpiresAt ni createdAt",
+      });
+      continue;
+    }
+
+    if (expiresAt.getTime() > now.getTime()) {
+      skipped += 1;
+      details.push({
+        orderId: doc.id,
+        action: "skipped",
+        holdExpiresAt: expiresIso,
+        reason: "aún vigente",
+      });
+      continue;
+    }
 
     const result = await cancelOrderAndReleaseStock(db, doc.id, "expired");
     if (result.ok) {
       if (!result.alreadyReleased) {
         released += 1;
+        details.push({
+          orderId: doc.id,
+          action: "released",
+          holdExpiresAt: expiresIso,
+        });
         try {
           const { sendOrderCancelledEmail } = await import(
             "@/lib/checkout/send-checkout-emails"
@@ -330,11 +378,23 @@ export async function releaseExpiredOrderHolds(db: Firestore): Promise<{
         } catch (err) {
           console.error("[release-expired] email", doc.id, err);
         }
+      } else {
+        details.push({
+          orderId: doc.id,
+          action: "already",
+          holdExpiresAt: expiresIso,
+        });
       }
     } else {
       errors.push(`${doc.id}: ${result.error}`);
+      details.push({
+        orderId: doc.id,
+        action: "error",
+        holdExpiresAt: expiresIso,
+        reason: result.error,
+      });
     }
   }
 
-  return { checked: snap.docs.length, released, errors };
+  return { checked: snap.docs.length, released, skipped, errors, details };
 }

@@ -19,5 +19,11 @@ export async function GET(request: Request) {
   }
 
   const result = await releaseExpiredOrderHolds(db);
+  console.info("[cron/release-expired-holds]", {
+    checked: result.checked,
+    released: result.released,
+    skipped: result.skipped,
+    errors: result.errors,
+  });
   return NextResponse.json({ ok: true, ...result });
 }

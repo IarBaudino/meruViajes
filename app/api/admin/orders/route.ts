@@ -155,10 +155,20 @@ export async function GET(request: Request) {
       archived,
       past,
       canArchive: paymentStatus !== "pendiente",
-      holdExpiresAt:
-        data.holdExpiresAt?.toDate?.() instanceof Date
-          ? data.holdExpiresAt.toDate().toISOString()
-          : null,
+      holdExpiresAt: (() => {
+        const raw = data.holdExpiresAt;
+        if (raw?.toDate?.() instanceof Date) return raw.toDate().toISOString();
+        if (raw instanceof Date) return raw.toISOString();
+        if (raw && typeof raw === "object" && "seconds" in raw) {
+          const seconds = Number((raw as { seconds: unknown }).seconds);
+          if (Number.isFinite(seconds)) return new Date(seconds * 1000).toISOString();
+        }
+        if (typeof raw === "string") {
+          const d = new Date(raw);
+          if (!Number.isNaN(d.getTime())) return d.toISOString();
+        }
+        return null;
+      })(),
       orderDate: orderDate instanceof Date ? orderDate.toISOString() : null,
       createdAt: createdAtDate ? createdAtDate.toISOString() : null,
       _search: normalize(
@@ -196,7 +206,11 @@ export async function GET(request: Request) {
     filtered = filtered.filter((o) => o._search.includes(q));
   }
 
-  const orders = filtered.map(({ _search, ...rest }) => rest);
+  const orders = filtered.map((row) => {
+    const { _search: _ignored, ...rest } = row;
+    void _ignored;
+    return rest;
+  });
 
   return NextResponse.json(
     {
