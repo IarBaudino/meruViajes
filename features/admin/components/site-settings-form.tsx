@@ -166,20 +166,11 @@ export function SiteSettingsForm() {
           {...register("googleReviews.placeId")}
         />
         <p className="text-xs text-meru-muted">
-          Sacá el Place ID en{" "}
-          <a
-            href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder"
-            target="_blank"
-            rel="noreferrer"
-            className="text-meru-secondary underline"
-          >
-            Place ID Finder
-          </a>{" "}
-          buscando el negocio en Google Maps. También necesitás{" "}
-          <code className="text-[11px]">GOOGLE_PLACES_API_KEY</code> en Vercel (Places API
-          habilitada). Guardá el Place ID y después usá el botón de refrescar.
+          Pegá el Place ID, tocá <strong>Guardar contenido web</strong> y después{" "}
+          <strong>Actualizar reseñas desde Google</strong>. También necesitás{" "}
+          <code className="text-[11px]">GOOGLE_PLACES_API_KEY</code> en Vercel.
         </p>
-        <RefreshGoogleReviewsButton />
+        <RefreshGoogleReviewsButton placeId={watch("googleReviews.placeId") ?? ""} />
       </section>
 
       {saveOk ? (

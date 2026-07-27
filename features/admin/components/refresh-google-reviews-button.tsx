@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function RefreshGoogleReviewsButton() {
+type Props = {
+  /** Place ID actual del formulario (puede no estar guardado aún). */
+  placeId?: string;
+};
+
+export function RefreshGoogleReviewsButton({ placeId = "" }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -12,8 +17,20 @@ export function RefreshGoogleReviewsButton() {
     setLoading(true);
     setMessage("");
     setError("");
+
+    const trimmed = placeId.trim();
+    if (!trimmed) {
+      setError("Pegá el Place ID arriba y guardá el contenido web.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/admin/google-reviews/refresh", { method: "POST" });
+      const res = await fetch("/api/admin/google-reviews/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placeId: trimmed }),
+      });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? "No se pudo refrescar");
