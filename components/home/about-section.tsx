@@ -29,14 +29,16 @@ export function AboutSection({ about }: AboutSectionProps) {
                     <Icon className="h-6 w-6 text-meru-primary" aria-hidden />
                   </div>
                   <h3 className="text-lg text-meru-charcoal">{title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-meru-charcoal-muted">{text}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-meru-charcoal-muted whitespace-pre-line">
+                    {text}
+                  </p>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        <p className="mx-auto mt-12 max-w-3xl text-center leading-relaxed text-meru-charcoal-muted">
+        <p className="mx-auto mt-12 max-w-3xl whitespace-pre-line text-center leading-relaxed text-meru-charcoal-muted">
           {about.closingText}
         </p>
       </div>

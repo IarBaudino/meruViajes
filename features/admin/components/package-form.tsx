@@ -121,6 +121,9 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           error={errors.description?.message}
           {...register("description")}
         />
+        <p className="-mt-3 text-xs text-meru-muted">
+          Usá Enter para separar párrafos. Se respetan en la ficha pública.
+        </p>
         <div className="grid gap-5 sm:grid-cols-2">
           <Input
             label="Precio del paquete (ARS)"

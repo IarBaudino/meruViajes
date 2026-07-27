@@ -138,33 +138,35 @@ export default async function ExcursionDetailPage({ params }: Props) {
             <h2 id="desc-heading" className="sr-only">
               Descripción
             </h2>
-            <p className="text-lg leading-relaxed text-meru-charcoal-muted">{service.description}</p>
+            <p className="whitespace-pre-line text-lg leading-relaxed text-meru-charcoal-muted">
+              {service.description}
+            </p>
           </section>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {service.meetingPoint && (
               <InfoBlock title="Punto de encuentro">
-                <p>{service.meetingPoint}</p>
+                <p className="whitespace-pre-line">{service.meetingPoint}</p>
               </InfoBlock>
             )}
             {service.requirements && (
               <InfoBlock title="Requisitos">
-                <p>{service.requirements}</p>
+                <p className="whitespace-pre-line">{service.requirements}</p>
               </InfoBlock>
             )}
             {service.additionalEquipment && (
               <InfoBlock title="Equipo recomendado">
-                <p>{service.additionalEquipment}</p>
+                <p className="whitespace-pre-line">{service.additionalEquipment}</p>
               </InfoBlock>
             )}
             {service.cancellationPolicy && (
               <InfoBlock title="Cancelaciones">
-                <p>{service.cancellationPolicy}</p>
+                <p className="whitespace-pre-line">{service.cancellationPolicy}</p>
               </InfoBlock>
             )}
             {service.notIncluded && (
               <InfoBlock title="No incluye">
-                <p>{service.notIncluded}</p>
+                <p className="whitespace-pre-line">{service.notIncluded}</p>
               </InfoBlock>
             )}
           </div>
