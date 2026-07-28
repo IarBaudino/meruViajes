@@ -12,11 +12,12 @@ const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").
 export const metadata: Metadata = {
   title: "Paquetes",
   description:
-    "Paquetes de excursiones en Ushuaia con precio por persona. Combiná experiencias con Meru Viajes y Turismo.",
+    "Paquetes de excursiones en Ushuaia con precio por persona. Combiná experiencias y reservá online con Meru Viajes y Turismo.",
   alternates: { canonical: `${appUrl}/paquetes` },
   openGraph: {
-    title: "Paquetes | Meru Viajes y Turismo",
-    description: "Combinaciones de excursiones en Ushuaia con precio especial.",
+    title: "Paquetes en Ushuaia | Meru Viajes y Turismo",
+    description:
+      "Combinaciones de excursiones con precio especial. Armamos el itinerario según tus fechas.",
     url: `${appUrl}/paquetes`,
   },
 };

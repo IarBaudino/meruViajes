@@ -5,13 +5,15 @@ import { ExcursionCatalog } from "@/features/excursions/components/excursion-cat
 
 export const metadata: Metadata = {
   title: "Excursiones",
-  description: "Catálogo de excursiones en Ushuaia — Meru Viajes y Turismo",
+  description:
+    "Catálogo de excursiones en Ushuaia y Tierra del Fuego: trekking, navegación y naturaleza. Reservá online con Meru Viajes y Turismo.",
   alternates: {
     canonical: `${(process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(/\/$/, "")}/excursiones`,
   },
   openGraph: {
-    title: "Excursiones | Meru Viajes y Turismo",
-    description: "Experiencias en el Fin del Mundo: navegación, montaña y naturaleza.",
+    title: "Excursiones en Ushuaia | Meru Viajes y Turismo",
+    description:
+      "Trekking, navegación y experiencias en el Fin del Mundo. Filtrá y reservá online.",
   },
 };
 

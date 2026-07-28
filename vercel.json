@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/release-expired-holds",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-google-reviews",
+      "schedule": "0 12 * * 0"
     }
   ]
 }

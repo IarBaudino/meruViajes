@@ -20,11 +20,19 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "Meru Viajes y Turismo | Ushuaia, Tierra del Fuego",
+    default: "Meru Viajes y Turismo | Excursiones en Ushuaia",
     template: "%s | Meru Viajes y Turismo",
   },
   description:
-    "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia, Tierra del Fuego.",
+    "Excursiones, navegaciones y paquetes en Ushuaia, Tierra del Fuego. Reservá online con Meru Viajes y Turismo — cupos confirmados y atención local.",
+  keywords: [
+    "excursiones Ushuaia",
+    "turismo Tierra del Fuego",
+    "Meru Viajes",
+    "paquetes Ushuaia",
+    "Fin del Mundo",
+    "trekking Ushuaia",
+  ],
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],
     apple: [{ url: "/logo.png" }],
@@ -35,24 +43,15 @@ export const metadata: Metadata = {
     locale: "es_AR",
     url: appUrl,
     siteName: "Meru Viajes y Turismo",
-    title: "Meru Viajes y Turismo | Ushuaia",
+    title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
     description:
-      "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia.",
-    images: [
-      {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: "Meru Viajes y Turismo",
-      },
-    ],
+      "Excursiones y paquetes en el Fin del Mundo. Reservá online con Meru.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Meru Viajes y Turismo | Ushuaia",
+    title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
     description:
-      "Aventurate en el Fin del Mundo con Meru. Excursiones y turismo en Ushuaia.",
-    images: ["/logo.png"],
+      "Excursiones y paquetes en Ushuaia, Tierra del Fuego. Reservá online.",
   },
   robots: {
     index: true,

@@ -20,10 +20,10 @@ const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").
 export const metadata: Metadata = {
   title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
   description:
-    "Excursiones y paquetes en Ushuaia, Tierra del Fuego. Reservá online con Meru Viajes y Turismo.",
+    "Excursiones, navegaciones y paquetes en Ushuaia. Reservá online con Meru Viajes y Turismo.",
   alternates: { canonical: appUrl },
   openGraph: {
-    title: "Meru Viajes y Turismo | Ushuaia",
+    title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
     description:
       "Excursiones y paquetes en el Fin del Mundo. Reservá online con Meru.",
     url: appUrl,

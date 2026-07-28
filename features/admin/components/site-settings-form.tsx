@@ -168,7 +168,9 @@ export function SiteSettingsForm() {
         <p className="text-xs text-meru-muted">
           Pegá el Place ID, tocá <strong>Guardar contenido web</strong> y después{" "}
           <strong>Actualizar reseñas desde Google</strong>. También necesitás{" "}
-          <code className="text-[11px]">GOOGLE_PLACES_API_KEY</code> en Vercel.
+          <code className="text-[11px]">GOOGLE_PLACES_API_KEY</code> en Vercel. Las reseñas se
+          refrescan solas <strong>1 vez por semana</strong> (domingo); este botón es para
+          actualizar ya.
         </p>
         <RefreshGoogleReviewsButton placeId={watch("googleReviews.placeId") ?? ""} />
       </section>
