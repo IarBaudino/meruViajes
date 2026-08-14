@@ -1,3 +1,5 @@
+import type { Season } from "@/types";
+
 export interface ServiceCategory {
   id: string;
   name: string;
@@ -22,6 +24,8 @@ export interface ExcursionPackage {
   featuredOnHome?: boolean;
   /** Orden en el home (menor = primero). */
   homeOrder?: number;
+  /** Temporadas en las que se ofrece el paquete. */
+  seasons?: Season[];
 }
 
 export interface GoogleReviewItem {

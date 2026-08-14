@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { SeasonSelector } from "@/features/admin/components/season-selector";
 import { formatCurrencyARS } from "@/lib/format";
 
 type PackageFormProps = {
@@ -31,6 +32,7 @@ function toDefaults(pkg?: ExcursionPackage): PackageFormData {
     featuredOnHome: pkg?.featuredOnHome ?? false,
     homeOrder: pkg?.homeOrder ?? 100,
     category: pkg?.category ?? "",
+    seasons: pkg?.seasons ?? ["todo-el-ano"],
   };
 }
 
@@ -55,6 +57,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
   const photos = watch("photos") ?? [];
   const serviceIds = watch("serviceIds") ?? [];
   const price = watch("price");
+  const seasons = watch("seasons") ?? ["todo-el-ano"];
 
   useEffect(() => {
     if (!isEdit && title) {
@@ -146,6 +149,10 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           <input type="checkbox" className="rounded" {...register("active")} />
           Publicado (visible en /paquetes)
         </label>
+        <SeasonSelector
+          value={seasons}
+          onChange={(next) => setValue("seasons", next, { shouldDirty: true, shouldValidate: true })}
+        />
         <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("featuredOnHome")} />
           Destacar en el home
@@ -222,6 +229,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           photos={photos}
           onChange={(urls) => setValue("photos", urls, { shouldDirty: true })}
           label="Fotos del paquete"
+          hint="La primera foto es la portada. Usá ↑ ↓ para cambiar el orden."
         />
       </section>
 

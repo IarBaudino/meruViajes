@@ -1,4 +1,12 @@
-import type { Service, SeasonalPhoto, DiscountOption, ServicePromotion, DepartureSlot } from "@/types";
+import type {
+  Service,
+  SeasonalPhoto,
+  DiscountOption,
+  ServicePromotion,
+  DepartureSlot,
+  Season,
+  SeasonalContentOverride,
+} from "@/types";
 import { legacyDiscountsToOptions } from "@/types/discounts";
 import type { DocumentData } from "firebase-admin/firestore";
 
@@ -17,6 +25,116 @@ function asBool(value: unknown, fallback = false): boolean {
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
+}
+
+function mapSeasons(value: unknown): Season[] {
+  if (!Array.isArray(value)) return ["todo-el-ano"];
+  const valid = value.filter(
+    (season): season is Season =>
+      season === "verano" || season === "invierno" || season === "todo-el-ano"
+  );
+  return valid.length > 0 ? valid : ["todo-el-ano"];
+}
+
+function mapSeasonalOverride(value: unknown): SeasonalContentOverride | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const o = value as Record<string, unknown>;
+  const photos = asStringArray(o.photos);
+  const price = asNumber(o.price, 0);
+  const title = asString(o.title);
+  const description = asString(o.description);
+  const duration = asString(o.duration);
+  const difficulty = asString(o.difficulty);
+  const meetingPoint = asString(o.meetingPoint);
+  const requirements = asString(o.requirements);
+  const cancellationPolicy = asString(o.cancellationPolicy);
+  const additionalEquipment = asString(o.additionalEquipment);
+  const notIncluded = asString(o.notIncluded);
+
+  const hasAnything =
+    title ||
+    description ||
+    duration ||
+    difficulty ||
+    meetingPoint ||
+    requirements ||
+    cancellationPolicy ||
+    additionalEquipment ||
+    notIncluded ||
+    photos.length > 0 ||
+    price > 0;
+
+  if (!hasAnything) return undefined;
+
+  return {
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ...(price > 0 ? { price } : {}),
+    ...(duration ? { duration } : {}),
+    ...(difficulty ? { difficulty } : {}),
+    ...(photos.length ? { photos } : {}),
+    ...(meetingPoint ? { meetingPoint } : {}),
+    ...(requirements ? { requirements } : {}),
+    ...(cancellationPolicy ? { cancellationPolicy } : {}),
+    ...(additionalEquipment ? { additionalEquipment } : {}),
+    ...(notIncluded ? { notIncluded } : {}),
+  };
+}
+
+function mapSeasonalContent(value: unknown): Service["seasonalContent"] | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const o = value as Record<string, unknown>;
+  const verano = mapSeasonalOverride(o.verano);
+  const invierno = mapSeasonalOverride(o.invierno);
+  if (!verano && !invierno) return undefined;
+  return {
+    ...(verano ? { verano } : {}),
+    ...(invierno ? { invierno } : {}),
+  };
+}
+
+function overrideToFirestore(override: SeasonalContentOverride | undefined | null) {
+  if (!override) return null;
+  const photos = (override.photos ?? []).filter(Boolean);
+  const price = typeof override.price === "number" && override.price > 0 ? override.price : 0;
+  const title = override.title?.trim() ?? "";
+  const description = override.description?.trim() ?? "";
+  const duration = override.duration?.trim() ?? "";
+  const difficulty = override.difficulty?.trim() ?? "";
+  const meetingPoint = override.meetingPoint?.trim() ?? "";
+  const requirements = override.requirements?.trim() ?? "";
+  const cancellationPolicy = override.cancellationPolicy?.trim() ?? "";
+  const additionalEquipment = override.additionalEquipment?.trim() ?? "";
+  const notIncluded = override.notIncluded?.trim() ?? "";
+
+  const hasAnything =
+    title ||
+    description ||
+    duration ||
+    difficulty ||
+    meetingPoint ||
+    requirements ||
+    cancellationPolicy ||
+    additionalEquipment ||
+    notIncluded ||
+    photos.length > 0 ||
+    price > 0;
+
+  if (!hasAnything) return null;
+
+  return {
+    title: title || null,
+    description: description || null,
+    price: price > 0 ? price : null,
+    duration: duration || null,
+    difficulty: difficulty || null,
+    photos,
+    meetingPoint: meetingPoint || null,
+    requirements: requirements || null,
+    cancellationPolicy: cancellationPolicy || null,
+    additionalEquipment: additionalEquipment || null,
+    notIncluded: notIncluded || null,
+  };
 }
 
 function mapDiscountOptions(data: DocumentData): DiscountOption[] {
@@ -39,12 +157,9 @@ function mapDiscountOptions(data: DocumentData): DiscountOption[] {
   if (legacy && typeof legacy === "object") {
     const d = legacy as Record<string, unknown>;
     return legacyDiscountsToOptions({
-      minorPercent:
-        typeof d.minorPercent === "number" ? d.minorPercent : undefined,
-      infantPercent:
-        typeof d.infantPercent === "number" ? d.infantPercent : undefined,
-      seniorPercent:
-        typeof d.seniorPercent === "number" ? d.seniorPercent : undefined,
+      minorPercent: typeof d.minorPercent === "number" ? d.minorPercent : undefined,
+      infantPercent: typeof d.infantPercent === "number" ? d.infantPercent : undefined,
+      seniorPercent: typeof d.seniorPercent === "number" ? d.seniorPercent : undefined,
     });
   }
 
@@ -133,6 +248,8 @@ export function mapFirestoreService(id: string, data: DocumentData): Service {
     photos: asStringArray(data.photos),
     seasonalPhotos: mapSeasonalPhotos(data.seasonalPhotos),
     category: asString(data.category) || undefined,
+    seasons: mapSeasons(data.seasons),
+    seasonalContent: mapSeasonalContent(data.seasonalContent),
     meetingPoint: asString(data.meetingPoint) || undefined,
     requirements: asString(data.requirements) || undefined,
     cancellationPolicy: asString(data.cancellationPolicy) || undefined,
@@ -159,6 +276,11 @@ export function serviceToFirestore(data: {
   photos: string[];
   seasonalPhotos?: SeasonalPhoto[] | null;
   category?: string | null;
+  seasons?: Season[];
+  seasonalContent?: {
+    verano?: SeasonalContentOverride | null;
+    invierno?: SeasonalContentOverride | null;
+  } | null;
   meetingPoint?: string | null;
   requirements?: string | null;
   cancellationPolicy?: string | null;
@@ -192,6 +314,16 @@ export function serviceToFirestore(data: {
     active: d.active !== false,
   }));
 
+  const verano = overrideToFirestore(data.seasonalContent?.verano);
+  const invierno = overrideToFirestore(data.seasonalContent?.invierno);
+  const seasonalContent =
+    verano || invierno
+      ? {
+          ...(verano ? { verano } : {}),
+          ...(invierno ? { invierno } : {}),
+        }
+      : null;
+
   return {
     title: data.title,
     slug: data.slug,
@@ -203,6 +335,8 @@ export function serviceToFirestore(data: {
     photos: data.photos,
     seasonalPhotos: data.seasonalPhotos ?? null,
     category: data.category ?? null,
+    seasons: data.seasons?.length ? data.seasons : ["todo-el-ano"],
+    seasonalContent,
     meetingPoint: data.meetingPoint ?? null,
     requirements: data.requirements ?? null,
     cancellationPolicy: data.cancellationPolicy ?? null,

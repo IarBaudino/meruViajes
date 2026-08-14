@@ -1,11 +1,21 @@
 import type { DocumentData } from "firebase-admin/firestore";
 import type { ExcursionPackage } from "@/types/catalog";
+import type { Season } from "@/types";
 
 export const PACKAGES_COLLECTION = "packages";
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
+}
+
+function mapSeasons(value: unknown): Season[] {
+  if (!Array.isArray(value)) return ["todo-el-ano"];
+  const valid = value.filter(
+    (season): season is Season =>
+      season === "verano" || season === "invierno" || season === "todo-el-ano"
+  );
+  return valid.length > 0 ? valid : ["todo-el-ano"];
 }
 
 export function mapFirestorePackage(id: string, data: DocumentData): ExcursionPackage {
@@ -22,6 +32,7 @@ export function mapFirestorePackage(id: string, data: DocumentData): ExcursionPa
     featuredOnHome: data.featuredOnHome === true,
     homeOrder: typeof data.homeOrder === "number" ? data.homeOrder : 100,
     category: typeof data.category === "string" ? data.category : undefined,
+    seasons: mapSeasons(data.seasons),
   };
 }
 
@@ -40,5 +51,6 @@ export function packageToFirestore(
     featuredOnHome: data.featuredOnHome === true,
     homeOrder: Number.isFinite(data.homeOrder) ? Number(data.homeOrder) : 100,
     category: data.category ?? null,
+    seasons: data.seasons?.length ? data.seasons : ["todo-el-ano"],
   };
 }

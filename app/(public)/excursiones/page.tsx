@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getActiveServices } from "@/features/excursions/lib/get-services";
 import { ExcursionCatalog } from "@/features/excursions/components/excursion-catalog";
 
@@ -47,7 +48,11 @@ export default async function ExcursionsPage() {
           </Link>
         </div>
       ) : (
-        <ExcursionCatalog services={services} />
+        <div className="mt-10">
+          <Suspense fallback={<p className="text-meru-muted">Cargando catálogo…</p>}>
+            <ExcursionCatalog services={services} />
+          </Suspense>
+        </div>
       )}
     </div>
   );

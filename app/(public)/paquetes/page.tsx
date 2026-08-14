@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getActivePackages } from "@/features/packages/lib/get-packages";
-import { PackageCard } from "@/features/packages/components/package-card";
+import { PackageCatalog } from "@/features/packages/components/package-catalog";
 
 export const revalidate = 60;
 
@@ -39,13 +40,11 @@ export default async function PackagesPage() {
           Todavía no hay paquetes publicados.
         </p>
       ) : (
-        <ul className="mt-10 grid list-none gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {packages.map((pkg) => (
-            <li key={pkg.id}>
-              <PackageCard package={pkg} />
-            </li>
-          ))}
-        </ul>
+        <div className="mt-10">
+          <Suspense fallback={<p className="text-meru-muted">Cargando paquetes…</p>}>
+            <PackageCatalog packages={packages} />
+          </Suspense>
+        </div>
       )}
     </div>
   );

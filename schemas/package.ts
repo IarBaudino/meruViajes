@@ -15,6 +15,10 @@ export const packageSchema = z.object({
   featuredOnHome: z.boolean().default(false),
   homeOrder: z.number().int().min(0).max(999).default(100),
   category: z.string().optional(),
+  seasons: z
+    .array(z.enum(["verano", "invierno", "todo-el-ano"]))
+    .min(1, "Elegí al menos una temporada")
+    .default(["todo-el-ano"]),
 });
 
 export type PackageFormData = z.infer<typeof packageSchema>;

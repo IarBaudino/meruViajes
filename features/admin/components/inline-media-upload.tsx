@@ -194,6 +194,15 @@ export function PhotoGalleryUpload({
     onChange(photos.filter((_, i) => i !== index));
   }
 
+  function move(index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= photos.length) return;
+    const copy = [...photos];
+    const [row] = copy.splice(index, 1);
+    copy.splice(target, 0, row!);
+    onChange(copy);
+  }
+
   return (
     <div className="space-y-4">
       {label ? <p className="text-sm font-medium text-meru-charcoal">{label}</p> : null}
@@ -207,6 +216,35 @@ export function PhotoGalleryUpload({
               className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-meru-border bg-meru-sand"
             >
               <Image src={url} alt="" fill className="object-cover" sizes="200px" />
+              {index === 0 ? (
+                <span className="absolute left-1.5 top-1.5 rounded bg-meru-primary px-1.5 py-0.5 text-[10px] font-medium uppercase text-white">
+                  Portada
+                </span>
+              ) : (
+                <span className="absolute left-1.5 top-1.5 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  {index + 1}
+                </span>
+              )}
+              <div className="absolute bottom-1.5 left-1.5 flex gap-1">
+                <button
+                  type="button"
+                  className="rounded bg-white/95 px-1.5 py-0.5 text-xs shadow disabled:opacity-40"
+                  onClick={() => move(index, -1)}
+                  disabled={index === 0}
+                  aria-label="Mover hacia arriba"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-white/95 px-1.5 py-0.5 text-xs shadow disabled:opacity-40"
+                  onClick={() => move(index, 1)}
+                  disabled={index === photos.length - 1}
+                  aria-label="Mover hacia abajo"
+                >
+                  ↓
+                </button>
+              </div>
               <button
                 type="button"
                 className={cn(

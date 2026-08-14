@@ -66,6 +66,24 @@ export const departureSlotSchema = z.object({
   active: z.boolean(),
 });
 
+/** Override opcional: campos vacíos / precio 0 no reemplazan la ficha base. */
+export const seasonalContentOverrideSchema = z.object({
+  title: z.string().optional().default(""),
+  description: z.string().optional().default(""),
+  price: z.preprocess(
+    (v) => (typeof v === "number" && Number.isNaN(v) ? 0 : v),
+    z.number().nonnegative().optional().default(0)
+  ),
+  duration: z.string().optional().default(""),
+  difficulty: z.string().optional().default(""),
+  photos: z.array(z.string().url()).optional().default([]),
+  meetingPoint: z.string().optional().default(""),
+  requirements: z.string().optional().default(""),
+  cancellationPolicy: z.string().optional().default(""),
+  additionalEquipment: z.string().optional().default(""),
+  notIncluded: z.string().optional().default(""),
+});
+
 export const serviceSchema = z
   .object({
     title: z.string().min(3),
@@ -89,6 +107,16 @@ export const serviceSchema = z
       )
       .optional(),
     category: z.string().optional(),
+    seasons: z
+      .array(z.enum(["verano", "invierno", "todo-el-ano"]))
+      .min(1, "Elegí al menos una temporada")
+      .default(["todo-el-ano"]),
+    seasonalContent: z
+      .object({
+        verano: seasonalContentOverrideSchema.optional(),
+        invierno: seasonalContentOverrideSchema.optional(),
+      })
+      .optional(),
     meetingPoint: z.string().optional(),
     requirements: z.string().optional(),
     cancellationPolicy: z.string().optional(),

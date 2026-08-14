@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyARS } from "@/lib/format";
 import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { SeasonSelector } from "@/features/admin/components/season-selector";
 import { ServiceDeparturesFields } from "@/features/admin/components/service-departures-fields";
 
 type ServiceFormProps = {
@@ -27,6 +28,51 @@ function defaultDiscountOptions() {
     { id: newDiscountId(), label: "Menor", percent: 50 },
     { id: newDiscountId(), label: "Jubilado", percent: 20 },
   ];
+}
+
+function emptySeasonalOverride() {
+  return {
+    title: "",
+    description: "",
+    price: 0,
+    duration: "",
+    difficulty: "",
+    photos: [] as string[],
+    meetingPoint: "",
+    requirements: "",
+    cancellationPolicy: "",
+    additionalEquipment: "",
+    notIncluded: "",
+  };
+}
+
+function toSeasonalOverrideDefaults(override?: {
+  title?: string;
+  description?: string;
+  price?: number;
+  duration?: string;
+  difficulty?: string;
+  photos?: string[];
+  meetingPoint?: string;
+  requirements?: string;
+  cancellationPolicy?: string;
+  additionalEquipment?: string;
+  notIncluded?: string;
+}) {
+  return {
+    ...emptySeasonalOverride(),
+    title: override?.title ?? "",
+    description: override?.description ?? "",
+    price: override?.price && override.price > 0 ? override.price : 0,
+    duration: override?.duration ?? "",
+    difficulty: override?.difficulty ?? "",
+    photos: override?.photos ?? [],
+    meetingPoint: override?.meetingPoint ?? "",
+    requirements: override?.requirements ?? "",
+    cancellationPolicy: override?.cancellationPolicy ?? "",
+    additionalEquipment: override?.additionalEquipment ?? "",
+    notIncluded: override?.notIncluded ?? "",
+  };
 }
 
 function toFormDefaults(service?: Service): ServiceFormData {
@@ -49,6 +95,11 @@ function toFormDefaults(service?: Service): ServiceFormData {
     location: service?.location ?? "",
     photos: service?.photos ?? [],
     category: service?.category ?? "",
+    seasons: service?.seasons ?? ["todo-el-ano"],
+    seasonalContent: {
+      verano: toSeasonalOverrideDefaults(service?.seasonalContent?.verano),
+      invierno: toSeasonalOverrideDefaults(service?.seasonalContent?.invierno),
+    },
     meetingPoint: service?.meetingPoint ?? "",
     requirements: service?.requirements ?? "",
     cancellationPolicy: service?.cancellationPolicy ?? "",
@@ -96,6 +147,9 @@ export function ServiceForm({ service }: ServiceFormProps) {
   const title = watch("title");
   const price = watch("price");
   const photos = watch("photos") ?? [];
+  const veranoPhotos = watch("seasonalContent.verano.photos") ?? [];
+  const inviernoPhotos = watch("seasonalContent.invierno.photos") ?? [];
+  const seasons = watch("seasons") ?? ["todo-el-ano"];
   const promoEnabled = watch("promotion.enabled");
   const discountOptions = watch("discountOptions") ?? [];
   const appliesTo = watch("promotion.appliesToDiscountIds") ?? [];
@@ -271,6 +325,10 @@ export function ServiceForm({ service }: ServiceFormProps) {
           <input type="checkbox" className="rounded" {...register("active")} />
           Publicada (visible en el catálogo)
         </label>
+        <SeasonSelector
+          value={seasons}
+          onChange={(next) => setValue("seasons", next, { shouldDirty: true, shouldValidate: true })}
+        />
         <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("featuredOnHome")} />
           Destacar en el home
@@ -446,9 +504,103 @@ export function ServiceForm({ service }: ServiceFormProps) {
           folder="excursions"
           photos={photos}
           onChange={(next) => setValue("photos", next, { shouldDirty: true })}
-          label="Galería de fotos"
-          hint="Subí todas las imágenes que quieras para esta excursión."
+          label="Galería de fotos (ficha base)"
+          hint="La primera foto es la portada. Usá ↑ ↓ para cambiar el orden. Se comprimen automáticamente."
         />
+      </section>
+
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-8">
+        <div>
+          <h2 className="text-lg text-meru-charcoal">Versiones por temporada</h2>
+          <p className="mt-1 text-sm text-meru-muted">
+            Opcional. Si completás algo acá, al entrar desde Verano o Invierno en el menú se muestra
+            esa versión (texto, fotos, precio, etc.). Los campos vacíos siguen usando la ficha base
+            de arriba.
+          </p>
+        </div>
+
+        {(["verano", "invierno"] as const).map((seasonKey) => {
+          const seasonPhotos = seasonKey === "verano" ? veranoPhotos : inviernoPhotos;
+          const seasonLabel = seasonKey === "verano" ? "Verano" : "Invierno";
+          return (
+            <div
+              key={seasonKey}
+              className="space-y-4 rounded-lg border border-dashed border-meru-border p-4"
+            >
+              <h3 className="font-medium text-meru-charcoal">Versión {seasonLabel}</h3>
+              <Input
+                label={`Título (${seasonLabel})`}
+                placeholder="Vacío = usar título base"
+                {...register(`seasonalContent.${seasonKey}.title`)}
+              />
+              <Textarea
+                label={`Descripción (${seasonLabel})`}
+                rows={5}
+                placeholder="Vacío = usar descripción base"
+                {...register(`seasonalContent.${seasonKey}.description`)}
+              />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Input
+                  label={`Precio adulto (${seasonLabel})`}
+                  type="number"
+                  min={0}
+                  step={100}
+                  placeholder="0 = precio base"
+                  {...register(`seasonalContent.${seasonKey}.price`, { valueAsNumber: true })}
+                />
+                <Input
+                  label="Duración"
+                  placeholder="Vacío = base"
+                  {...register(`seasonalContent.${seasonKey}.duration`)}
+                />
+                <Input
+                  label="Dificultad"
+                  placeholder="Vacío = base"
+                  {...register(`seasonalContent.${seasonKey}.difficulty`)}
+                />
+              </div>
+              <Textarea
+                label="Punto de encuentro"
+                rows={2}
+                placeholder="Vacío = base"
+                {...register(`seasonalContent.${seasonKey}.meetingPoint`)}
+              />
+              <Textarea
+                label="Requisitos"
+                rows={2}
+                placeholder="Vacío = base"
+                {...register(`seasonalContent.${seasonKey}.requirements`)}
+              />
+              <Textarea
+                label="Equipo adicional"
+                rows={2}
+                placeholder="Vacío = base"
+                {...register(`seasonalContent.${seasonKey}.additionalEquipment`)}
+              />
+              <Textarea
+                label="No incluye"
+                rows={2}
+                placeholder="Vacío = base"
+                {...register(`seasonalContent.${seasonKey}.notIncluded`)}
+              />
+              <Textarea
+                label="Cancelaciones"
+                rows={2}
+                placeholder="Vacío = base"
+                {...register(`seasonalContent.${seasonKey}.cancellationPolicy`)}
+              />
+              <PhotoGalleryUpload
+                folder="excursions"
+                photos={seasonPhotos}
+                onChange={(next) =>
+                  setValue(`seasonalContent.${seasonKey}.photos`, next, { shouldDirty: true })
+                }
+                label={`Fotos ${seasonLabel}`}
+                hint="Si cargás fotos acá, reemplazan la galería base al ver esa temporada."
+              />
+            </div>
+          );
+        })}
       </section>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

@@ -91,6 +91,16 @@ export interface Service {
   photos: string[];
   seasonalPhotos?: SeasonalPhoto[];
   category?: string;
+  /** Disponibilidad comercial para navegar el catálogo por temporada. */
+  seasons?: Season[];
+  /**
+   * Contenido opcional distinto por temporada.
+   * Si la persona entra con ?temporada=invierno, se aplican esos campos sobre la ficha base.
+   */
+  seasonalContent?: {
+    verano?: SeasonalContentOverride;
+    invierno?: SeasonalContentOverride;
+  };
   meetingPoint?: string;
   requirements?: string;
   cancellationPolicy?: string;
@@ -111,6 +121,24 @@ export interface Service {
   /** Orden en el home (menor = primero). */
   homeOrder?: number;
   active: boolean;
+}
+
+export type Season = "verano" | "invierno" | "todo-el-ano";
+export type CatalogSeason = "verano" | "invierno";
+
+/** Campos opcionales que reemplazan la ficha base al ver una temporada concreta. */
+export interface SeasonalContentOverride {
+  title?: string;
+  description?: string;
+  price?: number;
+  duration?: string;
+  difficulty?: string;
+  photos?: string[];
+  meetingPoint?: string;
+  requirements?: string;
+  cancellationPolicy?: string;
+  additionalEquipment?: string;
+  notIncluded?: string;
 }
 
 export interface DepartureSlot {
