@@ -196,16 +196,41 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    const nextStatus = parsed.data.paymentStatus;
+    const markingPaid = nextStatus === "pagado" && current !== "pagado";
+    const beforeData = snap.data()!;
+
     await ref.set(
       {
-        paymentStatus: parsed.data.paymentStatus,
+        paymentStatus: nextStatus,
         updatedAt: new Date(),
+        ...(markingPaid
+          ? {
+              paidAt: new Date(),
+              paidVia: "manual",
+            }
+          : {}),
       },
       { merge: true }
     );
 
+    if (markingPaid) {
+      try {
+        const { sendOrderPaidEmail } = await import("@/lib/checkout/send-checkout-emails");
+        await sendOrderPaidEmail({
+          orderId: id,
+          customerName: String(beforeData.customerName ?? ""),
+          customerEmail: String(beforeData.customerEmail ?? ""),
+          total: Number(beforeData.total ?? 0),
+          items: Array.isArray(beforeData.items) ? beforeData.items : [],
+        });
+      } catch (err) {
+        console.error("[admin/orders] paid email", err);
+      }
+    }
+
     return NextResponse.json(
-      { ok: true, paymentStatus: parsed.data.paymentStatus },
+      { ok: true, paymentStatus: nextStatus },
       { headers: { "Cache-Control": "no-store" } }
     );
   }

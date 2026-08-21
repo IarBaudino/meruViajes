@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import { getGetnetConfig } from "@/lib/payments/getnet/config";
-import { sendCheckoutEmails } from "@/lib/checkout/send-checkout-emails";
+import { sendOrderPaidEmail } from "@/lib/checkout/send-checkout-emails";
 
 /**
  * Webhook Getnet — marca la orden como pagada.
@@ -64,21 +64,23 @@ export async function POST(request: Request) {
       await orderRef.set(
         {
           paymentStatus: "pagado",
+          paidAt: new Date(),
+          paidVia: "getnet",
           updatedAt: new Date(),
         },
         { merge: true }
       );
 
       try {
-        await sendCheckoutEmails({
+        await sendOrderPaidEmail({
           orderId: reference,
           customerName: String(data.customerName ?? ""),
           customerEmail: String(data.customerEmail ?? ""),
           total: Number(data.total ?? 0),
-          items: data.items ?? [],
+          items: Array.isArray(data.items) ? data.items : [],
         });
       } catch (err) {
-        console.error("[getnet webhook] email", err);
+        console.error("[getnet webhook] paid email", err);
       }
     }
   }
