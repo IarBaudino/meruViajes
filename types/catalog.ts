@@ -26,6 +26,15 @@ export interface ExcursionPackage {
   homeOrder?: number;
   /** Temporadas en las que se ofrece el paquete. */
   seasons?: Season[];
+  /** Promo opcional: % de descuento sobre el precio del paquete. */
+  promotion?: PackagePromotion | null;
+}
+
+/** Descuento porcentual sobre el precio base del paquete. */
+export interface PackagePromotion {
+  enabled: boolean;
+  /** Entero 1–100. */
+  percent: number;
 }
 
 export interface GoogleReviewItem {

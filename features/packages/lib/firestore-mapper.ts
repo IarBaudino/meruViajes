@@ -1,5 +1,5 @@
 import type { DocumentData } from "firebase-admin/firestore";
-import type { ExcursionPackage } from "@/types/catalog";
+import type { ExcursionPackage, PackagePromotion } from "@/types/catalog";
 import type { Season } from "@/types";
 
 export const PACKAGES_COLLECTION = "packages";
@@ -18,6 +18,17 @@ function mapSeasons(value: unknown): Season[] {
   return valid.length > 0 ? valid : ["todo-el-ano"];
 }
 
+function mapPromotion(value: unknown): PackagePromotion | null {
+  if (!value || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  const percent = typeof o.percent === "number" ? o.percent : Number(o.percent);
+  if (!Number.isFinite(percent) || percent <= 0) return null;
+  return {
+    enabled: o.enabled === true,
+    percent: Math.min(100, Math.max(0, Math.round(percent))),
+  };
+}
+
 export function mapFirestorePackage(id: string, data: DocumentData): ExcursionPackage {
   return {
     id,
@@ -33,12 +44,22 @@ export function mapFirestorePackage(id: string, data: DocumentData): ExcursionPa
     homeOrder: typeof data.homeOrder === "number" ? data.homeOrder : 100,
     category: typeof data.category === "string" ? data.category : undefined,
     seasons: mapSeasons(data.seasons),
+    promotion: mapPromotion(data.promotion),
   };
 }
 
 export function packageToFirestore(
   data: Omit<ExcursionPackage, "id">
 ): DocumentData {
+  const promo = data.promotion;
+  const promotion =
+    promo && promo.enabled && promo.percent > 0
+      ? {
+          enabled: true,
+          percent: Math.min(100, Math.max(1, Math.round(Number(promo.percent)))),
+        }
+      : null;
+
   return {
     title: data.title,
     slug: data.slug,
@@ -52,5 +73,6 @@ export function packageToFirestore(
     homeOrder: Number.isFinite(data.homeOrder) ? Number(data.homeOrder) : 100,
     category: data.category ?? null,
     seasons: data.seasons?.length ? data.seasons : ["todo-el-ano"],
+    promotion,
   };
 }

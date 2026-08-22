@@ -33,6 +33,10 @@ function toDefaults(pkg?: ExcursionPackage): PackageFormData {
     homeOrder: pkg?.homeOrder ?? 100,
     category: pkg?.category ?? "",
     seasons: pkg?.seasons ?? ["todo-el-ano"],
+    promotion: {
+      enabled: Boolean(pkg?.promotion?.enabled),
+      percent: pkg?.promotion?.percent ?? 0,
+    },
   };
 }
 
@@ -58,6 +62,8 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
   const serviceIds = watch("serviceIds") ?? [];
   const price = watch("price");
   const seasons = watch("seasons") ?? ["todo-el-ano"];
+  const promoEnabled = watch("promotion.enabled");
+  const promoPercent = watch("promotion.percent") ?? 0;
 
   useEffect(() => {
     if (!isEdit && title) {
@@ -137,13 +143,54 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           {price > 0 ? (
             <p className="self-end pb-2 text-sm text-meru-muted">
               Vista previa: {formatCurrencyARS(price)}
+              {promoEnabled && promoPercent > 0 ? (
+                <>
+                  {" "}
+                  → promo{" "}
+                  <span className="font-medium text-meru-primary">
+                    {formatCurrencyARS(
+                      Math.max(0, Math.round(price * (1 - promoPercent / 100)))
+                    )}
+                  </span>{" "}
+                  (−{Math.round(promoPercent)}%)
+                </>
+              ) : null}
             </p>
           ) : null}
-          <Input
-            label="Tope opcional de paquetes (0 = sin tope extra)"
-            type="number"
-            {...register("stock", { valueAsNumber: true })}
-          />
+          <div>
+            <Input
+              label="Límite de ventas del paquete (opcional)"
+              type="number"
+              min={0}
+              {...register("stock", { valueAsNumber: true })}
+            />
+            <p className="mt-1 text-xs text-meru-muted">
+              Dejá <strong>0</strong> si no querés poner un máximo. Si ponés un número (ej. 10),
+              solo se podrán confirmar esa cantidad de reservas de este paquete. El cupo de cada
+              excursión lo manejás aparte al armar el itinerario.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-meru-border bg-meru-ice/40 p-4 space-y-3">
+          <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+            <input type="checkbox" className="rounded" {...register("promotion.enabled")} />
+            Activar promo (descuento %)
+          </label>
+          {promoEnabled ? (
+            <Input
+              label="Porcentaje de descuento"
+              type="number"
+              min={1}
+              max={100}
+              error={errors.promotion?.percent?.message}
+              {...register("promotion.percent", { valueAsNumber: true })}
+            />
+          ) : null}
+          <p className="text-xs text-meru-muted">
+            En el catálogo se muestra “Promo” y el %; el precio tachado es el habitual y el
+            destacado es el promocional.
+          </p>
         </div>
         <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("active")} />

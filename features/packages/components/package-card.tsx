@@ -2,7 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ExcursionPackage } from "@/types/catalog";
 import { BrandLogo } from "@/components/brand-logo";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrencyARS } from "@/lib/format";
+import {
+  getEffectivePackagePrice,
+  getPackageDiscountPercent,
+  hasActivePackagePromotion,
+} from "@/features/packages/lib/pricing";
 
 type Props = {
   package: ExcursionPackage;
@@ -10,6 +16,9 @@ type Props = {
 
 export function PackageCard({ package: pkg }: Props) {
   const cover = pkg.photos[0] ?? null;
+  const promo = hasActivePackagePromotion(pkg);
+  const percent = getPackageDiscountPercent(pkg);
+  const effective = getEffectivePackagePrice(pkg);
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-meru-border bg-white shadow-sm transition hover:shadow-md">
@@ -27,6 +36,13 @@ export function PackageCard({ package: pkg }: Props) {
             <BrandLogo href={null} size="lg" className="opacity-70" />
           </div>
         )}
+        {promo ? (
+          <span className="absolute left-3 top-3">
+            <Badge className="bg-meru-secondary text-white shadow-sm">
+              Promo −{percent}%
+            </Badge>
+          </span>
+        ) : null}
       </Link>
       <div className="flex flex-1 flex-col p-5">
         <p className="text-xs font-medium uppercase tracking-wider text-meru-secondary">
@@ -38,9 +54,23 @@ export function PackageCard({ package: pkg }: Props) {
           </Link>
         </h3>
         <p className="mt-2 line-clamp-3 flex-1 text-sm text-meru-muted">{pkg.description}</p>
-        <p className="mt-4 text-lg font-semibold text-meru-primary">
-          {formatCurrencyARS(pkg.price)}
-        </p>
+        <div className="mt-4 flex flex-wrap items-baseline gap-2">
+          {promo ? (
+            <>
+              <span className="text-sm text-meru-muted line-through">
+                {formatCurrencyARS(pkg.price)}
+              </span>
+              <span className="text-lg font-semibold text-meru-primary">
+                {formatCurrencyARS(effective)}
+              </span>
+              <span className="text-xs font-medium text-meru-secondary">Promo −{percent}%</span>
+            </>
+          ) : (
+            <span className="text-lg font-semibold text-meru-primary">
+              {formatCurrencyARS(pkg.price)}
+            </span>
+          )}
+        </div>
       </div>
     </article>
   );

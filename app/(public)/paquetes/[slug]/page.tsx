@@ -10,6 +10,12 @@ import { getServiceByIdAdmin } from "@/features/excursions/lib/get-services";
 import { AddPackageToCartButton } from "@/features/packages/components/add-package-to-cart-button";
 import { formatCurrencyARS } from "@/lib/format";
 import { JsonLd } from "@/components/seo/json-ld";
+import { Badge } from "@/components/ui/badge";
+import {
+  getEffectivePackagePrice,
+  getPackageDiscountPercent,
+  hasActivePackagePromotion,
+} from "@/features/packages/lib/pricing";
 
 export const revalidate = 60;
 
@@ -66,6 +72,9 @@ export default async function PackageDetailPage({ params }: Props) {
   ).filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   const cover = pkg.photos[0];
+  const promo = hasActivePackagePromotion(pkg);
+  const percent = getPackageDiscountPercent(pkg);
+  const effectivePrice = getEffectivePackagePrice(pkg);
 
   const productLd = {
     "@context": "https://schema.org",
@@ -77,7 +86,7 @@ export default async function PackageDetailPage({ params }: Props) {
     offers: {
       "@type": "Offer",
       priceCurrency: "ARS",
-      price: pkg.price,
+      price: effectivePrice,
       availability: "https://schema.org/InStock",
       url: `${appUrl}/paquetes/${pkg.slug}`,
     },
@@ -147,10 +156,28 @@ export default async function PackageDetailPage({ params }: Props) {
         </div>
 
         <aside className="h-fit rounded-2xl border border-meru-border bg-white p-6 shadow-sm lg:sticky lg:top-24">
-          <p className="text-sm text-meru-muted">Precio del paquete</p>
-          <p className="mt-1 text-3xl font-semibold text-meru-primary">
-            {formatCurrencyARS(pkg.price)}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-meru-muted">Precio del paquete</p>
+            {promo ? (
+              <Badge className="bg-meru-secondary/10 text-meru-secondary">
+                Promo −{percent}%
+              </Badge>
+            ) : null}
+          </div>
+          {promo ? (
+            <div className="mt-1 flex flex-wrap items-baseline gap-3">
+              <p className="text-lg text-meru-muted line-through">
+                {formatCurrencyARS(pkg.price)}
+              </p>
+              <p className="text-3xl font-semibold text-meru-primary">
+                {formatCurrencyARS(effectivePrice)}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-1 text-3xl font-semibold text-meru-primary">
+              {formatCurrencyARS(pkg.price)}
+            </p>
+          )}
           <p className="mt-1 text-xs text-meru-muted">Por persona</p>
           <p className="mt-2 text-sm text-meru-muted">
             Elegí el rango de fechas y la cantidad de pasajeros. Nosotros armamos el itinerario y

@@ -3,7 +3,8 @@ import type { CheckoutItemInput } from "@/schemas/checkout";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import type { DepartureSlot, OrderItem, PaymentStatus } from "@/types";
-import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
+import { PACKAGES_COLLECTION, mapFirestorePackage } from "@/features/packages/lib/firestore-mapper";
+import { getEffectivePackagePrice } from "@/features/packages/lib/pricing";
 import { mapFirestoreService } from "@/features/excursions/lib/firestore-mapper";
 import {
   computePassengersLineTotalFromService,
@@ -140,11 +141,11 @@ export async function createCheckout(
           throw new CheckoutError("Uno de los paquetes ya no está disponible.", 404);
         }
 
-        const pkg = packageSnap.data()!;
-        const title = String(pkg.title ?? "Paquete");
-        const stock = Number(pkg.stock ?? 0);
+        const pkg = mapFirestorePackage(packageId, packageSnap.data()!);
+        const title = pkg.title || "Paquete";
+        const stock = pkg.stock;
 
-        if (pkg.active !== true) {
+        if (!pkg.active) {
           throw new CheckoutError(`"${title}" ya no está publicado.`, 400);
         }
         if (!item.stayFrom || !item.stayTo) {
@@ -160,9 +161,7 @@ export async function createCheckout(
           );
         }
 
-        const serviceIds = Array.isArray(pkg.serviceIds)
-          ? pkg.serviceIds.filter((id: unknown): id is string => typeof id === "string")
-          : [];
+        const serviceIds = pkg.serviceIds;
 
         if (serviceIds.length === 0) {
           throw new CheckoutError(`"${title}" no tiene excursiones asociadas.`, 400);
@@ -200,7 +199,7 @@ export async function createCheckout(
           );
         }
 
-        const unitPrice = Number(pkg.price ?? 0);
+        const unitPrice = getEffectivePackagePrice(pkg);
         if (unitPrice <= 0) {
           throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
         }
@@ -209,7 +208,7 @@ export async function createCheckout(
         orderItems.push({
           serviceId: packageId,
           serviceTitle: title,
-          slug: String(pkg.slug ?? ""),
+          slug: pkg.slug,
           quantity: item.quantity,
           unitPrice,
           lineTotal: unitPrice * item.quantity,

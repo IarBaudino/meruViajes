@@ -7,6 +7,12 @@ import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/stores/cart-store";
 import type { ExcursionPackage } from "@/types/catalog";
 import type { Service } from "@/types";
+import { formatCurrencyARS } from "@/lib/format";
+import {
+  getEffectivePackagePrice,
+  getPackageDiscountPercent,
+  hasActivePackagePromotion,
+} from "@/features/packages/lib/pricing";
 
 type Props = {
   package: ExcursionPackage;
@@ -28,6 +34,9 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
 
   const minDate = useMemo(() => todayYmd(), []);
   const maxPassengers = 40;
+  const promo = hasActivePackagePromotion(pkg);
+  const percent = getPackageDiscountPercent(pkg);
+  const unitPrice = getEffectivePackagePrice(pkg);
 
   function handleAdd() {
     setError("");
@@ -55,11 +64,12 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
       packageId: pkg.id,
       slug: pkg.slug,
       title: pkg.title,
-      price: pkg.price,
+      price: unitPrice,
       image: pkg.photos[0],
       quantity: passengers,
       stayFrom,
       stayTo,
+      promotionApplied: promo,
       includedServices: services.map((s) => ({
         serviceId: s.id,
         title: s.title,
@@ -93,6 +103,15 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
         Indicá el rango de fechas y cuántos pasajeros van. La agencia arma el itinerario y te lo
         envía por privado.
       </p>
+
+      {promo ? (
+        <p className="rounded-lg border border-meru-secondary/30 bg-meru-secondary/5 px-3 py-2 text-sm text-meru-charcoal">
+          Promo −{percent}% · {formatCurrencyARS(unitPrice)} por persona
+          <span className="ml-2 text-meru-muted line-through">
+            {formatCurrencyARS(pkg.price)}
+          </span>
+        </p>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Input

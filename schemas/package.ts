@@ -19,6 +19,25 @@ export const packageSchema = z.object({
     .array(z.enum(["verano", "invierno", "todo-el-ano"]))
     .min(1, "Elegí al menos una temporada")
     .default(["todo-el-ano"]),
+  promotion: z
+    .object({
+      enabled: z.boolean(),
+      percent: z.preprocess(
+        (v) => (typeof v === "number" && Number.isNaN(v) ? 0 : v),
+        z.number().min(0).max(100)
+      ),
+    })
+    .superRefine((promo, ctx) => {
+      if (!promo.enabled) return;
+      if (!(promo.percent > 0 && promo.percent <= 100)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Indicá un % entre 1 y 100",
+          path: ["percent"],
+        });
+      }
+    })
+    .optional(),
 });
 
 export type PackageFormData = z.infer<typeof packageSchema>;
