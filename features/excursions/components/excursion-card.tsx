@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 import { formatCurrencyARS } from "@/lib/format";
 import {
   getEffectiveAdultPrice,
+  getServiceDiscountPercent,
   hasActivePromotion,
-  hasAnyDiscount,
 } from "@/features/excursions/lib/pricing";
-import { resolveServiceForSeason } from "@/lib/seasons";
+import { resolveServiceForCatalog } from "@/lib/seasons";
 
 type ExcursionCardProps = {
   service: Service;
@@ -22,8 +22,10 @@ type ExcursionCardProps = {
 };
 
 export function ExcursionCard({ service, season = null, className }: ExcursionCardProps) {
-  const display = resolveServiceForSeason(service, season);
+  const display = resolveServiceForCatalog(service, season);
   const cover = display.photos[0] ?? null;
+  const promo = hasActivePromotion(display);
+  const promoPercent = getServiceDiscountPercent(display);
   const href =
     season != null
       ? `/excursiones/${service.slug}?temporada=${season}`
@@ -56,6 +58,13 @@ export function ExcursionCard({ service, season = null, className }: ExcursionCa
               <Badge className="bg-white/95 text-meru-primary shadow-sm">{display.category}</Badge>
             </span>
           )}
+          {promo ? (
+            <span className="absolute right-3 top-3">
+              <Badge className="bg-meru-secondary text-white shadow-sm">
+                Promo −{promoPercent}%
+              </Badge>
+            </span>
+          ) : null}
         </div>
         <CardContent className="pt-5">
           <h2 className="text-lg text-meru-charcoal transition-colors group-hover:text-meru-secondary">
@@ -71,7 +80,7 @@ export function ExcursionCard({ service, season = null, className }: ExcursionCa
             {display.description}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-meru-border pt-4">
-            {hasActivePromotion(display) ? (
+            {promo ? (
               <>
                 <span className="text-sm text-meru-muted line-through">
                   {formatCurrencyARS(display.price)}
@@ -79,16 +88,13 @@ export function ExcursionCard({ service, season = null, className }: ExcursionCa
                 <span className="text-lg font-medium text-meru-primary">
                   {formatCurrencyARS(getEffectiveAdultPrice(display))}
                 </span>
-                <span className="text-xs font-medium text-meru-secondary">Promo</span>
+                <span className="text-xs font-medium text-meru-secondary">
+                  Promo −{promoPercent}%
+                </span>
               </>
             ) : (
               <span className="text-lg font-medium text-meru-primary">
                 {formatCurrencyARS(display.price)}
-              </span>
-            )}
-            {hasAnyDiscount(display) && (
-              <span className="text-xs font-medium text-meru-secondary">
-                Descuentos disponibles
               </span>
             )}
             {display.duration && (

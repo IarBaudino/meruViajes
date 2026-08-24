@@ -213,6 +213,7 @@ export function CartView() {
             departureId: item.departureId,
             departureDate: item.departureDate,
             departureTime: item.departureTime,
+            catalogSeason: item.catalogSeason,
             stayFrom: item.stayFrom,
             stayTo: item.stayTo,
           })),

@@ -3,6 +3,7 @@ import { getHomeFeaturedServices } from "@/features/excursions/lib/get-services"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrencyARS } from "@/lib/format";
+import { resolveServiceForCatalog } from "@/lib/seasons";
 import Image from "next/image";
 import type { SiteSettings } from "@/types/site-settings";
 
@@ -37,7 +38,8 @@ export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
           <>
             <ul className="mt-12 grid list-none gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {preview.map((service) => {
-                const cover = service.photos[0];
+                const display = resolveServiceForCatalog(service, null);
+                const cover = display.photos[0];
                 return (
                   <li key={service.id}>
                     <Card className="group h-full overflow-hidden transition-shadow hover:shadow-[var(--shadow-elevated)]">
@@ -49,7 +51,7 @@ export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
                           {cover ? (
                             <Image
                               src={cover}
-                              alt={`${service.title} — vista previa`}
+                              alt={`${display.title} — vista previa`}
                               fill
                               className="object-cover transition-transform duration-500 group-hover:scale-105"
                               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -58,13 +60,13 @@ export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
                         </div>
                         <CardContent className="flex flex-1 flex-col pt-5">
                           <h3 className="text-lg text-meru-charcoal group-hover:text-meru-secondary">
-                            {service.title}
+                            {display.title}
                           </h3>
                           <p className="mt-2 line-clamp-2 flex-1 text-sm text-meru-charcoal-muted">
-                            {service.description}
+                            {display.description}
                           </p>
                           <p className="mt-4 font-medium text-meru-primary">
-                            {formatCurrencyARS(service.price)}
+                            {formatCurrencyARS(display.price)}
                           </p>
                           <span className="mt-2 text-sm font-semibold text-meru-secondary">
                             Ver detalle →

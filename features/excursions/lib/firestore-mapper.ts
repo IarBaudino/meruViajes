@@ -1,5 +1,7 @@
 import type {
+  CatalogSeason,
   Service,
+  ServiceSeasonVariant,
   SeasonalPhoto,
   DiscountOption,
   ServicePromotion,
@@ -8,7 +10,11 @@ import type {
   SeasonalContentOverride,
 } from "@/types";
 import { legacyDiscountsToOptions } from "@/types/discounts";
+import { getEnabledCatalogSeasons } from "@/lib/seasons";
+import type { ServiceFormData } from "@/schemas/service";
 import type { DocumentData } from "firebase-admin/firestore";
+
+const CATALOG_SEASONS: CatalogSeason[] = ["verano", "invierno"];
 
 function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -93,54 +99,9 @@ function mapSeasonalContent(value: unknown): Service["seasonalContent"] | undefi
   };
 }
 
-function overrideToFirestore(override: SeasonalContentOverride | undefined | null) {
-  if (!override) return null;
-  const photos = (override.photos ?? []).filter(Boolean);
-  const price = typeof override.price === "number" && override.price > 0 ? override.price : 0;
-  const title = override.title?.trim() ?? "";
-  const description = override.description?.trim() ?? "";
-  const duration = override.duration?.trim() ?? "";
-  const difficulty = override.difficulty?.trim() ?? "";
-  const meetingPoint = override.meetingPoint?.trim() ?? "";
-  const requirements = override.requirements?.trim() ?? "";
-  const cancellationPolicy = override.cancellationPolicy?.trim() ?? "";
-  const additionalEquipment = override.additionalEquipment?.trim() ?? "";
-  const notIncluded = override.notIncluded?.trim() ?? "";
-
-  const hasAnything =
-    title ||
-    description ||
-    duration ||
-    difficulty ||
-    meetingPoint ||
-    requirements ||
-    cancellationPolicy ||
-    additionalEquipment ||
-    notIncluded ||
-    photos.length > 0 ||
-    price > 0;
-
-  if (!hasAnything) return null;
-
-  return {
-    title: title || null,
-    description: description || null,
-    price: price > 0 ? price : null,
-    duration: duration || null,
-    difficulty: difficulty || null,
-    photos,
-    meetingPoint: meetingPoint || null,
-    requirements: requirements || null,
-    cancellationPolicy: cancellationPolicy || null,
-    additionalEquipment: additionalEquipment || null,
-    notIncluded: notIncluded || null,
-  };
-}
-
-function mapDiscountOptions(data: DocumentData): DiscountOption[] {
-  const raw = data.discountOptions;
-  if (Array.isArray(raw) && raw.length > 0) {
-    return raw
+function mapDiscountOptionsFromRaw(value: unknown, data?: DocumentData): DiscountOption[] {
+  if (Array.isArray(value) && value.length > 0) {
+    return value
       .map((item) => {
         if (!item || typeof item !== "object") return null;
         const o = item as Record<string, unknown>;
@@ -152,6 +113,8 @@ function mapDiscountOptions(data: DocumentData): DiscountOption[] {
       })
       .filter((o): o is DiscountOption => o !== null);
   }
+
+  if (!data) return [];
 
   const legacy = data.discounts;
   if (legacy && typeof legacy === "object") {
@@ -166,17 +129,30 @@ function mapDiscountOptions(data: DocumentData): DiscountOption[] {
   return [];
 }
 
-function mapPromotion(data: DocumentData): ServicePromotion | null {
-  const raw = data.promotion;
-  if (!raw || typeof raw !== "object") return null;
-  const p = raw as Record<string, unknown>;
-  const price = asNumber(p.price, NaN);
+function mapPromotionFromRaw(value: unknown, basePrice?: number): ServicePromotion | null {
+  if (!value || typeof value !== "object") return null;
+  const p = value as Record<string, unknown>;
   const startsAt = asString(p.startsAt);
   const endsAt = asString(p.endsAt);
-  if (Number.isNaN(price) || !startsAt || !endsAt) return null;
+  if (!startsAt || !endsAt) return null;
+
+  let percent = asNumber(p.percent, NaN);
+  if (Number.isNaN(percent) || percent <= 0) {
+    const legacyPrice = asNumber(p.price, NaN);
+    if (
+      !Number.isNaN(legacyPrice) &&
+      legacyPrice > 0 &&
+      typeof basePrice === "number" &&
+      basePrice > 0
+    ) {
+      percent = Math.round((1 - legacyPrice / basePrice) * 100);
+    }
+  }
+  if (Number.isNaN(percent) || percent <= 0 || percent > 100) return null;
+
   return {
     enabled: p.enabled !== false,
-    price,
+    percent: Math.round(percent),
     startsAt,
     endsAt,
     appliesToDiscountIds: asStringArray(p.appliesToDiscountIds),
@@ -234,121 +210,270 @@ function mapDepartures(value: unknown): DepartureSlot[] {
     .filter((d): d is DepartureSlot => d !== null);
 }
 
-export function mapFirestoreService(id: string, data: DocumentData): Service {
-  const discountOptions = mapDiscountOptions(data);
+function emptyVariant(): ServiceSeasonVariant {
   return {
-    id,
-    title: asString(data.title),
-    slug: asString(data.slug),
-    description: asString(data.description),
-    price: asNumber(data.price),
-    duration: asString(data.duration) || undefined,
-    difficulty: asString(data.difficulty) || undefined,
-    location: asString(data.location) || undefined,
-    photos: asStringArray(data.photos),
-    seasonalPhotos: mapSeasonalPhotos(data.seasonalPhotos),
-    category: asString(data.category) || undefined,
-    seasons: mapSeasons(data.seasons),
-    seasonalContent: mapSeasonalContent(data.seasonalContent),
-    meetingPoint: asString(data.meetingPoint) || undefined,
-    requirements: asString(data.requirements) || undefined,
-    cancellationPolicy: asString(data.cancellationPolicy) || undefined,
-    additionalEquipment: asString(data.additionalEquipment) || undefined,
-    notIncluded: asString(data.notIncluded) || undefined,
-    discountOptions,
-    promotion: mapPromotion(data),
-    stock: asNumber(data.stock, 0),
-    departures: mapDepartures(data.departures),
-    featuredOnHome: asBool(data.featuredOnHome, false),
-    homeOrder: asNumber(data.homeOrder, 100),
-    active: asBool(data.active, true),
+    enabled: false,
+    title: "",
+    description: "",
+    price: 0,
+    duration: "",
+    difficulty: "",
+    photos: [],
+    meetingPoint: "",
+    requirements: "",
+    cancellationPolicy: "",
+    additionalEquipment: "",
+    notIncluded: "",
+    discountOptions: [],
+    promotion: null,
+    stock: 0,
+    departures: [],
   };
 }
 
-export function serviceToFirestore(data: {
-  title: string;
-  slug: string;
-  description: string;
-  price: number;
-  duration?: string | null;
-  difficulty?: string | null;
-  location?: string | null;
-  photos: string[];
-  seasonalPhotos?: SeasonalPhoto[] | null;
-  category?: string | null;
-  seasons?: Season[];
-  seasonalContent?: {
-    verano?: SeasonalContentOverride | null;
-    invierno?: SeasonalContentOverride | null;
-  } | null;
-  meetingPoint?: string | null;
-  requirements?: string | null;
-  cancellationPolicy?: string | null;
-  additionalEquipment?: string | null;
-  notIncluded?: string | null;
-  discountOptions?: DiscountOption[];
-  promotion?: ServicePromotion | null;
-  stock: number;
-  departures?: DepartureSlot[];
-  featuredOnHome?: boolean;
-  homeOrder?: number;
-  active: boolean;
-}): DocumentData {
+function mapVariantFromRaw(
+  value: unknown,
+  fallback: ServiceSeasonVariant
+): ServiceSeasonVariant {
+  if (!value || typeof value !== "object") return fallback;
+  const o = value as Record<string, unknown>;
+  const variantPrice = asNumber(o.price, fallback.price);
+  const promotion = mapPromotionFromRaw(o.promotion, variantPrice);
+  return {
+    enabled: typeof o.enabled === "boolean" ? o.enabled : fallback.enabled,
+    title: asString(o.title, fallback.title),
+    description: asString(o.description, fallback.description),
+    price: asNumber(o.price, fallback.price),
+    duration: asString(o.duration, fallback.duration ?? "") || undefined,
+    difficulty: asString(o.difficulty, fallback.difficulty ?? "") || undefined,
+    photos: asStringArray(o.photos).length ? asStringArray(o.photos) : fallback.photos,
+    meetingPoint: asString(o.meetingPoint, fallback.meetingPoint ?? "") || undefined,
+    requirements: asString(o.requirements, fallback.requirements ?? "") || undefined,
+    cancellationPolicy:
+      asString(o.cancellationPolicy, fallback.cancellationPolicy ?? "") || undefined,
+    additionalEquipment:
+      asString(o.additionalEquipment, fallback.additionalEquipment ?? "") || undefined,
+    notIncluded: asString(o.notIncluded, fallback.notIncluded ?? "") || undefined,
+    discountOptions: mapDiscountOptionsFromRaw(o.discountOptions).length
+      ? mapDiscountOptionsFromRaw(o.discountOptions)
+      : fallback.discountOptions,
+    promotion: promotion ?? fallback.promotion ?? null,
+    stock: asNumber(o.stock, fallback.stock),
+    departures: mapDepartures(o.departures).length
+      ? mapDepartures(o.departures)
+      : fallback.departures,
+  };
+}
+
+function migrateLegacyToVariants(data: DocumentData): Service["seasonalVariants"] {
+  const seasons = mapSeasons(data.seasons);
+  const baseDiscountOptions = mapDiscountOptionsFromRaw(data.discountOptions, data);
+  const basePromotion = mapPromotionFromRaw(data.promotion, asNumber(data.price));
+  const baseDepartures = mapDepartures(data.departures);
+  const seasonalPhotos = mapSeasonalPhotos(data.seasonalPhotos);
+  const seasonalContent = mapSeasonalContent(data.seasonalContent);
+
+  const veranoEnabled = seasons.includes("verano") || seasons.includes("todo-el-ano");
+  const inviernoEnabled = seasons.includes("invierno") || seasons.includes("todo-el-ano");
+
+  function build(
+    season: CatalogSeason,
+    enabled: boolean,
+    override?: SeasonalContentOverride
+  ): ServiceSeasonVariant {
+    const seasonPhotoUrls =
+      seasonalPhotos?.filter((p) => p.season === season).map((p) => p.url) ?? [];
+    const photos = override?.photos?.length
+      ? override.photos
+      : seasonPhotoUrls.length
+        ? seasonPhotoUrls
+        : asStringArray(data.photos);
+
+    return {
+      enabled,
+      title: override?.title?.trim() || asString(data.title),
+      description: override?.description?.trim() || asString(data.description),
+      price:
+        typeof override?.price === "number" && override.price > 0
+          ? override.price
+          : asNumber(data.price),
+      duration: override?.duration?.trim() || asString(data.duration) || undefined,
+      difficulty: override?.difficulty?.trim() || asString(data.difficulty) || undefined,
+      photos,
+      meetingPoint: override?.meetingPoint?.trim() || asString(data.meetingPoint) || undefined,
+      requirements: override?.requirements?.trim() || asString(data.requirements) || undefined,
+      cancellationPolicy:
+        override?.cancellationPolicy?.trim() || asString(data.cancellationPolicy) || undefined,
+      additionalEquipment:
+        override?.additionalEquipment?.trim() || asString(data.additionalEquipment) || undefined,
+      notIncluded: override?.notIncluded?.trim() || asString(data.notIncluded) || undefined,
+      discountOptions: baseDiscountOptions,
+      promotion: basePromotion,
+      stock: asNumber(data.stock, 0),
+      departures: baseDepartures,
+    };
+  }
+
+  return {
+    verano: build("verano", veranoEnabled, seasonalContent?.verano),
+    invierno: build("invierno", inviernoEnabled, seasonalContent?.invierno),
+  };
+}
+
+function mapSeasonalVariants(data: DocumentData): Service["seasonalVariants"] {
+  const raw = data.seasonalVariants;
+  if (raw && typeof raw === "object") {
+    const legacy = migrateLegacyToVariants(data);
+    const o = raw as Record<string, unknown>;
+    return {
+      verano: mapVariantFromRaw(o.verano, legacy.verano),
+      invierno: mapVariantFromRaw(o.invierno, legacy.invierno),
+    };
+  }
+  return migrateLegacyToVariants(data);
+}
+
+function pickPrimaryVariant(variants: Service["seasonalVariants"]): ServiceSeasonVariant {
+  if (variants.verano.enabled) return variants.verano;
+  if (variants.invierno.enabled) return variants.invierno;
+  return variants.verano;
+}
+
+function variantToFirestore(variant: ServiceSeasonVariant): DocumentData {
   const promotion =
-    data.promotion && data.promotion.enabled
+    variant.promotion && variant.promotion.enabled
       ? {
           enabled: true,
-          price: data.promotion.price,
-          startsAt: data.promotion.startsAt,
-          endsAt: data.promotion.endsAt,
-          appliesToDiscountIds: data.promotion.appliesToDiscountIds ?? [],
-        }
-      : null;
-
-  const departures = (data.departures ?? []).map((d) => ({
-    id: d.id,
-    date: d.date,
-    time: d.time,
-    capacity: d.capacity,
-    booked: Math.max(0, d.booked ?? 0),
-    active: d.active !== false,
-  }));
-
-  const verano = overrideToFirestore(data.seasonalContent?.verano);
-  const invierno = overrideToFirestore(data.seasonalContent?.invierno);
-  const seasonalContent =
-    verano || invierno
-      ? {
-          ...(verano ? { verano } : {}),
-          ...(invierno ? { invierno } : {}),
+          percent: Math.min(100, Math.max(1, Math.round(Number(variant.promotion.percent)))),
+          startsAt: variant.promotion.startsAt,
+          endsAt: variant.promotion.endsAt,
+          appliesToDiscountIds: variant.promotion.appliesToDiscountIds ?? [],
         }
       : null;
 
   return {
-    title: data.title,
-    slug: data.slug,
-    description: data.description,
-    price: data.price,
-    duration: data.duration ?? null,
-    difficulty: data.difficulty ?? null,
-    location: data.location ?? null,
-    photos: data.photos,
-    seasonalPhotos: data.seasonalPhotos ?? null,
-    category: data.category ?? null,
-    seasons: data.seasons?.length ? data.seasons : ["todo-el-ano"],
-    seasonalContent,
-    meetingPoint: data.meetingPoint ?? null,
-    requirements: data.requirements ?? null,
-    cancellationPolicy: data.cancellationPolicy ?? null,
-    additionalEquipment: data.additionalEquipment ?? null,
-    notIncluded: data.notIncluded ?? null,
-    discountOptions: data.discountOptions ?? [],
+    enabled: variant.enabled,
+    title: variant.title,
+    description: variant.description,
+    price: variant.price,
+    duration: variant.duration ?? null,
+    difficulty: variant.difficulty ?? null,
+    photos: variant.photos,
+    meetingPoint: variant.meetingPoint ?? null,
+    requirements: variant.requirements ?? null,
+    cancellationPolicy: variant.cancellationPolicy ?? null,
+    additionalEquipment: variant.additionalEquipment ?? null,
+    notIncluded: variant.notIncluded ?? null,
+    discountOptions: variant.discountOptions ?? [],
     promotion,
-    discounts: null,
-    stock: data.stock,
-    departures,
+    stock: variant.stock,
+    departures: (variant.departures ?? []).map((d) => ({
+      id: d.id,
+      date: d.date,
+      time: d.time,
+      capacity: d.capacity,
+      booked: Math.max(0, d.booked ?? 0),
+      active: d.active !== false,
+    })),
+  };
+}
+
+export function mapFirestoreService(id: string, data: DocumentData): Service {
+  const seasonalVariants = mapSeasonalVariants(data);
+  const primary = pickPrimaryVariant(seasonalVariants);
+  const enabledSeasons = getEnabledCatalogSeasons({ seasonalVariants });
+
+  return {
+    id,
+    slug: asString(data.slug),
+    location: asString(data.location) || undefined,
+    category: asString(data.category) || undefined,
+    seasonalVariants,
+    featuredOnHome: asBool(data.featuredOnHome, false),
+    homeOrder: asNumber(data.homeOrder, 100),
+    active: asBool(data.active, true),
+    title: primary.title,
+    description: primary.description,
+    price: primary.price,
+    duration: primary.duration,
+    difficulty: primary.difficulty,
+    photos: primary.photos,
+    seasonalPhotos: mapSeasonalPhotos(data.seasonalPhotos),
+    seasons: enabledSeasons.length
+      ? (enabledSeasons as Season[])
+      : mapSeasons(data.seasons),
+    seasonalContent: mapSeasonalContent(data.seasonalContent),
+    meetingPoint: primary.meetingPoint,
+    requirements: primary.requirements,
+    cancellationPolicy: primary.cancellationPolicy,
+    additionalEquipment: primary.additionalEquipment,
+    notIncluded: primary.notIncluded,
+    discountOptions: primary.discountOptions,
+    promotion: primary.promotion ?? null,
+    stock: primary.stock,
+    departures: primary.departures,
+  };
+}
+
+function pickPrimaryFromForm(data: ServiceFormData): ServiceSeasonVariant | null {
+  if (data.seasonalVariants.verano.enabled) return data.seasonalVariants.verano;
+  if (data.seasonalVariants.invierno.enabled) return data.seasonalVariants.invierno;
+  return null;
+}
+
+export function serviceToFirestore(data: ServiceFormData): DocumentData {
+  const seasonalVariants = {
+    verano: variantToFirestore(data.seasonalVariants.verano),
+    invierno: variantToFirestore(data.seasonalVariants.invierno),
+  };
+  const primary = pickPrimaryFromForm(data);
+  const enabledSeasons = CATALOG_SEASONS.filter((s) => data.seasonalVariants[s].enabled);
+
+  return {
+    slug: data.slug,
+    location: data.location ?? null,
+    category: data.category ?? null,
+    active: data.active,
     featuredOnHome: data.featuredOnHome === true,
     homeOrder: Number.isFinite(data.homeOrder) ? Number(data.homeOrder) : 100,
-    active: data.active,
+    seasonalVariants,
+    title: primary?.title ?? "",
+    description: primary?.description ?? "",
+    price: primary?.price ?? 0,
+    duration: primary?.duration ?? null,
+    difficulty: primary?.difficulty ?? null,
+    photos: primary?.photos ?? [],
+    meetingPoint: primary?.meetingPoint ?? null,
+    requirements: primary?.requirements ?? null,
+    cancellationPolicy: primary?.cancellationPolicy ?? null,
+    additionalEquipment: primary?.additionalEquipment ?? null,
+    notIncluded: primary?.notIncluded ?? null,
+    discountOptions: primary?.discountOptions ?? [],
+    promotion:
+      primary?.promotion && primary.promotion.enabled
+        ? {
+            enabled: true,
+            percent: Math.min(
+              100,
+              Math.max(1, Math.round(Number(primary.promotion.percent)))
+            ),
+            startsAt: primary.promotion.startsAt,
+            endsAt: primary.promotion.endsAt,
+            appliesToDiscountIds: primary.promotion.appliesToDiscountIds ?? [],
+          }
+        : null,
+    stock: primary?.stock ?? 0,
+    departures: (primary?.departures ?? []).map((d) => ({
+      id: d.id,
+      date: d.date,
+      time: d.time,
+      capacity: d.capacity,
+      booked: Math.max(0, d.booked ?? 0),
+      active: d.active !== false,
+    })),
+    seasons: enabledSeasons.length ? enabledSeasons : ["verano"],
+    seasonalContent: null,
+    seasonalPhotos: null,
+    discounts: null,
   };
 }

@@ -44,11 +44,17 @@ function emptyPassengersFromQty(quantity: number): CartPassengers {
   return { adult: quantity, infant: 0, discounted: [] };
 }
 
-function sameServiceLine(a: CartItem, serviceId: string, departureId?: string) {
+function sameServiceLine(
+  a: CartItem,
+  serviceId: string,
+  departureId?: string,
+  catalogSeason?: string
+) {
   return (
     a.serviceId === serviceId &&
     (a.kind ?? "service") === "service" &&
-    (a.departureId ?? "") === (departureId ?? "")
+    (a.departureId ?? "") === (departureId ?? "") &&
+    (a.catalogSeason ?? "") === (catalogSeason ?? "")
   );
 }
 
@@ -124,7 +130,7 @@ export const useCartStore = create<CartState>()(
           if (seats < 1) return state;
 
           const existing = state.items.find((i) =>
-            sameServiceLine(i, item.serviceId, item.departureId)
+            sameServiceLine(i, item.serviceId, item.departureId, item.catalogSeason)
           );
           const currentSeats = existing?.quantity ?? 0;
           if (maxStock !== undefined && !canAddQuantity(currentSeats, seats, maxStock)) {
@@ -144,7 +150,7 @@ export const useCartStore = create<CartState>()(
 
             return {
               items: state.items.map((i) =>
-                sameServiceLine(i, item.serviceId, item.departureId)
+                sameServiceLine(i, item.serviceId, item.departureId, item.catalogSeason)
                   ? {
                       ...i,
                       passengers: mergedPassengers,
@@ -154,6 +160,7 @@ export const useCartStore = create<CartState>()(
                       departureId: item.departureId ?? existing.departureId,
                       departureDate: item.departureDate ?? existing.departureDate,
                       departureTime: item.departureTime ?? existing.departureTime,
+                      catalogSeason: item.catalogSeason ?? existing.catalogSeason,
                       quantity: nextQty,
                       price: adultPrice,
                       lineTotal: nextTotal,
@@ -183,6 +190,7 @@ export const useCartStore = create<CartState>()(
                 departureId: item.departureId,
                 departureDate: item.departureDate,
                 departureTime: item.departureTime,
+                catalogSeason: item.catalogSeason,
                 quantity: seats,
                 lineTotal,
               },
@@ -249,7 +257,7 @@ export const useCartStore = create<CartState>()(
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
     {
-      name: "meru-cart-v9",
+      name: "meru-cart-v10",
       partialize: (state) => ({
         items: state.items,
         holdOrderId: state.holdOrderId,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Control, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
+import type { Control, FieldPath, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
 import type { ServiceFormData } from "@/schemas/service";
 import { Input } from "@/components/ui/input";
@@ -30,15 +30,26 @@ type Props = {
   register: UseFormRegister<ServiceFormData>;
   watch: UseFormWatch<ServiceFormData>;
   setValue: UseFormSetValue<ServiceFormData>;
+  departuresPath: FieldPath<ServiceFormData>;
 };
 
-export function ServiceDeparturesFields({ control, register, watch, setValue }: Props) {
+export function ServiceDeparturesFields({
+  control,
+  register,
+  watch,
+  setValue,
+  departuresPath,
+}: Props) {
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "departures",
+    name: departuresPath as "seasonalVariants.verano.departures",
   });
 
-  const departures = watch("departures") ?? [];
+  const departures = (watch(departuresPath) ?? []) as ServiceFormData["seasonalVariants"]["verano"]["departures"];
+
+  function depPath(index: number, field: "id" | "booked" | "date" | "time" | "capacity" | "active") {
+    return `${departuresPath}.${index}.${field}` as FieldPath<ServiceFormData>;
+  }
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -107,7 +118,7 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
       setGenError("Esos turnos ya estaban cargados.");
       return;
     }
-    setValue("departures", [...departures, ...toAdd], { shouldDirty: true });
+    setValue(departuresPath, [...departures, ...toAdd], { shouldDirty: true });
     setFilter("upcoming");
     setPage(0);
     setGenOk(`Se agregaron ${toAdd.length} turno${toAdd.length === 1 ? "" : "s"}.`);
@@ -216,18 +227,18 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
       <div className="hidden">
         {fields.map((field, index) => (
           <div key={field.id}>
-            <input type="hidden" {...register(`departures.${index}.id`)} />
+            <input type="hidden" {...register(depPath(index, "id"))} />
             <input
               type="hidden"
-              {...register(`departures.${index}.booked`, { valueAsNumber: true })}
+              {...register(depPath(index, "booked"), { valueAsNumber: true })}
             />
-            <input type="hidden" {...register(`departures.${index}.date`)} />
-            <input type="hidden" {...register(`departures.${index}.time`)} />
+            <input type="hidden" {...register(depPath(index, "date"))} />
+            <input type="hidden" {...register(depPath(index, "time"))} />
             <input
               type="hidden"
-              {...register(`departures.${index}.capacity`, { valueAsNumber: true })}
+              {...register(depPath(index, "capacity"), { valueAsNumber: true })}
             />
-            <input type="hidden" {...register(`departures.${index}.active`)} />
+            <input type="hidden" {...register(depPath(index, "active"))} />
           </div>
         ))}
       </div>
@@ -260,7 +271,7 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
                             className="rounded border border-meru-border px-2 py-1"
                             value={item.date}
                             onChange={(e) =>
-                              setValue(`departures.${item.index}.date`, e.target.value, {
+                              setValue(depPath(item.index, "date"), e.target.value, {
                                 shouldDirty: true,
                               })
                             }
@@ -270,7 +281,7 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
                             className="rounded border border-meru-border px-2 py-1"
                             value={item.time}
                             onChange={(e) =>
-                              setValue(`departures.${item.index}.time`, e.target.value, {
+                              setValue(depPath(item.index, "time"), e.target.value, {
                                 shouldDirty: true,
                               })
                             }
@@ -290,11 +301,9 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
                           className="w-20 rounded border border-meru-border px-2 py-1"
                           value={item.capacity}
                           onChange={(e) =>
-                            setValue(
-                              `departures.${item.index}.capacity`,
-                              Number(e.target.value),
-                              { shouldDirty: true }
-                            )
+                            setValue(depPath(item.index, "capacity"), Number(e.target.value), {
+                              shouldDirty: true,
+                            })
                           }
                         />
                       ) : (
@@ -309,7 +318,7 @@ export function ServiceDeparturesFields({ control, register, watch, setValue }: 
                           className="rounded"
                           checked={item.active !== false}
                           onChange={(e) =>
-                            setValue(`departures.${item.index}.active`, e.target.checked, {
+                            setValue(depPath(item.index, "active"), e.target.checked, {
                               shouldDirty: true,
                             })
                           }

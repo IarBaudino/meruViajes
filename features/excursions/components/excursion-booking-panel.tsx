@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ShoppingCart } from "lucide-react";
-import type { Service } from "@/types";
+import type { CatalogSeason, Service } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cart-store";
 import { canAddQuantity } from "@/lib/excursions/stock";
@@ -12,6 +12,7 @@ import {
   computePassengersLineTotal,
   getApplicableDiscountOptions,
   getEffectiveAdultPrice,
+  getServiceDiscountPercent,
   hasActivePromotion,
   totalPassengers,
   type CartPassengers,
@@ -26,9 +27,10 @@ import { DepartureSchedulePicker } from "@/features/excursions/components/depart
 
 type Props = {
   service: Service;
+  catalogSeason?: CatalogSeason | null;
 };
 
-export function ExcursionBookingPanel({ service }: Props) {
+export function ExcursionBookingPanel({ service, catalogSeason = null }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const hasDeparturesConfigured = serviceUsesDepartures(service.departures);
   const bookable = useMemo(
@@ -38,6 +40,7 @@ export function ExcursionBookingPanel({ service }: Props) {
 
   const cartItems = useCartStore((s) => s.items);
   const promoActive = hasActivePromotion(service);
+  const promoPercent = getServiceDiscountPercent(service);
   const adultPrice = getEffectiveAdultPrice(service);
   const discountOptions = getApplicableDiscountOptions(service);
 
@@ -66,7 +69,8 @@ export function ExcursionBookingPanel({ service }: Props) {
       (i) =>
         i.serviceId === service.id &&
         (i.kind ?? "service") === "service" &&
-        (i.departureId ?? "") === (selected?.id ?? "")
+        (i.departureId ?? "") === (selected?.id ?? "") &&
+        (i.catalogSeason ?? "") === (catalogSeason ?? "")
     )?.quantity ?? 0;
 
   const maxStock = selected ? slotRemaining(selected) : 0;
@@ -139,6 +143,7 @@ export function ExcursionBookingPanel({ service }: Props) {
       departureId: selected.id,
       departureDate: selected.date,
       departureTime: selected.time,
+      catalogSeason: catalogSeason ?? undefined,
       lineTotal,
       maxStock,
     });
@@ -168,7 +173,7 @@ export function ExcursionBookingPanel({ service }: Props) {
     <div className="space-y-5">
       <div>
         <p className="text-sm text-meru-muted">
-          {promoActive ? "Tarifa promocional" : "Tarifa adulto"}
+          {promoActive ? `Tarifa promocional (−${promoPercent}%)` : "Tarifa adulto"}
         </p>
         {promoActive ? (
           <div className="mt-1">

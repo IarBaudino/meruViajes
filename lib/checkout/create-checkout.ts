@@ -2,7 +2,8 @@ import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import type { CheckoutItemInput } from "@/schemas/checkout";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { getAdminFirestore } from "@/lib/firebase/admin";
-import type { DepartureSlot, OrderItem, PaymentStatus } from "@/types";
+import type { DepartureSlot, OrderItem, PaymentStatus, CatalogSeason } from "@/types";
+import { resolveServiceForSeason } from "@/lib/seasons";
 import { PACKAGES_COLLECTION, mapFirestorePackage } from "@/features/packages/lib/firestore-mapper";
 import { getEffectivePackagePrice } from "@/features/packages/lib/pricing";
 import { mapFirestoreService } from "@/features/excursions/lib/firestore-mapper";
@@ -47,7 +48,12 @@ type BookingDraft = {
 
 type StockUpdate =
   | { kind: "stock"; ref: DocumentReference; nextStock: number }
-  | { kind: "departures"; ref: DocumentReference; departures: DepartureSlot[] };
+  | {
+      kind: "departures";
+      ref: DocumentReference;
+      departures: DepartureSlot[];
+      catalogSeason?: CatalogSeason;
+    };
 
 function requireProfileFields(profile: {
   name?: string;
@@ -125,8 +131,8 @@ export async function createCheckout(
     const orderItems: OrderLine[] = [];
     const bookingDrafts: BookingDraft[] = [];
     const stockUpdates: StockUpdate[] = [];
-    /** Acumula cambios de turnos por serviceId dentro de la misma tx. */
-    const pendingDepartures = new Map<string, DepartureSlot[]>();
+    /** Acumula cambios de turnos por serviceId + temporada dentro de la misma tx. */
+    const pendingDepartures = new Map<string, { departures: DepartureSlot[]; catalogSeason?: CatalogSeason }>();
 
     // 1) Todas las lecturas primero (regla de transacciones Firestore).
     for (const item of items) {
@@ -249,12 +255,20 @@ export async function createCheckout(
       }
 
       const data = serviceSnap.data()!;
-      const title = String(data.title ?? "Excursión");
       const service = mapFirestoreService(item.serviceId, data);
-      const usesDepartures = serviceUsesDepartures(service.departures);
+      const catalogSeason = item.catalogSeason;
+      const resolved = catalogSeason
+        ? resolveServiceForSeason(service, catalogSeason)
+        : service;
+      const title = resolved.title || String(data.title ?? "Excursión");
+      const usesDepartures = serviceUsesDepartures(resolved.departures);
 
       if (data.active !== true) {
         throw new CheckoutError(`"${title}" ya no está publicada.`, 400);
+      }
+
+      if (catalogSeason && !service.seasonalVariants?.[catalogSeason]?.enabled) {
+        throw new CheckoutError(`"${title}" no está disponible en esa temporada.`, 400);
       }
 
       if (!item.passengers) {
@@ -282,9 +296,11 @@ export async function createCheckout(
         throw new CheckoutError(`Elegí fecha y hora para "${title}".`, 400);
       }
 
+      const pendingKey = `${item.serviceId}:${catalogSeason ?? "default"}`;
+      const pending = pendingDepartures.get(pendingKey);
       const working =
-        pendingDepartures.get(item.serviceId) ??
-        (service.departures ?? []).map((d) => ({ ...d }));
+        pending?.departures ??
+        (resolved.departures ?? []).map((d) => ({ ...d }));
       const idx = working.findIndex((d) => d.id === item.departureId);
       if (idx < 0) {
         throw new CheckoutError(`El turno elegido para "${title}" ya no existe.`, 404);
@@ -319,18 +335,18 @@ export async function createCheckout(
         ...slot,
         booked: Number(slot.booked || 0) + seats,
       };
-      pendingDepartures.set(item.serviceId, working);
+      pendingDepartures.set(pendingKey, { departures: working, catalogSeason });
 
       const departureId = slot.id;
       const departureDate = slot.date;
       const departureTime = slot.time;
 
-      const unitPrice = getEffectiveAdultPrice(service);
+      const unitPrice = getEffectiveAdultPrice(resolved);
       if (unitPrice <= 0) {
         throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
       }
 
-      const lineTotal = computePassengersLineTotalFromService(service, passengers);
+      const lineTotal = computePassengersLineTotalFromService(resolved, passengers);
 
       orderItems.push({
         serviceId: item.serviceId,
@@ -343,6 +359,7 @@ export async function createCheckout(
         departureId,
         departureDate,
         departureTime,
+        catalogSeason,
       });
 
       bookingDrafts.push({
@@ -358,11 +375,14 @@ export async function createCheckout(
       });
     }
 
-    for (const [serviceId, departures] of pendingDepartures) {
+    for (const [pendingKey, pending] of pendingDepartures) {
+      const serviceId = pendingKey.split(":")[0];
+      if (!serviceId) continue;
       stockUpdates.push({
         kind: "departures",
         ref: db.collection("services").doc(serviceId),
-        departures,
+        departures: pending.departures,
+        catalogSeason: pending.catalogSeason,
       });
     }
 
@@ -374,10 +394,15 @@ export async function createCheckout(
           updatedAt: FieldValue.serverTimestamp(),
         });
       } else {
-        tx.update(update.ref, {
-          departures: update.departures,
+        const patch: Record<string, unknown> = {
           updatedAt: FieldValue.serverTimestamp(),
-        });
+        };
+        if (update.catalogSeason) {
+          patch[`seasonalVariants.${update.catalogSeason}.departures`] = update.departures;
+        } else {
+          patch.departures = update.departures;
+        }
+        tx.update(update.ref, patch);
       }
     }
 

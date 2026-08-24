@@ -6,11 +6,11 @@ export interface DiscountOption {
   percent: number;
 }
 
-/** Promo temporal: cambia el precio adulto y qué descuentos aplican. */
+/** Promo temporal: % de descuento sobre tarifa adulto y qué descuentos aplican. */
 export interface ServicePromotion {
   enabled: boolean;
-  /** Precio adulto promocional. */
-  price: number;
+  /** Entero 1–100 sobre el precio adulto habitual. */
+  percent: number;
   /** Fecha inicio (YYYY-MM-DD). */
   startsAt: string;
   /** Fecha fin inclusive (YYYY-MM-DD). */

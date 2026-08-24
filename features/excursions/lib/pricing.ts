@@ -35,21 +35,31 @@ export function isPromotionActive(
   now: Date = new Date()
 ): boolean {
   if (!promo?.enabled) return false;
-  if (!(promo.price > 0) || !promo.startsAt || !promo.endsAt) return false;
+  const percent = Number(promo.percent);
+  if (!Number.isFinite(percent) || percent <= 0 || percent > 100) return false;
+  if (!promo.startsAt || !promo.endsAt) return false;
   const start = parseDayBound(promo.startsAt, false);
   const end = parseDayBound(promo.endsAt, true);
   if (!start || !end) return false;
   return now >= start && now <= end;
 }
 
+export function getServiceDiscountPercent(
+  service: Pick<Service, "promotion">,
+  now: Date = new Date()
+): number {
+  if (!isPromotionActive(service.promotion, now)) return 0;
+  return Math.round(Number(service.promotion!.percent));
+}
+
 export function getEffectiveAdultPrice(
   service: Pick<Service, "price" | "promotion">,
   now: Date = new Date()
 ): number {
-  if (isPromotionActive(service.promotion, now)) {
-    return service.promotion!.price;
-  }
-  return service.price;
+  const base = Number(service.price) || 0;
+  const percent = getServiceDiscountPercent(service, now);
+  if (percent <= 0) return base;
+  return Math.max(0, Math.round(base * (1 - percent / 100)));
 }
 
 /** Descuentos que se pueden elegir ahora (todos, o solo los de la promo activa). */

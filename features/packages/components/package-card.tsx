@@ -37,7 +37,7 @@ export function PackageCard({ package: pkg }: Props) {
           </div>
         )}
         {promo ? (
-          <span className="absolute left-3 top-3">
+          <span className="absolute right-3 top-3">
             <Badge className="bg-meru-secondary text-white shadow-sm">
               Promo −{percent}%
             </Badge>

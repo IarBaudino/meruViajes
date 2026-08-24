@@ -7,7 +7,7 @@ import { ExcursionGallery } from "@/features/excursions/components/excursion-gal
 import { ExcursionBookingPanel } from "@/features/excursions/components/excursion-booking-panel";
 import { Badge } from "@/components/ui/badge";
 import { JsonLd } from "@/components/seo/json-ld";
-import { parseCatalogSeason, resolveServiceForSeason, SEASON_LABELS } from "@/lib/seasons";
+import { parseCatalogSeason, resolveServiceForSeason, SEASON_LABELS, isSeasonVariantEnabled, pickDefaultCatalogSeason } from "@/lib/seasons";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -85,12 +85,19 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
   const sp = await searchParams;
   const season = parseCatalogSeason(sp.temporada);
   const base = await getServiceBySlug(slug);
-
   if (!base) {
     notFound();
   }
 
-  const service = resolveServiceForSeason(base, season);
+  const effectiveSeason = season ?? pickDefaultCatalogSeason(base);
+  if (season && !isSeasonVariantEnabled(base, season)) {
+    notFound();
+  }
+  if (!effectiveSeason) {
+    notFound();
+  }
+
+  const service = resolveServiceForSeason(base, effectiveSeason);
   const catalogHref = season ? `/excursiones?temporada=${season}` : "/excursiones";
 
   const productLd = {
@@ -136,6 +143,11 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
           {season && (
             <Badge className="bg-meru-secondary/10 text-meru-secondary">
               Temporada {SEASON_LABELS[season]}
+            </Badge>
+          )}
+          {!season && effectiveSeason && (
+            <Badge className="bg-meru-secondary/10 text-meru-secondary">
+              Temporada {SEASON_LABELS[effectiveSeason]}
             </Badge>
           )}
         </div>
@@ -210,7 +222,7 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
               </p>
             )}
             <div className={service.duration || service.difficulty ? "mt-6" : undefined}>
-              <ExcursionBookingPanel service={service} />
+              <ExcursionBookingPanel service={service} catalogSeason={effectiveSeason} />
             </div>
             <Link
               href="/#consulta"

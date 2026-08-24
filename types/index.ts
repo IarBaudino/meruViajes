@@ -77,26 +77,59 @@ export interface CartItem {
   discounts?: ServiceDiscounts;
   /** Total de la línea ya calculado con descuentos. */
   lineTotal?: number;
+  /** Temporada de catálogo al reservar (verano / invierno). */
+  catalogSeason?: CatalogSeason;
 }
 
-export interface Service {
-  id: string;
+/** Variante completa de una excursión por temporada. */
+export interface ServiceSeasonVariant {
+  enabled: boolean;
   title: string;
-  slug: string;
   description: string;
   price: number;
   duration?: string;
   difficulty?: string;
+  photos: string[];
+  meetingPoint?: string;
+  requirements?: string;
+  cancellationPolicy?: string;
+  additionalEquipment?: string;
+  notIncluded?: string;
+  discountOptions: DiscountOption[];
+  promotion?: ServicePromotion | null;
+  stock: number;
+  departures: DepartureSlot[];
+}
+
+export interface Service {
+  id: string;
+  slug: string;
   location?: string;
+  category?: string;
+  /** Ficha completa por temporada (verano / invierno). */
+  seasonalVariants: {
+    verano: ServiceSeasonVariant;
+    invierno: ServiceSeasonVariant;
+  };
+  /** Destacar en el home. */
+  featuredOnHome?: boolean;
+  /** Orden en el home (menor = primero). */
+  homeOrder?: number;
+  active: boolean;
+  /**
+   * Campos planos derivados de la variante principal (lectura / compatibilidad).
+   * Usar resolveServiceForSeason() en el sitio público.
+   */
+  title: string;
+  description: string;
+  price: number;
+  duration?: string;
+  difficulty?: string;
   photos: string[];
   seasonalPhotos?: SeasonalPhoto[];
-  category?: string;
-  /** Disponibilidad comercial para navegar el catálogo por temporada. */
+  /** @deprecated Derivado de variantes habilitadas. */
   seasons?: Season[];
-  /**
-   * Contenido opcional distinto por temporada.
-   * Si la persona entra con ?temporada=invierno, se aplican esos campos sobre la ficha base.
-   */
+  /** @deprecated Usar seasonalVariants. */
   seasonalContent?: {
     verano?: SeasonalContentOverride;
     invierno?: SeasonalContentOverride;
@@ -106,21 +139,13 @@ export interface Service {
   cancellationPolicy?: string;
   additionalEquipment?: string;
   notIncluded?: string;
-  /** Descuentos flexibles por tipo de pasajero (% sobre tarifa adulta vigente). */
   discountOptions?: DiscountOption[];
-  /** Promo temporal de precio adulto + qué descuentos aplican. */
   promotion?: ServicePromotion | null;
   /** @deprecated Migrado a discountOptions al leer. */
   discounts?: ServiceDiscounts;
   guides?: Record<string, unknown>;
   stock: number;
-  /** Salidas / turnos con cupo propio. Si hay turnos, el cliente elige fecha y hora. */
   departures?: DepartureSlot[];
-  /** Destacar en el home. */
-  featuredOnHome?: boolean;
-  /** Orden en el home (menor = primero). */
-  homeOrder?: number;
-  active: boolean;
 }
 
 export type Season = "verano" | "invierno" | "todo-el-ano";
@@ -183,6 +208,8 @@ export interface OrderItem {
   departureId?: string;
   departureDate?: string;
   departureTime?: string;
+  /** Temporada de catálogo al reservar (verano / invierno). */
+  catalogSeason?: CatalogSeason;
   /** Paquetes: rango de fechas indicado por el cliente. */
   stayFrom?: string;
   stayTo?: string;

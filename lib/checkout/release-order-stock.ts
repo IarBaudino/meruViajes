@@ -2,7 +2,7 @@ import { FieldValue, type DocumentData, type DocumentReference, type Firestore }
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 import { computeHoldExpiresAtDate } from "@/lib/checkout/hold-warning";
-import type { DepartureSlot } from "@/types";
+import type { DepartureSlot, CatalogSeason } from "@/types";
 
 /** Calcula vencimiento del hold (máx. post-reserva y/o antes de la salida). */
 export async function computeHoldExpiresAt(
@@ -31,6 +31,7 @@ type StockDelta = {
   id: string;
   quantity: number;
   departureId?: string;
+  catalogSeason?: CatalogSeason;
 };
 
 function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
@@ -39,7 +40,7 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
 
   function addDelta(delta: StockDelta) {
     const key = delta.departureId
-      ? `${delta.collection}:${delta.id}:dep:${delta.departureId}`
+      ? `${delta.collection}:${delta.id}:dep:${delta.departureId}:${delta.catalogSeason ?? ""}`
       : `${delta.collection}:${delta.id}`;
     const prev = map.get(key);
     map.set(key, {
@@ -66,6 +67,10 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
       typeof item.departureId === "string" && item.departureId.trim()
         ? item.departureId.trim()
         : undefined;
+    const catalogSeason =
+      item.catalogSeason === "verano" || item.catalogSeason === "invierno"
+        ? item.catalogSeason
+        : undefined;
 
     if (packageId) {
       addDelta({
@@ -91,6 +96,10 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
             id: sid,
             quantity: qty,
             departureId: did,
+            catalogSeason:
+              r.catalogSeason === "verano" || r.catalogSeason === "invierno"
+                ? r.catalogSeason
+                : undefined,
           });
         }
       }
@@ -103,6 +112,7 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
         id: serviceId,
         quantity,
         departureId,
+        catalogSeason,
       });
     }
   }
@@ -152,7 +162,13 @@ export async function cancelOrderAndReleaseStock(
       // Agrupar por documento para no pisar actualizaciones de varios turnos.
       const byDoc = new Map<
         string,
-        { collection: "services" | "packages"; id: string; stockQty: number; departureQty: Map<string, number> }
+        {
+          collection: "services" | "packages";
+          id: string;
+          stockQty: number;
+          departureQty: Map<string, number>;
+          catalogSeason?: CatalogSeason;
+        }
       >();
 
       for (const delta of deltas) {
@@ -162,12 +178,16 @@ export async function cancelOrderAndReleaseStock(
           id: delta.id,
           stockQty: 0,
           departureQty: new Map<string, number>(),
+          catalogSeason: delta.catalogSeason,
         };
         if (delta.departureId) {
           prev.departureQty.set(
             delta.departureId,
             (prev.departureQty.get(delta.departureId) ?? 0) + delta.quantity
           );
+          if (delta.catalogSeason) {
+            prev.catalogSeason = delta.catalogSeason;
+          }
         } else {
           prev.stockQty += delta.quantity;
         }
@@ -182,6 +202,7 @@ export async function cancelOrderAndReleaseStock(
           id: string;
           stockQty: number;
           departureQty: Map<string, number>;
+          catalogSeason?: CatalogSeason;
         };
         snapData: DocumentData;
       }> = [];
@@ -206,9 +227,24 @@ export async function cancelOrderAndReleaseStock(
         };
 
         if (group.departureQty.size > 0) {
-          const departures = Array.isArray(snapData.departures)
-            ? (snapData.departures as DepartureSlot[]).map((d) => ({ ...d }))
-            : [];
+          const catalogSeason = group.catalogSeason;
+          const nested =
+            catalogSeason &&
+            snapData.seasonalVariants &&
+            typeof snapData.seasonalVariants === "object"
+              ? (snapData.seasonalVariants as Record<string, unknown>)[catalogSeason]
+              : null;
+          const nestedDepartures =
+            nested && typeof nested === "object"
+              ? (nested as Record<string, unknown>).departures
+              : null;
+
+          const departures = Array.isArray(nestedDepartures)
+            ? (nestedDepartures as DepartureSlot[]).map((d) => ({ ...d }))
+            : Array.isArray(snapData.departures)
+              ? (snapData.departures as DepartureSlot[]).map((d) => ({ ...d }))
+              : [];
+
           for (const [departureId, qty] of group.departureQty) {
             const idx = departures.findIndex((d) => d.id === departureId);
             if (idx >= 0) {
@@ -218,7 +254,12 @@ export async function cancelOrderAndReleaseStock(
               };
             }
           }
-          patch.departures = departures;
+
+          if (catalogSeason && nestedDepartures) {
+            patch[`seasonalVariants.${catalogSeason}.departures`] = departures;
+          } else {
+            patch.departures = departures;
+          }
         }
 
         if (group.stockQty > 0) {

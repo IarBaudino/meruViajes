@@ -4,6 +4,7 @@ import {
   applyDiscountPercent,
   getApplicableDiscountOptions,
   getEffectiveAdultPrice,
+  getServiceDiscountPercent,
   hasActivePromotion,
   hasAnyDiscount,
 } from "@/features/excursions/lib/pricing";
@@ -14,13 +15,14 @@ type Props = {
 
 export function ExcursionPricingPanel({ service }: Props) {
   const promoActive = hasActivePromotion(service);
+  const promoPercent = getServiceDiscountPercent(service);
   const adultPrice = getEffectiveAdultPrice(service);
   const discountOptions = getApplicableDiscountOptions(service);
 
   return (
     <div>
       <p className="text-sm text-meru-muted">
-        {promoActive ? "Tarifa promocional" : "Tarifa adulto"}
+        {promoActive ? `Tarifa promocional (−${promoPercent}%)` : "Tarifa adulto"}
       </p>
       {promoActive ? (
         <div className="mt-1">

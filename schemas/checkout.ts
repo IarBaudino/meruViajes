@@ -27,6 +27,7 @@ export const checkoutItemSchema = z
     departureId: z.string().min(1).optional(),
     departureDate: z.string().optional(),
     departureTime: z.string().optional(),
+    catalogSeason: z.enum(["verano", "invierno"]).optional(),
     stayFrom: ymdSchema.optional(),
     stayTo: ymdSchema.optional(),
   })

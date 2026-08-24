@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrencyARS } from "@/lib/format";
+import { getEnabledCatalogSeasons, SEASON_LABELS } from "@/lib/seasons";
 import { BookingHoldSettingsCard } from "@/features/admin/components/booking-hold-settings-card";
 
 export function ExcursionsAdminList() {
@@ -120,6 +121,7 @@ export function ExcursionsAdminList() {
           <thead className="border-b border-meru-border bg-meru-sand/50 text-left text-meru-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Título</th>
+              <th className="px-4 py-3 font-medium">Temporadas</th>
               <th className="px-4 py-3 font-medium">Precio</th>
               <th className="px-4 py-3 font-medium">Home</th>
               <th className="px-4 py-3 font-medium">Estado</th>
@@ -132,6 +134,11 @@ export function ExcursionsAdminList() {
                 <td className="px-4 py-3">
                   <p className="text-meru-charcoal">{service.title}</p>
                   <p className="text-xs text-meru-muted">/{service.slug}</p>
+                </td>
+                <td className="px-4 py-3 text-meru-muted">
+                  {getEnabledCatalogSeasons(service)
+                    .map((s) => SEASON_LABELS[s])
+                    .join(" · ") || "—"}
                 </td>
                 <td className="px-4 py-3">{formatCurrencyARS(service.price)}</td>
                 <td className="px-4 py-3 text-meru-muted">

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { Service } from "@/types";
 import { ExcursionCard } from "@/features/excursions/components/excursion-card";
 import { getServiceCategories } from "@/features/excursions/lib/excursion-utils";
-import { isAvailableInSeason } from "@/lib/seasons";
+import { isAvailableInSeason, resolveServiceForCatalog } from "@/lib/seasons";
 
 type Props = {
   services: Service[];
@@ -34,12 +34,12 @@ export function ExcursionCatalog({ services }: Props) {
       list = list.filter((s) => s.category === category);
     }
     if (season) {
-      list = list.filter((s) => isAvailableInSeason(s.seasons, season));
+      list = list.filter((s) => isAvailableInSeason(s, season));
     }
     if (maxPrice.trim()) {
       const n = Number(maxPrice);
       if (!Number.isNaN(n) && n > 0) {
-        list = list.filter((s) => s.price <= n);
+        list = list.filter((s) => resolveServiceForCatalog(s, season || null).price <= n);
       }
     }
     return list;
@@ -76,7 +76,7 @@ export function ExcursionCatalog({ services }: Props) {
             onChange={(e) => setSeason(e.target.value as "" | "verano" | "invierno")}
             className="mt-1.5 w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-meru-charcoal"
           >
-            <option value="">Todo el año</option>
+            <option value="">Todas las temporadas</option>
             <option value="verano">Verano</option>
             <option value="invierno">Invierno</option>
           </select>
