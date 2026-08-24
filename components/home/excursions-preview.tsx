@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { getHomeFeaturedServices } from "@/features/excursions/lib/get-services";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrencyARS } from "@/lib/format";
-import { resolveServiceForCatalog } from "@/lib/seasons";
-import Image from "next/image";
+import { ExcursionCard } from "@/features/excursions/components/excursion-card";
 import type { SiteSettings } from "@/types/site-settings";
 
 type ExcursionsPreviewProps = {
@@ -37,46 +34,11 @@ export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
         ) : (
           <>
             <ul className="mt-12 grid list-none gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {preview.map((service) => {
-                const display = resolveServiceForCatalog(service, null);
-                const cover = display.photos[0];
-                return (
-                  <li key={service.id}>
-                    <Card className="group h-full overflow-hidden transition-shadow hover:shadow-[var(--shadow-elevated)]">
-                      <Link
-                        href={`/excursiones/${service.slug}`}
-                        className="flex h-full flex-col outline-none focus-visible:ring-2 focus-visible:ring-meru-secondary"
-                      >
-                        <div className="relative aspect-[4/3] overflow-hidden bg-slate-200">
-                          {cover ? (
-                            <Image
-                              src={cover}
-                              alt={`${display.title} — vista previa`}
-                              fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-105"
-                              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                            />
-                          ) : null}
-                        </div>
-                        <CardContent className="flex flex-1 flex-col pt-5">
-                          <h3 className="text-lg text-meru-charcoal group-hover:text-meru-secondary">
-                            {display.title}
-                          </h3>
-                          <p className="mt-2 line-clamp-2 flex-1 text-sm text-meru-charcoal-muted">
-                            {display.description}
-                          </p>
-                          <p className="mt-4 font-medium text-meru-primary">
-                            {formatCurrencyARS(display.price)}
-                          </p>
-                          <span className="mt-2 text-sm font-semibold text-meru-secondary">
-                            Ver detalle →
-                          </span>
-                        </CardContent>
-                      </Link>
-                    </Card>
-                  </li>
-                );
-              })}
+              {preview.map((service) => (
+                <li key={service.id}>
+                  <ExcursionCard service={service} className="h-full" />
+                </li>
+              ))}
             </ul>
 
             <div className="mt-10 text-center">
