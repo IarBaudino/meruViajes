@@ -197,4 +197,21 @@ export async function sendOrderCancelledEmail(params: CancelEmailParams): Promis
       <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
     `,
   });
+
+  await resend.emails.send({
+    from: resendDefaults.from,
+    to: resendDefaults.to,
+    subject: `[Meru] Reserva cancelada — ${params.customerName} (#${orderRef})`,
+    html: `
+      ${logoHtml}
+      <h2>Reserva cancelada</h2>
+      <p><strong>Motivo:</strong> ${
+        params.reason === "expired" ? "Plazo de pago vencido" : "Cancelada por la agencia"
+      }</p>
+      <p><strong>Cliente:</strong> ${params.customerName} (${params.customerEmail})</p>
+      <p><strong>Pedido:</strong> ${params.orderId}</p>
+      <ul>${itemsHtml}</ul>
+      <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
+    `,
+  });
 }
