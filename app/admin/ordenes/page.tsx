@@ -126,12 +126,18 @@ export default function AdminOrdersPage() {
     });
   }, [orders, now]);
 
-  async function patchStatus(orderId: string, paymentStatus: "pagado" | "cancelado") {
+  async function patchStatus(
+    orderId: string,
+    paymentStatus: "pagado" | "cancelado",
+    fromPaid = false
+  ) {
     setActionError("");
     const confirmMsg =
       paymentStatus === "pagado"
         ? "¿Marcar esta orden como pagada? Pasará a Reservas del cliente."
-        : "¿Cancelar esta reserva pendiente y liberar los cupos? El cliente será avisado.";
+        : fromPaid
+          ? "¿Anular esta orden pagada y liberar los cupos? El cliente será avisado."
+          : "¿Cancelar esta reserva pendiente y liberar los cupos? El cliente será avisado.";
     if (!confirm(confirmMsg)) return;
 
     setBusyId(orderId);
@@ -575,6 +581,16 @@ export default function AdminOrdersPage() {
                               Liberar cupos
                             </button>
                           </>
+                        ) : null}
+                        {order.paymentStatus === "pagado" ? (
+                          <button
+                            type="button"
+                            className="text-red-700 hover:underline disabled:opacity-50"
+                            disabled={busyId === order.id}
+                            onClick={() => void patchStatus(order.id, "cancelado", true)}
+                          >
+                            Anular / liberar
+                          </button>
                         ) : null}
                         {order.canArchive ? (
                           <button

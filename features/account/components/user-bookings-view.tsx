@@ -81,7 +81,7 @@ export function UserBookingsView() {
           <p className="text-meru-charcoal">Todavía no tenés reservas pagadas.</p>
           <p className="mt-2 text-sm text-meru-muted">
             Si ya reservaste y el pago está pendiente, mirá el{" "}
-            <Link href="/mi-cuenta/carrito" className="text-meru-secondary hover:underline">
+            <Link href="/carrito" className="text-meru-secondary hover:underline">
               carrito
             </Link>
             .

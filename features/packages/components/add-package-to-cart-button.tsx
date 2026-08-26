@@ -86,7 +86,7 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
       return;
     }
 
-    router.push("/mi-cuenta/carrito");
+    router.push("/carrito");
   }
 
   if (services.length === 0) {

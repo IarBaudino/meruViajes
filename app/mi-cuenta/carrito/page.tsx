@@ -1,5 +1,5 @@
-import { CartView } from "@/features/account/components/cart-view";
+import { redirect } from "next/navigation";
 
-export default function CartPage() {
-  return <CartView />;
+export default function AccountCartRedirect() {
+  redirect("/carrito");
 }

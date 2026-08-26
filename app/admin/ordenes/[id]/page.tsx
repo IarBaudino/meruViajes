@@ -68,6 +68,23 @@ type OrderDetail = {
   customerEmail: string;
   customerDni: string;
   customerPhone: string;
+  billing?: {
+    fullName: string;
+    email: string;
+    phoneFull: string;
+    identificationType: string;
+    identificationNumber: string;
+    address: {
+      country: string;
+      city: string;
+      street: string;
+      apartment?: string;
+      postalCode: string;
+    };
+  } | null;
+  serviceOrderNumber?: string | null;
+  serviceOrderGeneratedAt?: string | null;
+  isGuest?: boolean;
   items: OrderItem[];
   archived?: boolean;
   holdExpiresAt: string | null;
@@ -118,7 +135,7 @@ export default function AdminOrderDetailPage() {
   async function markPaid() {
     if (!order) return;
     setActionError("");
-    if (!confirm("¿Marcar esta orden como pagada? Pasará a Reservas del cliente.")) return;
+    if (!confirm("¿Confirmar el pago y generar la orden de servicio?")) return;
 
     setSaving(true);
     try {
@@ -132,7 +149,11 @@ export default function AdminOrderDetailPage() {
         setActionError(json.error ?? "No se pudo actualizar");
         return;
       }
-      setOrder({ ...order, paymentStatus: "pagado" });
+      setOrder({
+        ...order,
+        paymentStatus: "pagado",
+        serviceOrderNumber: json.serviceOrderNumber ?? order.serviceOrderNumber,
+      });
     } finally {
       setSaving(false);
     }
@@ -141,9 +162,12 @@ export default function AdminOrderDetailPage() {
   async function cancelAndRelease() {
     if (!order) return;
     setActionError("");
+    const wasPaid = order.paymentStatus === "pagado";
     if (
       !confirm(
-        "¿Cancelar esta reserva pendiente y liberar los cupos para que puedan venderse de nuevo?"
+        wasPaid
+          ? "¿Anular esta orden pagada y liberar los cupos? El cliente será avisado. Usalo para pruebas o cancelaciones reales."
+          : "¿Cancelar esta reserva pendiente y liberar los cupos para que puedan venderse de nuevo?"
       )
     ) {
       return;
@@ -248,21 +272,23 @@ export default function AdminOrderDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
-          <h2 className="text-lg text-meru-charcoal">Cliente</h2>
+          <h2 className="text-lg text-meru-charcoal">Cliente / facturación</h2>
           <dl className="space-y-3 text-sm">
             <div>
               <dt className="text-meru-muted">Nombre</dt>
-              <dd className="text-meru-charcoal">{order.customerName || "—"}</dd>
+              <dd className="text-meru-charcoal">
+                {order.billing?.fullName || order.customerName || "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-meru-muted">Email</dt>
               <dd>
-                {order.customerEmail ? (
+                {(order.billing?.email || order.customerEmail) ? (
                   <a
-                    href={`mailto:${order.customerEmail}`}
+                    href={`mailto:${order.billing?.email || order.customerEmail}`}
                     className="text-meru-secondary hover:underline"
                   >
-                    {order.customerEmail}
+                    {order.billing?.email || order.customerEmail}
                   </a>
                 ) : (
                   "—"
@@ -270,14 +296,14 @@ export default function AdminOrderDetailPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-meru-muted">Teléfono</dt>
+              <dt className="text-meru-muted">Teléfono (WhatsApp)</dt>
               <dd>
-                {order.customerPhone ? (
+                {(order.billing?.phoneFull || order.customerPhone) ? (
                   <a
-                    href={`tel:${order.customerPhone}`}
+                    href={`tel:${order.billing?.phoneFull || order.customerPhone}`}
                     className="text-meru-secondary hover:underline"
                   >
-                    {order.customerPhone}
+                    {order.billing?.phoneFull || order.customerPhone}
                   </a>
                 ) : (
                   "—"
@@ -285,18 +311,56 @@ export default function AdminOrderDetailPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-meru-muted">DNI / Pasaporte</dt>
-              <dd className="text-meru-charcoal">{order.customerDni || "—"}</dd>
+              <dt className="text-meru-muted">Identificación</dt>
+              <dd className="text-meru-charcoal">
+                {order.billing
+                  ? `${order.billing.identificationType} ${order.billing.identificationNumber}`
+                  : order.customerDni || "—"}
+              </dd>
             </div>
+            {order.billing?.address ? (
+              <div>
+                <dt className="text-meru-muted">Dirección</dt>
+                <dd className="text-meru-charcoal">
+                  {order.billing.address.street}
+                  {order.billing.address.apartment
+                    ? `, ${order.billing.address.apartment}`
+                    : ""}
+                  <br />
+                  {order.billing.address.city}, {order.billing.address.country}
+                  <br />
+                  CP {order.billing.address.postalCode}
+                </dd>
+              </div>
+            ) : null}
             <div>
-              <dt className="text-meru-muted">Usuario (UID)</dt>
-              <dd className="font-mono text-xs text-meru-muted">{order.userId}</dd>
+              <dt className="text-meru-muted">Cuenta</dt>
+              <dd className="text-meru-muted">
+                {order.isGuest || !order.userId
+                  ? "Compra sin cuenta (invitado)"
+                  : `UID ${order.userId}`}
+              </dd>
             </div>
           </dl>
         </section>
 
         <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
           <h2 className="text-lg text-meru-charcoal">Pago y estado</h2>
+          {order.serviceOrderNumber ? (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+              <p className="font-semibold">Orden de servicio</p>
+              <p className="mt-1 font-mono text-base">{order.serviceOrderNumber}</p>
+              {order.serviceOrderGeneratedAt ? (
+                <p className="mt-1 text-xs">
+                  Generada: {new Date(order.serviceOrderGeneratedAt).toLocaleString("es-AR")}
+                </p>
+              ) : null}
+            </div>
+          ) : order.paymentStatus === "pendiente" ? (
+            <p className="text-sm text-meru-muted">
+              La orden de servicio se genera al confirmar el pago.
+            </p>
+          ) : null}
           <dl className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-meru-muted">Estado</dt>
@@ -373,22 +437,33 @@ export default function AdminOrderDetailPage() {
             </div>
           </dl>
 
-          {order.paymentStatus === "pendiente" ? (
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={() => void markPaid()} isLoading={saving}>
-                Marcar como pagado
-              </Button>
+          <div className="flex flex-wrap gap-2">
+            {order.paymentStatus === "pendiente" ? (
+              <>
+                <Button type="button" onClick={() => void markPaid()} isLoading={saving}>
+                  Confirmar pago y generar OS
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void cancelAndRelease()}
+                  isLoading={saving}
+                >
+                  Cancelar y liberar cupos
+                </Button>
+              </>
+            ) : null}
+            {order.paymentStatus === "pagado" ? (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => void cancelAndRelease()}
                 isLoading={saving}
               >
-                Cancelar y liberar cupos
+                Anular y liberar cupos
               </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
+            ) : null}
+            {order.paymentStatus !== "pendiente" ? (
               <Button
                 type="button"
                 variant="outline"
@@ -397,8 +472,8 @@ export default function AdminOrderDetailPage() {
               >
                 {order.archived ? "Restaurar del archivo" : "Archivar orden"}
               </Button>
-            </div>
-          )}
+            ) : null}
+          </div>
         </section>
       </div>
 

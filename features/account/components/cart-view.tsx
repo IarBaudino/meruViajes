@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,6 @@ import { formatCurrencyARS } from "@/lib/format";
 import { formatPassengersSummary, normalizeCartPassengers } from "@/features/excursions/lib/pricing";
 import { formatDepartureLabel } from "@/features/excursions/lib/departures";
 import { cartWhatsAppHref, orderWhatsAppHref } from "@/lib/whatsapp";
-
-type ProfileCheck = {
-  ok: boolean;
-  missing: string[];
-};
 
 type OrderItemRow = {
   serviceTitle?: string;
@@ -45,17 +41,14 @@ type UserOrder = {
 
 export function CartView() {
   const router = useRouter();
+  const { status } = useSession();
   const items = useCartStore((s) => s.items);
   const holdOrderId = useCartStore((s) => s.holdOrderId);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
-  const setHoldOrderId = useCartStore((s) => s.setHoldOrderId);
   const syncHoldWithOrders = useCartStore((s) => s.syncHoldWithOrders);
   const total = useCartStore((s) => s.totalPrice());
 
-  const [profileCheck, setProfileCheck] = useState<ProfileCheck | null>(null);
-  const [checkingOut, setCheckingOut] = useState(false);
-  const [checkoutError, setCheckoutError] = useState("");
   const [pendingOrders, setPendingOrders] = useState<UserOrder[]>([]);
   const [cancelledOrders, setCancelledOrders] = useState<UserOrder[]>([]);
   const [pendingLoading, setPendingLoading] = useState(true);
@@ -130,30 +123,17 @@ export function CartView() {
   }, []);
 
   useEffect(() => {
-    async function loadProfile() {
-      const res = await fetch("/api/users/me");
-      if (!res.ok) {
-        setProfileCheck({ ok: false, missing: ["perfil"] });
-        return;
-      }
-      const data = await res.json();
-      const missing: string[] = [];
-      if (!data.dni?.trim() || data.dni.trim().length < 6) missing.push("DNI / pasaporte");
-      if (!data.phone?.trim() || data.phone.trim().length < 6) missing.push("teléfono");
-      if (!data.name?.trim()) missing.push("nombre");
-      setProfileCheck({ ok: missing.length === 0, missing });
-    }
-    void loadProfile();
-  }, []);
-
-  useEffect(() => {
     if (!cartHydrated) return;
-    void loadOrders();
-  }, [cartHydrated, loadOrders]);
+    if (status === "authenticated") {
+      void loadOrders();
+    } else {
+      setPendingLoading(false);
+    }
+  }, [cartHydrated, loadOrders, status]);
 
   useEffect(() => {
     function onFocus() {
-      if (!cartHydrated) return;
+      if (!cartHydrated || status !== "authenticated") return;
       if (document.visibilityState === "hidden") return;
       void loadOrders();
     }
@@ -163,86 +143,19 @@ export function CartView() {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onFocus);
     };
-  }, [cartHydrated, loadOrders]);
+  }, [cartHydrated, loadOrders, status]);
 
   useEffect(() => {
     if (!cartHydrated) return;
     const shouldPoll = Boolean(holdOrderId) || pendingOrders.length > 0;
-    if (!shouldPoll) return;
+    if (!shouldPoll || status !== "authenticated") return;
     const id = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       void loadOrders();
     }, 10000);
     return () => window.clearInterval(id);
-  }, [cartHydrated, holdOrderId, pendingOrders.length, loadOrders]);
+  }, [cartHydrated, holdOrderId, pendingOrders.length, loadOrders, status]);
 
-  async function handleCheckout() {
-    setCheckoutError("");
-    setCheckingOut(true);
-
-    try {
-      if (holdOrderId) {
-        throw new Error(
-          "Ya tenés una reserva pendiente de pago. Enviá el mensaje por WhatsApp o esperá la confirmación."
-        );
-      }
-
-      const missingDeparture = items.some((item) => {
-        if ((item.kind ?? "service") === "package") {
-          return !item.stayFrom || !item.stayTo;
-        }
-        return !item.departureDate || !item.departureTime || !item.departureId;
-      });
-      if (missingDeparture) {
-        throw new Error(
-          "Hay ítems sin fechas. Quitálos del carrito y volvé a reservar."
-        );
-      }
-
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paymentMethod: "coordinar",
-          items: items.map((item) => ({
-            kind: item.kind ?? "service",
-            serviceId: item.serviceId,
-            packageId: item.packageId,
-            quantity: item.quantity,
-            passengers: item.passengers,
-            departureId: item.departureId,
-            departureDate: item.departureDate,
-            departureTime: item.departureTime,
-            catalogSeason: item.catalogSeason,
-            stayFrom: item.stayFrom,
-            stayTo: item.stayTo,
-          })),
-        }),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.error ?? "No se pudo confirmar la reserva");
-      }
-
-      const orderId = String(json.orderId ?? "");
-      if (orderId) {
-        setHoldOrderId(orderId);
-      }
-
-      setJustReserved(true);
-
-      await loadOrders();
-      router.replace("/mi-cuenta/carrito?reserva=pendiente");
-    } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : "Error al confirmar");
-    } finally {
-      setCheckingOut(false);
-    }
-  }
-
-  const profileIncomplete = profileCheck && !profileCheck.ok;
   const cartEmpty = items.length === 0;
   const reserved = Boolean(holdOrderId);
   const noPending = !pendingLoading && pendingOrders.length === 0;
@@ -252,8 +165,28 @@ export function CartView() {
     <div>
       <PageHeader
         title="Carrito"
-        description="Reservá el cupo y procedé al pago enviando un mensaje por WhatsApp."
+        description="Revisá tu selección y continuá a facturación para reservar el cupo."
       />
+
+      {status !== "authenticated" && !reserved ? (
+        <div className="mb-6 rounded-xl border border-meru-secondary/30 bg-meru-ice/60 p-4 text-sm text-meru-charcoal">
+          Podés comprar sin cuenta. Si{" "}
+          <Link
+            href={`/login?callbackUrl=${encodeURIComponent("/carrito")}`}
+            className="font-semibold text-meru-secondary underline"
+          >
+            iniciás sesión
+          </Link>{" "}
+          o{" "}
+          <Link
+            href={`/registro?callbackUrl=${encodeURIComponent("/carrito")}`}
+            className="font-semibold text-meru-secondary underline"
+          >
+            creás una cuenta
+          </Link>
+          , vas a poder seguir tus reservas más fácil.
+        </div>
+      ) : null}
 
       {justReserved || reserved ? (
         <p className="mb-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
@@ -269,20 +202,6 @@ export function CartView() {
         </p>
       ) : null}
 
-      {profileIncomplete ? (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <p className="flex items-start gap-2">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <span>
-              Completá tu {profileCheck.missing.join(", ")} en{" "}
-              <Link href="/mi-cuenta/perfil" className="font-semibold underline">
-                Mi perfil
-              </Link>{" "}
-              antes de confirmar.
-            </span>
-          </p>
-        </div>
-      ) : null}
 
       {!pendingLoading && pendingOrders.length > 0 ? (
         <section className="mb-10">
@@ -547,64 +466,21 @@ export function CartView() {
                 </div>
               </div>
             ) : (
-              <>
-                <fieldset className="mt-6 rounded-xl border border-meru-border bg-white p-5">
-                  <legend className="px-1 text-sm font-medium text-meru-charcoal">
-                    Forma de pago
-                  </legend>
-                  <p className="mt-2 text-sm text-meru-charcoal">
-                    Para proceder al pago, enviá un mensaje por WhatsApp.
-                  </p>
-                  <p className="mt-1 text-xs text-meru-muted">
-                    Confirmá la reserva para guardar el cupo y después escribinos. Te llega un
-                    mensaje listo con el detalle del carrito.
-                  </p>
-                  <div className="mt-4">
-                    <WhatsAppButton
-                      href={cartWhatsAppHref({ items, total, orderId: holdOrderId })}
-                    />
-                  </div>
-                </fieldset>
-
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
-                  <p className="text-lg text-meru-charcoal">
-                    Total:{" "}
-                    <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={clearCart}
-                      disabled={checkingOut}
-                    >
-                      Vaciar carrito
-                    </Button>
-                    <Button
-                      type="button"
-                      size="lg"
-                      disabled={checkingOut || profileIncomplete === true}
-                      onClick={() => void handleCheckout()}
-                    >
-                      {checkingOut ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                          Confirmando…
-                        </>
-                      ) : (
-                        "Confirmar reserva"
-                      )}
-                    </Button>
-                  </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
+                <p className="text-lg text-meru-charcoal">
+                  Total:{" "}
+                  <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button type="button" variant="outline" onClick={clearCart}>
+                    Vaciar carrito
+                  </Button>
+                  <Button type="button" size="lg" onClick={() => router.push("/checkout")}>
+                    Continuar a facturación
+                  </Button>
                 </div>
-              </>
+              </div>
             )}
-
-            {checkoutError ? (
-              <p className="mt-4 text-sm text-red-600" role="alert">
-                {checkoutError}
-              </p>
-            ) : null}
           </>
         )}
       </section>

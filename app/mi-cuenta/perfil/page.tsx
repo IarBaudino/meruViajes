@@ -8,7 +8,7 @@ export default function ProfilePage() {
     <div className="rounded-xl border border-meru-border bg-white p-6 sm:p-8">
       <PageHeader
         title="Mi perfil"
-        description="Actualizá tus datos de contacto para reservas."
+        description="Datos personales y de facturación para agilizar tus reservas."
       />
       <AdminAccessBanner />
       <ProfileForm />

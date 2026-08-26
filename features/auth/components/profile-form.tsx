@@ -5,7 +5,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import {
+  billingToFormValues,
+  normalizeBilling,
+  parseStoredBilling,
+  type OrderBillingFormData,
+} from "@/schemas/billing";
 import { profileSchema, type ProfileFormData } from "@/schemas/user";
+import { BillingFormFields } from "@/features/checkout/components/billing-form-fields";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +29,19 @@ export function ProfileForm() {
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phoneCountryCode: "+54",
+      phoneNumber: "",
+      identificationType: "DNI",
+      identificationNumber: "",
+      addressCountry: "Argentina",
+      addressCity: "",
+      addressStreet: "",
+      addressApartment: "",
+      addressPostalCode: "",
+    },
   });
 
   useEffect(() => {
@@ -32,12 +52,29 @@ export function ProfileForm() {
           throw new Error("No se pudo cargar el perfil");
         }
         const data = await res.json();
+        const stored = parseStoredBilling(data.billing);
+        const email = data.email ?? session?.user?.email ?? "";
+        const name = data.name ?? "";
+        const formBilling = billingToFormValues(stored, {
+          fullName: name,
+          email,
+          phoneNumber: data.phone ?? "",
+          identificationNumber: data.dni ?? "",
+          addressStreet: typeof data.address === "string" ? data.address : "",
+        });
+
         reset({
-          name: data.name ?? "",
-          email: data.email ?? session?.user?.email ?? "",
-          dni: data.dni ?? "",
-          phone: data.phone ?? "",
-          address: data.address ?? "",
+          name: name || formBilling.fullName,
+          email: email || formBilling.email,
+          phoneCountryCode: formBilling.phoneCountryCode,
+          phoneNumber: formBilling.phoneNumber,
+          identificationType: formBilling.identificationType,
+          identificationNumber: formBilling.identificationNumber,
+          addressCountry: formBilling.addressCountry,
+          addressCity: formBilling.addressCity,
+          addressStreet: formBilling.addressStreet,
+          addressApartment: formBilling.addressApartment,
+          addressPostalCode: formBilling.addressPostalCode,
         });
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : "Error al cargar");
@@ -54,10 +91,34 @@ export function ProfileForm() {
     setSaveError("");
 
     try {
+      const billingPayload: OrderBillingFormData = {
+        fullName: data.name,
+        email: data.email,
+        phoneCountryCode: data.phoneCountryCode,
+        phoneNumber: data.phoneNumber,
+        identificationType: data.identificationType,
+        identificationNumber: data.identificationNumber,
+        addressCountry: data.addressCountry,
+        addressCity: data.addressCity,
+        addressStreet: data.addressStreet,
+        addressApartment: data.addressApartment,
+        addressPostalCode: data.addressPostalCode,
+      };
+      const billing = normalizeBilling(billingPayload);
+
       const res = await fetch("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          billing: billingPayload,
+          dni: billing.identificationNumber,
+          phone: billing.phoneFull,
+          address: `${billing.address.street}${
+            billing.address.apartment ? `, ${billing.address.apartment}` : ""
+          }, ${billing.address.city}, ${billing.address.country} (${billing.address.postalCode})`,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -74,19 +135,43 @@ export function ProfileForm() {
     return <p className="text-red-600">{loadError}</p>;
   }
 
+  // BillingFormFields espera OrderBillingFormData; casteamos register/errors
+  // porque fullName/email viven en name/email del perfil.
+  const billingRegister = register as unknown as Parameters<
+    typeof BillingFormFields
+  >[0]["register"];
+  const billingErrors = errors as unknown as Parameters<
+    typeof BillingFormFields
+  >[0]["errors"];
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5" noValidate>
-      <Input label="Nombre completo" error={errors.name?.message} {...register("name")} />
-      <Input
-        label="Correo electrónico"
-        type="email"
-        disabled
-        error={errors.email?.message}
-        {...register("email")}
-      />
-      <Input label="DNI / Pasaporte" error={errors.dni?.message} {...register("dni")} />
-      <Input label="Teléfono" type="tel" error={errors.phone?.message} {...register("phone")} />
-      <Input label="Dirección" error={errors.address?.message} {...register("address")} />
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8" noValidate>
+      <section className="space-y-5">
+        <div>
+          <h2 className="text-base font-medium text-meru-charcoal">Datos personales</h2>
+          <p className="mt-1 text-sm text-meru-muted">
+            Nombre y correo de tu cuenta. El nombre también se usa en la facturación.
+          </p>
+        </div>
+        <Input label="Nombre completo" error={errors.name?.message} {...register("name")} />
+        <Input
+          label="Correo electrónico"
+          type="email"
+          disabled
+          error={errors.email?.message}
+          {...register("email")}
+        />
+      </section>
+
+      <section className="space-y-5 border-t border-meru-border pt-8">
+        <div>
+          <h2 className="text-base font-medium text-meru-charcoal">Datos de facturación</h2>
+          <p className="mt-1 text-sm text-meru-muted">
+            Se autocompletan al comprar. Podés actualizarlos cuando quieras.
+          </p>
+        </div>
+        <BillingFormFields register={billingRegister} errors={billingErrors} hideIdentity />
+      </section>
 
       {saveStatus === "success" && (
         <p className="flex items-center gap-2 text-sm text-green-700">

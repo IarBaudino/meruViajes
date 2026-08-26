@@ -61,12 +61,19 @@ export async function POST(request: Request) {
   if (paid) {
     const data = orderSnap.data()!;
     if (data.paymentStatus !== "pagado") {
+      const { generateServiceOrderNumber } = await import("@/lib/checkout/service-order");
+      const serviceOrderNumber =
+        String(data.serviceOrderNumber ?? "").trim() ||
+        generateServiceOrderNumber(reference);
+      const paidAt = new Date();
       await orderRef.set(
         {
           paymentStatus: "pagado",
-          paidAt: new Date(),
+          paidAt,
           paidVia: "getnet",
-          updatedAt: new Date(),
+          serviceOrderNumber,
+          serviceOrderGeneratedAt: paidAt,
+          updatedAt: paidAt,
         },
         { merge: true }
       );
@@ -78,6 +85,8 @@ export async function POST(request: Request) {
           customerEmail: String(data.customerEmail ?? ""),
           total: Number(data.total ?? 0),
           items: Array.isArray(data.items) ? data.items : [],
+          billing: data.billing ?? null,
+          serviceOrderNumber,
         });
       } catch (err) {
         console.error("[getnet webhook] paid email", err);

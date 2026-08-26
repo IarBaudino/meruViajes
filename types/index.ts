@@ -23,6 +23,8 @@ export interface User {
   dni?: string;
   phone?: string;
   address?: string;
+  /** Datos de facturación guardados en la cuenta (autocompletan el checkout). */
+  billing?: OrderBilling | null;
   image?: string;
   shoppingCart?: CartItem[];
   active: boolean;
@@ -183,6 +185,33 @@ export interface SeasonalPhoto {
 
 export type PaymentStatus = "pendiente" | "pagado" | "cancelado";
 
+export type IdentificationType =
+  | "CUIT"
+  | "DNI"
+  | "CUIL"
+  | "IVA"
+  | "Passport"
+  | "ID extranjera"
+  | "SIGD";
+
+/** Datos de facturación / contacto cargados al confirmar la reserva. */
+export interface OrderBilling {
+  fullName: string;
+  email: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
+  phoneFull: string;
+  identificationType: IdentificationType;
+  identificationNumber: string;
+  address: {
+    country: string;
+    city: string;
+    street: string;
+    apartment?: string;
+    postalCode: string;
+  };
+}
+
 export interface OrderItem {
   serviceId: string;
   serviceTitle: string;
@@ -235,7 +264,8 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  userId: string;
+  /** Vacío o null si es compra invitada (sin cuenta). */
+  userId?: string | null;
   orderDate: Date;
   total: number;
   paymentMethod?: string;
@@ -246,6 +276,14 @@ export interface Order {
   customerEmail?: string;
   customerDni?: string;
   customerPhone?: string;
+  /** Facturación completa (reserva pendiente y orden de servicio). */
+  billing?: OrderBilling | null;
+  /**
+   * Número de orden de servicio. Se asigna cuando el admin confirma el pago.
+   * Ejemplo: OS-20260826-A1B2C3
+   */
+  serviceOrderNumber?: string | null;
+  serviceOrderGeneratedAt?: Date | null;
   /** Oculta la orden del listado principal de admin. */
   archived?: boolean;
   archivedAt?: Date | null;

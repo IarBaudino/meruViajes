@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useCartStore } from "@/stores/cart-store";
 
 type Props = {
@@ -11,12 +10,8 @@ type Props = {
 };
 
 export function CartNavLink({ onNavigate, className }: Props) {
-  const { status } = useSession();
   const totalItems = useCartStore((s) => s.totalItems());
-  const href =
-    status === "authenticated"
-      ? "/mi-cuenta/carrito"
-      : `/login?callbackUrl=${encodeURIComponent("/mi-cuenta/carrito")}`;
+  const href = "/carrito";
 
   return (
     <Link

@@ -1,5 +1,6 @@
 import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import type { CheckoutItemInput } from "@/schemas/checkout";
+import type { OrderBilling } from "@/schemas/billing";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import type { DepartureSlot, OrderItem, PaymentStatus, CatalogSeason } from "@/types";
@@ -55,48 +56,25 @@ type StockUpdate =
       catalogSeason?: CatalogSeason;
     };
 
-function requireProfileFields(profile: {
-  name?: string;
-  dni?: string;
-  phone?: string;
-}): void {
-  if (!profile.name?.trim()) {
-    throw new CheckoutError("Completá tu nombre en Mi perfil antes de reservar.", 400);
-  }
-  if (!profile.dni?.trim() || profile.dni.trim().length < 6) {
-    throw new CheckoutError("Completá tu DNI o pasaporte en Mi perfil antes de reservar.", 400);
-  }
-  if (!profile.phone?.trim() || profile.phone.trim().length < 6) {
-    throw new CheckoutError("Completá tu teléfono en Mi perfil antes de reservar.", 400);
-  }
-}
+export type CreateCheckoutParams = {
+  items: CheckoutItemInput[];
+  billing: OrderBilling;
+  paymentMethod?: PaymentMethod;
+  userId?: string | null;
+};
 
-export async function createCheckout(
-  userId: string,
-  items: CheckoutItemInput[],
-  paymentMethod: PaymentMethod = "coordinar"
-): Promise<CheckoutResult> {
+export async function createCheckout(params: CreateCheckoutParams): Promise<CheckoutResult> {
+  const { items, billing, paymentMethod = "coordinar", userId = null } = params;
+
   const db = getAdminFirestore();
   if (!db) {
     throw new CheckoutError("Servidor no configurado", 503);
   }
 
-  const userSnap = await db.collection("users").doc(userId).get();
-  if (!userSnap.exists) {
-    throw new CheckoutError("Perfil de usuario no encontrado", 404);
-  }
-
-  const userData = userSnap.data()!;
-  requireProfileFields({
-    name: userData.name,
-    dni: userData.dni,
-    phone: userData.phone,
-  });
-
-  const customerDni = String(userData.dni).trim();
-  const customerName = String(userData.name).trim();
-  const customerEmail = String(userData.email ?? "").trim();
-  const customerPhone = String(userData.phone).trim();
+  const customerName = billing.fullName;
+  const customerEmail = billing.email;
+  const customerPhone = billing.phoneFull;
+  const customerDni = billing.identificationNumber;
   const paymentStatus: PaymentStatus = "pendiente";
 
   let earliestDeparture: Date | null = null;
@@ -131,10 +109,11 @@ export async function createCheckout(
     const orderItems: OrderLine[] = [];
     const bookingDrafts: BookingDraft[] = [];
     const stockUpdates: StockUpdate[] = [];
-    /** Acumula cambios de turnos por serviceId + temporada dentro de la misma tx. */
-    const pendingDepartures = new Map<string, { departures: DepartureSlot[]; catalogSeason?: CatalogSeason }>();
+    const pendingDepartures = new Map<
+      string,
+      { departures: DepartureSlot[]; catalogSeason?: CatalogSeason }
+    >();
 
-    // 1) Todas las lecturas primero (regla de transacciones Firestore).
     for (const item of items) {
       const kind = item.kind ?? "service";
 
@@ -168,7 +147,6 @@ export async function createCheckout(
         }
 
         const serviceIds = pkg.serviceIds;
-
         if (serviceIds.length === 0) {
           throw new CheckoutError(`"${title}" no tiene excursiones asociadas.`, 400);
         }
@@ -210,7 +188,6 @@ export async function createCheckout(
           throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
         }
 
-        // No se tocan turnos/cupos de excursiones: el admin arma el itinerario a mano.
         orderItems.push({
           serviceId: packageId,
           serviceTitle: title,
@@ -337,10 +314,6 @@ export async function createCheckout(
       };
       pendingDepartures.set(pendingKey, { departures: working, catalogSeason });
 
-      const departureId = slot.id;
-      const departureDate = slot.date;
-      const departureTime = slot.time;
-
       const unitPrice = getEffectiveAdultPrice(resolved);
       if (unitPrice <= 0) {
         throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
@@ -356,9 +329,9 @@ export async function createCheckout(
         unitPrice,
         lineTotal,
         passengers,
-        departureId,
-        departureDate,
-        departureTime,
+        departureId: slot.id,
+        departureDate: slot.date,
+        departureTime: slot.time,
         catalogSeason,
       });
 
@@ -369,9 +342,9 @@ export async function createCheckout(
         unitPrice,
         lineTotal,
         passengers,
-        departureId,
-        departureDate,
-        departureTime,
+        departureId: slot.id,
+        departureDate: slot.date,
+        departureTime: slot.time,
       });
     }
 
@@ -386,7 +359,6 @@ export async function createCheckout(
       });
     }
 
-    // 2) Escrituras
     for (const update of stockUpdates) {
       if (update.kind === "stock") {
         tx.update(update.ref, {
@@ -411,7 +383,8 @@ export async function createCheckout(
     const now = FieldValue.serverTimestamp();
 
     tx.set(orderRef, {
-      userId,
+      userId: userId || null,
+      isGuest: !userId,
       orderDate: now,
       total,
       paymentStatus,
@@ -421,6 +394,9 @@ export async function createCheckout(
       customerEmail,
       customerDni,
       customerPhone,
+      billing,
+      serviceOrderNumber: null,
+      serviceOrderGeneratedAt: null,
       holdExpiresAt,
       stockReleased: false,
       archived: false,
@@ -435,7 +411,7 @@ export async function createCheckout(
       bookingIds.push(bookingRef.id);
 
       tx.set(bookingRef, {
-        userId,
+        userId: userId || null,
         serviceId: draft.serviceId,
         serviceTitle: draft.serviceTitle,
         serviceOrderId: orderRef.id,
@@ -448,6 +424,8 @@ export async function createCheckout(
         departureDate: draft.departureDate ?? null,
         departureTime: draft.departureTime ?? null,
         DNI_Personal: customerDni,
+        customerEmail,
+        customerPhone,
         bookingDate: now,
         active: true,
         createdAt: now,

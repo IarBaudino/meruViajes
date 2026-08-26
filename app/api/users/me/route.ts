@@ -3,6 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPasswordProvider } from "@/lib/auth/auth-providers";
 import { getAdminAuth, getAdminFirestore } from "@/lib/firebase/admin";
+import {
+  normalizeBilling,
+  orderBillingSchema,
+  parseStoredBilling,
+} from "@/schemas/billing";
 import { profileSchema } from "@/schemas/user";
 
 export async function GET() {
@@ -44,6 +49,7 @@ export async function GET() {
     dni: data.dni ?? "",
     phone: data.phone ?? "",
     address: data.address ?? "",
+    billing: parseStoredBilling(data.billing),
     role: data.role ?? session.user.role ?? "customer",
     authProviders,
     hasPasswordLogin,
@@ -57,14 +63,66 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json();
-  const parsed = profileSchema.safeParse({
-    ...body,
-    email: session.user.email,
+  const email = session.user.email ?? body.email;
+
+  const billingRaw = body.billing
+    ? {
+        ...body.billing,
+        fullName: body.billing.fullName ?? body.name,
+        email: body.billing.email ?? email,
+      }
+    : {
+        fullName: body.name,
+        email,
+        phoneCountryCode: body.phoneCountryCode,
+        phoneNumber: body.phoneNumber,
+        identificationType: body.identificationType,
+        identificationNumber: body.identificationNumber,
+        addressCountry: body.addressCountry,
+        addressCity: body.addressCity,
+        addressStreet: body.addressStreet,
+        addressApartment: body.addressApartment,
+        addressPostalCode: body.addressPostalCode,
+      };
+
+  const parsedProfile = profileSchema.safeParse({
+    name: body.name,
+    email,
+    phoneCountryCode: billingRaw.phoneCountryCode,
+    phoneNumber: billingRaw.phoneNumber,
+    identificationType: billingRaw.identificationType,
+    identificationNumber: billingRaw.identificationNumber,
+    addressCountry: billingRaw.addressCountry,
+    addressCity: billingRaw.addressCity,
+    addressStreet: billingRaw.addressStreet,
+    addressApartment: billingRaw.addressApartment ?? "",
+    addressPostalCode: billingRaw.addressPostalCode,
   });
 
-  if (!parsed.success) {
+  if (!parsedProfile.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Datos inválidos" },
+      { error: parsedProfile.error.issues[0]?.message ?? "Datos inválidos" },
+      { status: 400 }
+    );
+  }
+
+  const billingParsed = orderBillingSchema.safeParse({
+    fullName: parsedProfile.data.name,
+    email: parsedProfile.data.email,
+    phoneCountryCode: parsedProfile.data.phoneCountryCode,
+    phoneNumber: parsedProfile.data.phoneNumber,
+    identificationType: parsedProfile.data.identificationType,
+    identificationNumber: parsedProfile.data.identificationNumber,
+    addressCountry: parsedProfile.data.addressCountry,
+    addressCity: parsedProfile.data.addressCity,
+    addressStreet: parsedProfile.data.addressStreet,
+    addressApartment: parsedProfile.data.addressApartment ?? "",
+    addressPostalCode: parsedProfile.data.addressPostalCode,
+  });
+
+  if (!billingParsed.success) {
+    return NextResponse.json(
+      { error: billingParsed.error.issues[0]?.message ?? "Datos de facturación inválidos" },
       { status: 400 }
     );
   }
@@ -74,21 +132,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Servidor no configurado" }, { status: 503 });
   }
 
-  const { name, dni, phone, address } = parsed.data;
+  const billing = normalizeBilling(billingParsed.data);
+  const addressLine = `${billing.address.street}${
+    billing.address.apartment ? `, ${billing.address.apartment}` : ""
+  }, ${billing.address.city}, ${billing.address.country} (${billing.address.postalCode})`;
 
   await db
     .collection("users")
     .doc(session.user.id)
     .set(
       {
-        name,
-        dni: dni ?? "",
-        phone: phone ?? "",
-        address: address ?? "",
+        name: parsedProfile.data.name,
+        dni: billing.identificationNumber,
+        phone: billing.phoneFull,
+        address: addressLine,
+        billing,
         updatedAt: new Date(),
       },
       { merge: true }
     );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, billing });
 }

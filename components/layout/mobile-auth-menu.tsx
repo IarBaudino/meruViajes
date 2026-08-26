@@ -13,9 +13,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
   const { data: session, status } = useSession();
   const user = session?.user;
   const totalItems = useCartStore((s) => s.totalItems());
-  const cartHref = user?.email
-    ? "/mi-cuenta/carrito"
-    : `/login?callbackUrl=${encodeURIComponent("/mi-cuenta/carrito")}`;
+  const cartHref = "/carrito";
 
   if (status === "loading") {
     return null;

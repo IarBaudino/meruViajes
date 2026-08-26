@@ -90,7 +90,11 @@ export async function GET(request: Request, context: RouteContext) {
       customerEmail: data.customerEmail ?? "",
       customerDni: data.customerDni ?? "",
       customerPhone: data.customerPhone ?? "",
+      billing: data.billing ?? null,
+      serviceOrderNumber: data.serviceOrderNumber ?? null,
+      serviceOrderGeneratedAt: serializeTimestamp(data.serviceOrderGeneratedAt),
       items: Array.isArray(data.items) ? data.items : [],
+      isGuest: data.isGuest === true,
       archived: data.archived === true,
       holdExpiresAt: serializeTimestamp(data.holdExpiresAt),
       stockReleased: data.stockReleased === true,
@@ -200,21 +204,24 @@ export async function PATCH(request: Request, context: RouteContext) {
     const markingPaid = nextStatus === "pagado" && current !== "pagado";
     const beforeData = snap.data()!;
 
-    await ref.set(
-      {
-        paymentStatus: nextStatus,
-        updatedAt: new Date(),
-        ...(markingPaid
-          ? {
-              paidAt: new Date(),
-              paidVia: "manual",
-            }
-          : {}),
-      },
-      { merge: true }
-    );
-
     if (markingPaid) {
+      const serviceOrderNumber =
+        String(beforeData.serviceOrderNumber ?? "").trim() ||
+        (await import("@/lib/checkout/service-order")).generateServiceOrderNumber(id);
+      const paidAt = new Date();
+
+      await ref.set(
+        {
+          paymentStatus: nextStatus,
+          updatedAt: paidAt,
+          paidAt,
+          paidVia: "manual",
+          serviceOrderNumber,
+          serviceOrderGeneratedAt: paidAt,
+        },
+        { merge: true }
+      );
+
       try {
         const { sendOrderPaidEmail } = await import("@/lib/checkout/send-checkout-emails");
         await sendOrderPaidEmail({
@@ -223,11 +230,26 @@ export async function PATCH(request: Request, context: RouteContext) {
           customerEmail: String(beforeData.customerEmail ?? ""),
           total: Number(beforeData.total ?? 0),
           items: Array.isArray(beforeData.items) ? beforeData.items : [],
+          billing: beforeData.billing ?? null,
+          serviceOrderNumber,
         });
       } catch (err) {
         console.error("[admin/orders] paid email", err);
       }
+
+      return NextResponse.json(
+        { ok: true, paymentStatus: nextStatus, serviceOrderNumber },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
+
+    await ref.set(
+      {
+        paymentStatus: nextStatus,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
 
     return NextResponse.json(
       { ok: true, paymentStatus: nextStatus },

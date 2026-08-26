@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { orderBillingSchema } from "@/schemas/billing";
 
 export const discountedSeatSchema = z.object({
   optionId: z.string().min(1),
@@ -99,6 +100,7 @@ export const checkoutItemSchema = z
 export const checkoutSchema = z.object({
   items: z.array(checkoutItemSchema).min(1).max(15),
   paymentMethod: z.enum(["coordinar", "getnet"]).default("coordinar"),
+  billing: orderBillingSchema,
 });
 
 export type CheckoutItemInput = z.infer<typeof checkoutItemSchema>;

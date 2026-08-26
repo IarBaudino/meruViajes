@@ -125,7 +125,8 @@ export type ReleaseOrderResult =
   | { ok: false; error: string; status: number };
 
 /**
- * Cancela una orden pendiente y devuelve los cupos.
+ * Cancela una orden y devuelve los cupos.
+ * El admin puede anular pendientes o pagadas; el vencimiento automático solo toca pendientes.
  * Idempotente: si ya estaba cancelada con stock liberado, no vuelve a sumar.
  */
 export async function cancelOrderAndReleaseStock(
@@ -145,10 +146,10 @@ export async function cancelOrderAndReleaseStock(
       const data = snap.data()!;
       const paymentStatus = String(data.paymentStatus ?? "pendiente");
 
-      if (paymentStatus === "pagado") {
+      if (paymentStatus === "pagado" && reason !== "admin") {
         return {
           ok: false as const,
-          error: "La orden ya está pagada; no se pueden liberar los cupos.",
+          error: "La orden ya está pagada; no se pueden liberar los cupos automáticamente.",
           status: 400,
         };
       }

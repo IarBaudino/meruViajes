@@ -4,6 +4,8 @@ import {
   formatPassengersSummary,
   normalizeCartPassengers,
 } from "@/features/excursions/lib/pricing";
+import type { OrderBilling } from "@/schemas/billing";
+import { formatBillingAddress } from "@/schemas/billing";
 import type { OrderItem } from "@/types";
 
 type CheckoutEmailParams = {
@@ -12,6 +14,8 @@ type CheckoutEmailParams = {
   customerEmail: string;
   total: number;
   items: OrderItem[];
+  billing?: OrderBilling | null;
+  serviceOrderNumber?: string | null;
 };
 
 export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<void> {
@@ -52,6 +56,18 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
 
   const orderRef = params.orderId.slice(0, 8).toUpperCase();
   const hasManualPackage = params.items.some((i) => i.fulfillmentMode === "manual");
+  const billingHtml = params.billing
+    ? `
+      <p><strong>Facturación / contacto</strong></p>
+      <ul>
+        <li>Nombre: ${params.billing.fullName}</li>
+        <li>Email: ${params.billing.email}</li>
+        <li>WhatsApp: ${params.billing.phoneFull}</li>
+        <li>ID: ${params.billing.identificationType} ${params.billing.identificationNumber}</li>
+        <li>Dirección: ${formatBillingAddress(params.billing)}</li>
+      </ul>
+    `
+    : "";
 
   await resend.emails.send({
     from: resendDefaults.from,
@@ -61,7 +77,7 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
       ${logoHtml}
       <p>Hola ${params.customerName},</p>
       <p>Recibimos tu reserva. El cupo quedó reservado con pago <strong>pendiente</strong>.</p>
-      <p>Para abonar, escribinos por WhatsApp desde el carrito o respondé este mail. Cuando confirmemos el pago, te llega otro aviso y la reserva aparece en <strong>Mis reservas</strong>.</p>
+      <p>Para abonar, escribinos por WhatsApp o respondé este mail. Cuando confirmemos el pago, te enviamos la orden de servicio.</p>
       <p><strong>Nº de pedido:</strong> ${params.orderId}</p>
       <ul>${itemsHtml}</ul>
       <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
@@ -86,6 +102,7 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
       }
       <p><strong>Cliente:</strong> ${params.customerName} (${params.customerEmail})</p>
       <p><strong>Pedido:</strong> ${params.orderId}</p>
+      ${billingHtml}
       <ul>${itemsHtml}</ul>
       <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
     `,
@@ -132,6 +149,19 @@ export async function sendOrderPaidEmail(params: CheckoutEmailParams): Promise<v
   const logoHtml = orderLogoHtml();
   const orderRef = params.orderId.slice(0, 8).toUpperCase();
   const itemsHtml = simpleItemsHtml(params.items);
+  const osNumber = params.serviceOrderNumber?.trim() || null;
+  const billingHtml = params.billing
+    ? `
+      <p><strong>Datos de facturación</strong></p>
+      <ul>
+        <li>Nombre: ${params.billing.fullName}</li>
+        <li>Email: ${params.billing.email}</li>
+        <li>WhatsApp: ${params.billing.phoneFull}</li>
+        <li>ID: ${params.billing.identificationType} ${params.billing.identificationNumber}</li>
+        <li>Dirección: ${formatBillingAddress(params.billing)}</li>
+      </ul>
+    `
+    : "";
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
     /\/$/,
     ""
@@ -140,14 +170,18 @@ export async function sendOrderPaidEmail(params: CheckoutEmailParams): Promise<v
   await resend.emails.send({
     from: resendDefaults.from,
     to: params.customerEmail,
-    subject: `Reserva confirmada y abonada — Meru Viajes (#${orderRef})`,
+    subject: osNumber
+      ? `Orden de servicio ${osNumber} — Meru Viajes`
+      : `Reserva confirmada y abonada — Meru Viajes (#${orderRef})`,
     html: `
       ${logoHtml}
       <p>Hola ${params.customerName},</p>
       <p>Tu reserva <strong>#${orderRef}</strong> ya está <strong>confirmada y abonada</strong>.</p>
+      ${osNumber ? `<p><strong>Orden de servicio:</strong> ${osNumber}</p>` : ""}
       <ul>${itemsHtml}</ul>
+      ${billingHtml}
       <p><strong>Total abonado:</strong> ${formatCurrencyARS(params.total)}</p>
-      <p>Podés verla en <a href="${appUrl}/mi-cuenta/reservas">Mis reservas</a>.</p>
+      <p>Podés verla en <a href="${appUrl}/mi-cuenta/reservas">Mis reservas</a> si tenés cuenta.</p>
       <p>¡Gracias por elegirnos!<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
     `,
   });
@@ -155,12 +189,16 @@ export async function sendOrderPaidEmail(params: CheckoutEmailParams): Promise<v
   await resend.emails.send({
     from: resendDefaults.from,
     to: resendDefaults.to,
-    subject: `[Meru] Reserva pagada — ${params.customerName} (#${orderRef})`,
+    subject: osNumber
+      ? `[Meru] Orden de servicio ${osNumber} — ${params.customerName}`
+      : `[Meru] Reserva pagada — ${params.customerName} (#${orderRef})`,
     html: `
       ${logoHtml}
-      <h2>Reserva confirmada / pagada</h2>
+      <h2>Orden de servicio generada</h2>
+      ${osNumber ? `<p><strong>Nº OS:</strong> ${osNumber}</p>` : ""}
       <p><strong>Cliente:</strong> ${params.customerName} (${params.customerEmail})</p>
       <p><strong>Pedido:</strong> ${params.orderId}</p>
+      ${billingHtml}
       <ul>${itemsHtml}</ul>
       <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
     `,

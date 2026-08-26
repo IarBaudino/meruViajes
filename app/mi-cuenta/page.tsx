@@ -10,7 +10,7 @@ export default async function AccountHomePage() {
 
   const links = [
     { href: "/mi-cuenta/perfil", label: "Completar perfil", icon: User },
-    { href: "/mi-cuenta/carrito", label: "Carrito", icon: ShoppingCart },
+    { href: "/carrito", label: "Carrito", icon: ShoppingCart },
     { href: "/mi-cuenta/reservas", label: "Reservas", icon: CalendarCheck },
   ];
 
