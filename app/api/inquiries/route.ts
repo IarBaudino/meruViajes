@@ -4,6 +4,20 @@ import { inquirySchema } from "@/schemas/inquiry";
 import { getAdminFirestore, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getResend, isResendConfigured, resendDefaults } from "@/lib/resend";
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function relatedLabel(kind?: string) {
+  if (kind === "package") return "Paquete";
+  if (kind === "excursion") return "Excursión";
+  return "Producto";
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -16,7 +30,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, message } = parsed.data;
+    const { name, email, message, relatedKind, relatedSlug, relatedTitle } = parsed.data;
+    const title = relatedTitle?.trim() || "";
+    const slug = relatedSlug?.trim() || "";
+    const kind = relatedKind;
+    const hasRelated = Boolean(title || slug);
 
     if (isFirebaseAdminConfigured()) {
       const db = getAdminFirestore();
@@ -25,7 +43,11 @@ export async function POST(request: Request) {
           name,
           email,
           message,
+          ...(kind ? { relatedKind: kind } : {}),
+          ...(slug ? { relatedSlug: slug } : {}),
+          ...(title ? { relatedTitle: title } : {}),
           status: "nuevo",
+          archived: false,
           createdAt: FieldValue.serverTimestamp(),
         });
       }
@@ -36,19 +58,26 @@ export async function POST(request: Request) {
       if (resend) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar";
         const logoHtml = `<img src="${appUrl.replace(/\/$/, "")}/logo.png" alt="Meru Viajes y Turismo" width="120" style="display:block;margin:0 0 20px 0" />`;
+        const relatedHtml = hasRelated
+          ? `<p><strong>${relatedLabel(kind)}:</strong> ${escapeHtml(title || slug)}${
+              slug ? ` <span style="color:#666">(${escapeHtml(slug)})</span>` : ""
+            }</p>`
+          : "";
+        const subjectSuffix = title ? ` — ${title}` : "";
 
         await resend.emails.send({
           from: resendDefaults.from,
           to: resendDefaults.to,
           replyTo: email,
-          subject: `[Meru Turismo] Nueva consulta de ${name}`,
+          subject: `[Meru Turismo] Nueva consulta de ${name}${subjectSuffix}`,
           html: `
             ${logoHtml}
             <h2>Nueva consulta desde el sitio web</h2>
-            <p><strong>Nombre:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
+            ${relatedHtml}
+            <p><strong>Nombre:</strong> ${escapeHtml(name)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
             <p><strong>Mensaje:</strong></p>
-            <p>${message.replace(/\n/g, "<br>")}</p>
+            <p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>
           `,
         });
 
@@ -58,8 +87,10 @@ export async function POST(request: Request) {
           subject: "Recibimos tu consulta — Meru Viajes y Turismo",
           html: `
             ${logoHtml}
-            <p>Hola ${name},</p>
-            <p>Gracias por contactarnos. Recibimos tu consulta y te responderemos a la brevedad.</p>
+            <p>Hola ${escapeHtml(name)},</p>
+            <p>Gracias por contactarnos. Recibimos tu consulta${
+              title ? ` sobre <strong>${escapeHtml(title)}</strong>` : ""
+            } y te responderemos a la brevedad.</p>
             <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
           `,
         });

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { HeroSection } from "@/components/home/hero-section";
 import { ExcursionsPreview } from "@/components/home/excursions-preview";
 import { PackagesPreview } from "@/components/home/packages-preview";
@@ -83,7 +84,9 @@ export default async function HomePage() {
           cache={reviewsCache}
         />
       ) : null}
-      <InquiryForm inquiry={settings.inquiry} />
+      <Suspense fallback={null}>
+        <InquiryForm inquiry={settings.inquiry} />
+      </Suspense>
     </>
   );
 }

@@ -323,6 +323,10 @@ export interface Inquiry {
   name: string;
   email: string;
   message: string;
+  relatedKind?: "excursion" | "package" | null;
+  relatedSlug?: string | null;
+  relatedTitle?: string | null;
   status: InquiryStatus;
+  archived?: boolean;
   createdAt: Date;
 }

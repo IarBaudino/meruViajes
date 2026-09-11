@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { inquirySchema, type InquiryFormData } from "@/schemas/inquiry";
+import {
+  inquiryFormFieldsSchema,
+  type InquiryFormFields,
+} from "@/schemas/inquiry";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -14,20 +18,47 @@ type InquiryFormProps = {
   inquiry: SiteSettings["inquiry"];
 };
 
+function relatedLabel(kind?: string) {
+  if (kind === "package") return "paquete";
+  if (kind === "excursion") return "excursión";
+  return "producto";
+}
+
 export function InquiryForm({ inquiry }: InquiryFormProps) {
+  const searchParams = useSearchParams();
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [relatedKind, setRelatedKind] = useState<"excursion" | "package" | undefined>();
+  const [relatedSlug, setRelatedSlug] = useState("");
+  const [relatedTitle, setRelatedTitle] = useState("");
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<InquiryFormData>({
-    resolver: zodResolver(inquirySchema),
+  } = useForm<InquiryFormFields>({
+    resolver: zodResolver(inquiryFormFieldsSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      message: "",
+    },
   });
 
-  async function onSubmit(data: InquiryFormData) {
+  useEffect(() => {
+    const kindRaw = searchParams.get("consulta")?.trim() || searchParams.get("kind")?.trim();
+    const kind =
+      kindRaw === "excursion" || kindRaw === "package" ? kindRaw : undefined;
+    const slug = searchParams.get("slug")?.trim() || "";
+    const title = searchParams.get("titulo")?.trim() || searchParams.get("title")?.trim() || "";
+
+    setRelatedKind(kind);
+    setRelatedSlug(slug);
+    setRelatedTitle(title);
+  }, [searchParams]);
+
+  async function onSubmit(data: InquiryFormFields) {
     setSubmitStatus("idle");
     setErrorMessage("");
 
@@ -35,7 +66,12 @@ export function InquiryForm({ inquiry }: InquiryFormProps) {
       const res = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          ...(relatedKind ? { relatedKind } : {}),
+          ...(relatedSlug ? { relatedSlug } : {}),
+          ...(relatedTitle ? { relatedTitle } : {}),
+        }),
       });
 
       const json = await res.json();
@@ -58,6 +94,12 @@ export function InquiryForm({ inquiry }: InquiryFormProps) {
         <div className="text-center">
           <h2 className="text-3xl text-white">{inquiry.title}</h2>
           <p className="mt-3 text-meru-sand/85">{inquiry.subtitle}</p>
+          {relatedTitle ? (
+            <p className="mt-4 inline-block rounded-lg bg-white/15 px-4 py-2 text-sm text-meru-sand">
+              Consultando por {relatedLabel(relatedKind)}:{" "}
+              <span className="font-semibold text-white">{relatedTitle}</span>
+            </p>
+          ) : null}
         </div>
 
         <form

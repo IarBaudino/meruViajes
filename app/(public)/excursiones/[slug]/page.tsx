@@ -225,7 +225,11 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
               <ExcursionBookingPanel service={service} catalogSeason={effectiveSeason} />
             </div>
             <Link
-              href="/#consulta"
+              href={`/?${new URLSearchParams({
+                consulta: "excursion",
+                slug: service.slug,
+                titulo: service.title,
+              }).toString()}#consulta`}
               className="mt-3 flex h-12 w-full items-center justify-center rounded-lg border-2 border-meru-primary font-semibold text-meru-primary transition-colors hover:bg-meru-ice"
             >
               Consultar por esta excursión
