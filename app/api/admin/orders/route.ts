@@ -33,7 +33,6 @@ function extractDepartures(items: unknown[]): {
     const row = item as {
       serviceTitle?: string;
       packageTitle?: string;
-      groupTripTitle?: string;
       packageId?: string;
       fulfillmentMode?: string;
       stayFrom?: string;
@@ -49,7 +48,6 @@ function extractDepartures(items: unknown[]): {
 
     if (row.serviceTitle) bits.push(row.serviceTitle);
     if (row.packageTitle) bits.push(row.packageTitle);
-    if (row.groupTripTitle) bits.push(row.groupTripTitle);
 
     if (row.packageId || row.packageTitle || row.fulfillmentMode === "manual") {
       if (row.fulfillmentMode === "manual") hasManualPackage = true;
@@ -147,10 +145,6 @@ export async function GET(request: Request) {
       total: data.total ?? 0,
       paymentStatus,
       paymentMethod: data.paymentMethod ?? "coordinar",
-      couponCode: data.coupon?.code ?? "",
-      couponSeller: data.coupon?.sellerName ?? "",
-      discountAmount: Number(data.discountAmount ?? data.coupon?.discountAmount ?? 0) || 0,
-      commissionAmount: Number(data.coupon?.commissionAmount ?? 0) || 0,
       customerName: data.customerName ?? "",
       customerEmail: data.customerEmail ?? "",
       customerPhone: data.customerPhone ?? "",
@@ -184,8 +178,6 @@ export async function GET(request: Request) {
           data.customerEmail,
           data.customerPhone,
           data.customerDni,
-          data.coupon?.code,
-          data.coupon?.sellerName,
           searchableText,
         ].join(" ")
       ),

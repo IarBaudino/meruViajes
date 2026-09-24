@@ -78,26 +78,26 @@ export function ChangePasswordForm() {
   }
 
   if (hasPasswordLogin === null) {
-    return <p className="text-sm text-brand-muted">Cargando acceso…</p>;
+    return <p className="text-sm text-meru-muted">Cargando acceso…</p>;
   }
 
   return (
-    <div className="mt-10 border-t border-brand-border pt-8">
-      <h2 className="text-lg text-brand-charcoal">Contraseña de acceso</h2>
-      <p className="mt-2 text-sm text-brand-muted">
+    <div className="mt-10 border-t border-meru-border pt-8">
+      <h2 className="text-lg text-meru-charcoal">Contraseña de acceso</h2>
+      <p className="mt-2 text-sm text-meru-muted">
         {hasPasswordLogin
           ? "Cambiá la contraseña con la que ingresás por email."
           : "Entraste con Google. Podés crear una contraseña para ingresar también con email."}
       </p>
 
       {authProviders.length > 0 ? (
-        <p className="mt-2 text-xs text-brand-muted">
+        <p className="mt-2 text-xs text-meru-muted">
           Métodos vinculados: {authProviders.map(formatAuthProvider).join(", ")}
         </p>
       ) : null}
 
-      <div className="mt-4 flex gap-2 rounded-lg border border-brand-border bg-brand-sand/50 p-3 text-xs text-brand-charcoal-muted">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-secondary" aria-hidden />
+      <div className="mt-4 flex gap-2 rounded-lg border border-meru-border bg-meru-sand/50 p-3 text-xs text-meru-charcoal-muted">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-meru-secondary" aria-hidden />
         <p>
           Usá <strong>Mostrar</strong> al lado del campo si querés ver lo que escribís. La contraseña
           guardada no se puede recuperar después.
@@ -149,7 +149,7 @@ export function ChangePasswordForm() {
           </Button>
           <Link
             href="/recuperar-contrasena"
-            className="inline-flex items-center text-sm font-medium text-brand-secondary hover:underline"
+            className="inline-flex items-center text-sm font-medium text-meru-secondary hover:underline"
           >
             Olvidé mi contraseña
           </Link>

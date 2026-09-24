@@ -172,25 +172,25 @@ export function ExcursionBookingPanel({ service, catalogSeason = null }: Props) 
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm text-brand-muted">
+        <p className="text-sm text-meru-muted">
           {promoActive ? `Tarifa promocional (−${promoPercent}%)` : "Tarifa adulto"}
         </p>
         {promoActive ? (
           <div className="mt-1">
-            <p className="text-sm text-brand-muted line-through">
+            <p className="text-sm text-meru-muted line-through">
               {formatCurrencyARS(service.price)}
             </p>
-            <p className="text-3xl font-bold text-brand-primary">
+            <p className="text-3xl font-bold text-meru-primary">
               {formatCurrencyARS(adultPrice)}
             </p>
             {service.promotion?.endsAt ? (
-              <p className="mt-1 text-xs text-brand-secondary">
+              <p className="mt-1 text-xs text-meru-secondary">
                 Promo válida hasta {service.promotion.endsAt.split("-").reverse().join("/")}
               </p>
             ) : null}
           </div>
         ) : (
-          <p className="mt-1 text-3xl font-bold text-brand-primary">
+          <p className="mt-1 text-3xl font-bold text-meru-primary">
             {formatCurrencyARS(adultPrice)}
           </p>
         )}
@@ -225,7 +225,7 @@ export function ExcursionBookingPanel({ service, catalogSeason = null }: Props) 
       {canBook ? (
         <>
           <div className="space-y-3">
-            <p className="text-sm font-medium text-brand-charcoal">¿Quiénes viajan?</p>
+            <p className="text-sm font-medium text-meru-charcoal">¿Quiénes viajan?</p>
 
             <PassengerRow
               label="Adulto"
@@ -264,13 +264,13 @@ export function ExcursionBookingPanel({ service, catalogSeason = null }: Props) 
             />
           </div>
 
-          <div className="rounded-lg bg-brand-sand/80 px-4 py-3">
+          <div className="rounded-lg bg-meru-sand/80 px-4 py-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-brand-muted">
+              <span className="text-meru-muted">
                 {seats} pasajero{seats === 1 ? "" : "s"}
                 {selected ? ` · ${formatDepartureLabel(selected)}` : ""}
               </span>
-              <span className="font-semibold text-brand-charcoal">
+              <span className="font-semibold text-meru-charcoal">
                 Total {formatCurrencyARS(lineTotal)}
               </span>
             </div>
@@ -296,7 +296,7 @@ export function ExcursionBookingPanel({ service, catalogSeason = null }: Props) 
         </p>
       ) : null}
       {message ? (
-        <p className="text-sm text-brand-secondary" role="status">
+        <p className="text-sm text-meru-secondary" role="status">
           {message}
         </p>
       ) : null}
@@ -316,26 +316,26 @@ function PassengerRow({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-brand-border px-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-meru-border px-3 py-2.5">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-brand-charcoal">{label}</p>
-        <p className="text-xs text-brand-muted">{unitLabel}</p>
+        <p className="text-sm font-medium text-meru-charcoal">{label}</p>
+        <p className="text-xs text-meru-muted">{unitLabel}</p>
       </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-border text-brand-charcoal hover:bg-brand-ice"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border text-meru-charcoal hover:bg-meru-ice"
           aria-label={`Menos ${label}`}
           onClick={() => onChange(count - 1)}
         >
           −
         </button>
-        <span className="w-6 text-center text-sm font-semibold tabular-nums text-brand-charcoal">
+        <span className="w-6 text-center text-sm font-semibold tabular-nums text-meru-charcoal">
           {count}
         </span>
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-border text-brand-charcoal hover:bg-brand-ice"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border text-meru-charcoal hover:bg-meru-ice"
           aria-label={`Más ${label}`}
           onClick={() => onChange(count + 1)}
         >

@@ -3,11 +3,9 @@ import { Suspense } from "react";
 import { HeroSection } from "@/components/home/hero-section";
 import { ExcursionsPreview } from "@/components/home/excursions-preview";
 import { PackagesPreview } from "@/components/home/packages-preview";
-import { GroupTripsPreview } from "@/components/home/group-trips-preview";
 import { AboutSection } from "@/components/home/about-section";
 import { InquiryForm } from "@/components/home/inquiry-form";
 import { GoogleReviewsSection } from "@/components/home/google-reviews-section";
-import { brand, getAppUrl } from "@/config/brand";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 import { getCachedGoogleReviews } from "@/lib/google/reviews";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -15,15 +13,20 @@ import { JsonLd } from "@/components/seo/json-ld";
 /** CMS del hero cambia en admin; no servir HTML estático con imágenes vacías. */
 export const revalidate = 60;
 
-const appUrl = getAppUrl();
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+  /\/$/,
+  ""
+);
 
 export const metadata: Metadata = {
-  title: brand.seo.titleDefault,
-  description: brand.seo.description,
+  title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
+  description:
+    "Excursiones, navegaciones y paquetes en Ushuaia. Reservá online con Meru Viajes y Turismo.",
   alternates: { canonical: appUrl },
   openGraph: {
-    title: brand.seo.titleDefault,
-    description: brand.seo.description,
+    title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
+    description:
+      "Excursiones y paquetes en el Fin del Mundo. Reservá online con Meru.",
     url: appUrl,
     type: "website",
   },
@@ -37,24 +40,24 @@ export default async function HomePage() {
     settings.footer?.phoneNumber?.replace(/\D/g, "") ||
     settings.footer?.phoneLabel?.replace(/\D/g, "") ||
     undefined;
-  const code = brand.countryCallingCode;
 
   const localBusiness = {
     "@context": "https://schema.org",
     "@type": "TravelAgency",
-    name: brand.agencyName,
+    name: "Meru Viajes y Turismo",
     url: appUrl,
-    image: `${appUrl}${brand.logo.src}`,
-    description: brand.seo.description,
+    image: `${appUrl}/logo.png`,
+    description:
+      "Excursiones y turismo en Ushuaia, Tierra del Fuego — Meru Viajes y Turismo.",
     address: {
       "@type": "PostalAddress",
-      addressLocality: brand.location.city,
-      addressRegion: brand.location.region,
-      addressCountry: brand.location.countryCode,
+      addressLocality: "Ushuaia",
+      addressRegion: "Tierra del Fuego",
+      addressCountry: "AR",
     },
     ...(phone
       ? {
-          telephone: phone.startsWith(code) ? `+${phone}` : `+${code}${phone}`,
+          telephone: phone.startsWith("54") ? `+${phone}` : `+54${phone}`,
         }
       : {}),
     ...(reviewsCache?.rating
@@ -74,7 +77,6 @@ export default async function HomePage() {
       <HeroSection hero={settings.hero} />
       <ExcursionsPreview section={settings.excursionsPreview} />
       <PackagesPreview section={settings.packagesPreview} />
-      <GroupTripsPreview section={settings.groupTripsPreview} />
       <AboutSection about={settings.about} />
       {reviewsEnabled ? (
         <GoogleReviewsSection

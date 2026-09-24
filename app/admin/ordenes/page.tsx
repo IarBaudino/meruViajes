@@ -25,8 +25,6 @@ type Order = {
   paymentMethod?: string;
   customerName?: string;
   customerEmail?: string;
-  couponCode?: string;
-  couponSeller?: string;
   customerPhone?: string;
   customerDni?: string;
   itemCount?: number;
@@ -269,10 +267,10 @@ export default function AdminOrdersPage() {
         description="Buscá por cliente y archivá canceladas o pasadas para mantener el listado limpio."
       />
 
-      <div className="mb-6 space-y-4 rounded-xl border border-brand-border bg-white p-4">
+      <div className="mb-6 space-y-4 rounded-xl border border-meru-border bg-white p-4">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-meru-muted"
             aria-hidden
           />
           <Input
@@ -298,8 +296,8 @@ export default function AdminOrdersPage() {
               onClick={() => setArchiveView(value)}
               className={`rounded-lg px-3 py-1.5 text-sm ${
                 archiveView === value
-                  ? "border border-brand-charcoal bg-white font-medium text-brand-charcoal"
-                  : "bg-brand-sand/60 text-brand-charcoal hover:bg-brand-sand"
+                  ? "bg-meru-primary text-white"
+                  : "bg-meru-sand/60 text-meru-charcoal hover:bg-meru-sand"
               }`}
             >
               {label}
@@ -323,8 +321,8 @@ export default function AdminOrdersPage() {
               onClick={() => setStatusFilter(value)}
               className={`rounded-lg px-3 py-1.5 text-sm ${
                 statusFilter === value
-                  ? "border border-brand-charcoal bg-white font-medium text-brand-charcoal"
-                  : "border border-brand-border text-brand-charcoal hover:bg-brand-sand/40"
+                  ? "bg-meru-charcoal text-white"
+                  : "border border-meru-border text-meru-charcoal hover:bg-meru-sand/40"
               }`}
             >
               {label}
@@ -344,7 +342,7 @@ export default function AdminOrdersPage() {
               <Archive className="mr-1.5 h-3.5 w-3.5" aria-hidden />
               Archivar canceladas/pasadas visibles
             </Button>
-            <p className="text-xs text-brand-muted">
+            <p className="text-xs text-meru-muted">
               Mostrando hasta {meta.fetched} órdenes recientes.
             </p>
           </div>
@@ -425,10 +423,10 @@ export default function AdminOrdersPage() {
         </p>
       ) : null}
 
-      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
+      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
 
       {!loading && orders.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-brand-border bg-white p-10 text-center text-brand-muted">
+        <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center text-meru-muted">
           {debouncedQuery || statusFilter !== "all" || archiveView !== "active"
             ? "No hay órdenes con esos filtros."
             : "Todavía no hay órdenes registradas."}
@@ -436,9 +434,9 @@ export default function AdminOrdersPage() {
       ) : null}
 
       {!loading && orders.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl border border-brand-border bg-white">
+        <div className="overflow-x-auto rounded-xl border border-meru-border bg-white">
           <table className="min-w-full text-sm">
-            <thead className="border-b border-brand-border bg-brand-sand/50 text-left text-brand-muted">
+            <thead className="border-b border-meru-border bg-meru-sand/50 text-left text-meru-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">ID</th>
                 <th className="px-4 py-3 font-medium">Cliente</th>
@@ -463,7 +461,7 @@ export default function AdminOrdersPage() {
                 return (
                   <tr
                     key={order.id}
-                    className={`border-b border-brand-border/60 last:border-0 ${
+                    className={`border-b border-meru-border/60 last:border-0 ${
                       expired
                         ? "bg-red-50/70"
                         : expiresSoon
@@ -480,16 +478,10 @@ export default function AdminOrdersPage() {
                       ) : null}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-brand-charcoal">{order.customerName || "—"}</p>
-                      {order.couponCode ? (
-                        <p className="text-xs text-brand-muted">
-                          Cupón {order.couponCode}
-                          {order.couponSeller ? ` · ${order.couponSeller}` : ""}
-                        </p>
-                      ) : null}
-                      <p className="text-xs text-brand-muted">{order.customerEmail || ""}</p>
+                      <p className="text-meru-charcoal">{order.customerName || "—"}</p>
+                      <p className="text-xs text-meru-muted">{order.customerEmail || ""}</p>
                       {order.customerPhone ? (
-                        <p className="text-xs text-brand-muted">{order.customerPhone}</p>
+                        <p className="text-xs text-meru-muted">{order.customerPhone}</p>
                       ) : null}
                     </td>
                     <td className="px-4 py-3">
@@ -499,13 +491,13 @@ export default function AdminOrdersPage() {
                         </Badge>
                       ) : null}
                       {(order.departures ?? []).length === 0 ? (
-                        <span className="text-brand-muted">—</span>
+                        <span className="text-meru-muted">—</span>
                       ) : (
                         <ul className="space-y-1">
                           {(order.departures ?? []).slice(0, 3).map((dep, idx) => (
                             <li
                               key={`${order.id}-dep-${idx}`}
-                              className="text-brand-charcoal"
+                              className="text-meru-charcoal"
                             >
                               <span className="font-medium">
                                 {dep.label ??
@@ -514,13 +506,13 @@ export default function AdminOrdersPage() {
                                     time: dep.time,
                                   })}
                               </span>
-                              <span className="block text-xs text-brand-muted">
+                              <span className="block text-xs text-meru-muted">
                                 {dep.title}
                               </span>
                             </li>
                           ))}
                           {(order.departures?.length ?? 0) > 3 ? (
-                            <li className="text-xs text-brand-muted">
+                            <li className="text-xs text-meru-muted">
                               +{(order.departures?.length ?? 0) - 3} más
                             </li>
                           ) : null}
@@ -533,7 +525,7 @@ export default function AdminOrdersPage() {
                         {order.paymentStatus}
                       </Badge>
                       {order.past && order.paymentStatus !== "pendiente" ? (
-                        <p className="mt-1 text-xs text-brand-muted">Salida pasada</p>
+                        <p className="mt-1 text-xs text-meru-muted">Salida pasada</p>
                       ) : null}
                       {order.paymentStatus === "pendiente" && order.holdExpiresAt ? (
                         <p
@@ -542,7 +534,7 @@ export default function AdminOrdersPage() {
                               ? "font-medium text-red-700"
                               : expiresSoon
                                 ? "font-medium text-amber-800"
-                                : "text-brand-muted"
+                                : "text-meru-muted"
                           }`}
                         >
                           {expired
@@ -557,7 +549,7 @@ export default function AdminOrdersPage() {
                         </p>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-brand-muted">
+                    <td className="px-4 py-3 text-meru-muted">
                       {order.createdAt
                         ? new Date(order.createdAt).toLocaleDateString("es-AR")
                         : "—"}
@@ -566,7 +558,7 @@ export default function AdminOrdersPage() {
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
                         <Link
                           href={`/admin/ordenes/${order.id}`}
-                          className="text-brand-secondary hover:underline"
+                          className="text-meru-secondary hover:underline"
                         >
                           Ver detalle
                         </Link>

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrencyARS } from "@/lib/format";
+import { getEnabledCatalogSeasons, SEASON_LABELS } from "@/lib/seasons";
 import { BookingHoldSettingsCard } from "@/features/admin/components/booking-hold-settings-card";
 
 export function ExcursionsAdminList() {
@@ -92,13 +93,13 @@ export function ExcursionsAdminList() {
       <BookingHoldSettingsCard />
 
       {!loading && services.length > 0 ? (
-        <p className="mb-4 text-sm text-brand-muted">
+        <p className="mb-4 text-sm text-meru-muted">
           {activeCount} activa{activeCount === 1 ? "" : "s"}
           {inactiveCount > 0 ? ` · ${inactiveCount} inactiva${inactiveCount === 1 ? "" : "s"}` : ""}
         </p>
       ) : null}
 
-      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
+      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
       {error ? <p className="text-red-600">{error}</p> : null}
       {actionError ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
@@ -107,19 +108,20 @@ export function ExcursionsAdminList() {
       ) : null}
 
       {!loading && services.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-brand-border bg-white p-10 text-center">
-          <p className="text-brand-charcoal">Todavía no hay excursiones.</p>
+        <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
+          <p className="text-meru-charcoal">Todavía no hay excursiones.</p>
           <Link href="/admin/excursiones/nueva" className="mt-4 inline-block">
             <Button>Crear la primera</Button>
           </Link>
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-brand-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-meru-border bg-white">
         <table className="min-w-full text-sm">
-          <thead className="border-b border-brand-border bg-brand-sand/50 text-left text-brand-muted">
+          <thead className="border-b border-meru-border bg-meru-sand/50 text-left text-meru-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Título</th>
+              <th className="px-4 py-3 font-medium">Temporadas</th>
               <th className="px-4 py-3 font-medium">Precio</th>
               <th className="px-4 py-3 font-medium">Home</th>
               <th className="px-4 py-3 font-medium">Estado</th>
@@ -128,13 +130,18 @@ export function ExcursionsAdminList() {
           </thead>
           <tbody>
             {services.map((service) => (
-              <tr key={service.id} className="border-b border-brand-border/60 last:border-0">
+              <tr key={service.id} className="border-b border-meru-border/60 last:border-0">
                 <td className="px-4 py-3">
-                  <p className="text-brand-charcoal">{service.title}</p>
-                  <p className="text-xs text-brand-muted">/{service.slug}</p>
+                  <p className="text-meru-charcoal">{service.title}</p>
+                  <p className="text-xs text-meru-muted">/{service.slug}</p>
+                </td>
+                <td className="px-4 py-3 text-meru-muted">
+                  {getEnabledCatalogSeasons(service)
+                    .map((s) => SEASON_LABELS[s])
+                    .join(" · ") || "—"}
                 </td>
                 <td className="px-4 py-3">{formatCurrencyARS(service.price)}</td>
-                <td className="px-4 py-3 text-brand-muted">
+                <td className="px-4 py-3 text-meru-muted">
                   {service.featuredOnHome ? `Sí · #${service.homeOrder ?? 100}` : "—"}
                 </td>
                 <td className="px-4 py-3">
@@ -152,7 +159,7 @@ export function ExcursionsAdminList() {
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     <Link
                       href={`/admin/excursiones/${service.id}/editar`}
-                      className="text-brand-secondary hover:underline"
+                      className="text-meru-secondary hover:underline"
                     >
                       Editar
                     </Link>
@@ -167,7 +174,7 @@ export function ExcursionsAdminList() {
                     ) : (
                       <button
                         type="button"
-                        className="text-brand-secondary hover:underline"
+                        className="text-meru-secondary hover:underline"
                         onClick={() => void setActive(service.id, true)}
                       >
                         Reactivar
@@ -183,7 +190,7 @@ export function ExcursionsAdminList() {
                     {service.active ? (
                       <Link
                         href={`/excursiones/${service.slug}`}
-                        className="text-brand-muted hover:underline"
+                        className="text-meru-muted hover:underline"
                         target="_blank"
                       >
                         Ver
@@ -197,7 +204,7 @@ export function ExcursionsAdminList() {
         </table>
       </div>
 
-      <p className="mt-4 text-xs text-brand-muted">
+      <p className="mt-4 text-xs text-meru-muted">
         <strong>Desactivar</strong> la oculta del catálogo pero conserva el historial.{" "}
         <strong>Eliminar</strong> borra Firestore y los medios en Supabase (solo si no tiene
         reservas).

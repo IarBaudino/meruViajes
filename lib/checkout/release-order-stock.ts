@@ -1,6 +1,5 @@
 import { FieldValue, type DocumentData, type DocumentReference, type Firestore } from "firebase-admin/firestore";
 import { PACKAGES_COLLECTION } from "@/features/packages/lib/firestore-mapper";
-import { GROUP_TRIPS_COLLECTION } from "@/features/group-trips/lib/firestore-mapper";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 import { computeHoldExpiresAtDate } from "@/lib/checkout/hold-warning";
 import type { DepartureSlot, CatalogSeason } from "@/types";
@@ -28,7 +27,7 @@ export async function resolveOrderHoldHours(
 }
 
 type StockDelta = {
-  collection: "services" | "packages" | "groupTrips";
+  collection: "services" | "packages";
   id: string;
   quantity: number;
   departureId?: string;
@@ -56,10 +55,6 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
     const quantity = Math.max(0, Number(item.quantity) || 0);
     if (quantity < 1) continue;
 
-    const groupTripId =
-      typeof item.groupTripId === "string" && item.groupTripId.trim()
-        ? item.groupTripId.trim()
-        : null;
     const packageId =
       typeof item.packageId === "string" && item.packageId.trim()
         ? item.packageId.trim()
@@ -76,15 +71,6 @@ function stockDeltasFromOrderItems(items: unknown): StockDelta[] {
       item.catalogSeason === "verano" || item.catalogSeason === "invierno"
         ? item.catalogSeason
         : undefined;
-
-    if (groupTripId) {
-      addDelta({
-        collection: "groupTrips",
-        id: groupTripId,
-        quantity,
-      });
-      continue;
-    }
 
     if (packageId) {
       addDelta({
@@ -178,7 +164,7 @@ export async function cancelOrderAndReleaseStock(
       const byDoc = new Map<
         string,
         {
-          collection: "services" | "packages" | "groupTrips";
+          collection: "services" | "packages";
           id: string;
           stockQty: number;
           departureQty: Map<string, number>;
@@ -213,7 +199,7 @@ export async function cancelOrderAndReleaseStock(
       const stockReads: Array<{
         ref: DocumentReference;
         group: {
-          collection: "services" | "packages" | "groupTrips";
+          collection: "services" | "packages";
           id: string;
           stockQty: number;
           departureQty: Map<string, number>;
@@ -224,11 +210,7 @@ export async function cancelOrderAndReleaseStock(
 
       for (const group of byDoc.values()) {
         const collection =
-          group.collection === "packages"
-            ? PACKAGES_COLLECTION
-            : group.collection === "groupTrips"
-              ? GROUP_TRIPS_COLLECTION
-              : "services";
+          group.collection === "packages" ? PACKAGES_COLLECTION : "services";
         const ref = db.collection(collection).doc(group.id);
         const stockSnap = await tx.get(ref);
         if (!stockSnap.exists) continue;

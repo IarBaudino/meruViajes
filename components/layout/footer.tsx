@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Mail, MapPin } from "lucide-react";
-import { brand } from "@/config/brand";
 import { getSiteSettings } from "@/lib/site-settings/get-site-settings";
 import { PhoneContact } from "@/components/layout/phone-contact";
 import { BrandLogo } from "@/components/brand-logo";
+
+const INSTAGRAM_URL = "https://www.instagram.com/meru.viajes";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -24,94 +25,104 @@ function InstagramIcon({ className }: { className?: string }) {
   );
 }
 
-const footerLinks = [
-  { href: "/excursiones", label: "Excursiones" },
-  { href: "/paquetes", label: "Paquetes" },
-  { href: "/viajes-grupales", label: "Viajes grupales" },
-  { href: "/#sobre-nosotros", label: "Sobre Nosotros" },
-  { href: "/#consulta", label: "Consultas" },
-  { href: "/admin", label: "Administración" },
-];
-
 export async function Footer() {
   const year = new Date().getFullYear();
-  const { footer, social } = await getSiteSettings();
+  const { footer } = await getSiteSettings();
 
   return (
-    <footer className="border-t border-brand-border bg-brand-surface text-brand-charcoal">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <BrandLogo href="/" size="sm" />
-            <div className="min-w-0">
-              <p className="font-heading text-base leading-tight text-brand-charcoal">
-                {footer.brandName}
-              </p>
-              <p className="mt-0.5 truncate text-xs text-brand-muted">{footer.tagline}</p>
+    <footer className="border-t border-meru-border bg-meru-charcoal text-meru-sand/90">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid gap-10 md:grid-cols-3">
+          <div>
+            <div className="inline-flex rounded-xl bg-white/95 p-3">
+              <BrandLogo href="/" size="lg" />
             </div>
+            <h2 className="mt-4 text-lg text-meru-sand">{footer.brandName}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-meru-sand/80">{footer.tagline}</p>
           </div>
 
-          <nav aria-label="Pie de página">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              {footerLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="hover:text-brand-secondary">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-muted">
-            <li className="inline-flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-secondary" aria-hidden />
-              <span>{footer.address}</span>
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5 shrink-0 text-brand-secondary" aria-hidden />
-              <a href={`mailto:${footer.email}`} className="hover:text-brand-secondary">
-                {footer.email}
-              </a>
-            </li>
-            <li>
-              <PhoneContact
-                phoneLabel={footer.phoneLabel}
-                phoneNumber={footer.phoneNumber}
-                className="inline-flex flex-row flex-wrap items-center gap-x-2"
-              />
-            </li>
-            {social.instagramUrl ? (
+          <div>
+            <h3 className="font-sans text-xs font-medium uppercase tracking-wider text-meru-secondary">
+              Enlaces
+            </h3>
+            <ul className="mt-4 space-y-2 text-sm">
               <li>
-                <a
-                  href={social.instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-brand-secondary"
-                >
-                  <InstagramIcon className="h-3.5 w-3.5 shrink-0 text-brand-secondary" />
-                  {social.instagramHandle}
+                <Link href="/excursiones" className="hover:text-meru-sand">
+                  Excursiones
+                </Link>
+              </li>
+              <li>
+                <Link href="/paquetes" className="hover:text-meru-sand">
+                  Paquetes
+                </Link>
+              </li>
+              <li>
+                <Link href="/#sobre-nosotros" className="hover:text-meru-sand">
+                  Sobre Nosotros
+                </Link>
+              </li>
+              <li>
+                <Link href="/#consulta" className="hover:text-meru-sand">
+                  Consultas
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin" className="hover:text-meru-sand">
+                  Administración
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-sans text-xs font-medium uppercase tracking-wider text-meru-secondary">
+              Contacto
+            </h3>
+            <ul className="mt-4 space-y-3 text-sm">
+              <li className="flex items-start gap-2">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-meru-secondary" aria-hidden />
+                <span>{footer.address}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 shrink-0 text-meru-secondary" aria-hidden />
+                <a href={`mailto:${footer.email}`} className="hover:text-meru-sand">
+                  {footer.email}
                 </a>
               </li>
-            ) : null}
-          </ul>
+              <li>
+                <PhoneContact
+                  phoneLabel={footer.phoneLabel}
+                  phoneNumber={footer.phoneNumber}
+                />
+              </li>
+              <li>
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:text-meru-sand"
+                >
+                  <InstagramIcon className="h-4 w-4 shrink-0 text-meru-secondary" />
+                  @meru.viajes
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-brand-border pt-2 text-[11px] text-brand-muted">
-          <p>© {year} {footer.brandName}</p>
-          {brand.developerCredit.enabled ? (
-            <p>
-              Desarrollado por{" "}
-              <a
-                href={brand.developerCredit.url}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-brand-charcoal underline underline-offset-2 hover:text-brand-secondary"
-              >
-                {brand.developerCredit.name}
-              </a>
-            </p>
-          ) : null}
+        <div className="mt-10 flex flex-col items-center gap-1 border-t border-white/10 pt-6 text-center text-xs text-meru-sand/55">
+          <p>© {year} {footer.brandName}. Todos los derechos reservados.</p>
+          <p>
+            Desarrollado por{" "}
+            <a
+              href="https://www.iarabaudinodev.com.ar"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-meru-sand/80 underline underline-offset-2 hover:text-meru-secondary"
+            >
+              Iara Baudino
+            </a>
+          </p>
         </div>
       </div>
     </footer>

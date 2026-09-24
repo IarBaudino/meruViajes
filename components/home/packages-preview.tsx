@@ -13,11 +13,11 @@ export async function PackagesPreview({ section }: Props) {
   if (preview.length === 0) return null;
 
   return (
-    <section id="paquetes" className="scroll-mt-24 bg-brand-sand/60 py-20">
+    <section id="paquetes" className="scroll-mt-24 bg-meru-sand/60 py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl text-brand-charcoal">{section.title}</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-brand-muted">{section.description}</p>
+          <h2 className="text-3xl text-meru-charcoal">{section.title}</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-meru-muted">{section.description}</p>
         </div>
 
         <ul className="mt-12 grid list-none gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { PhotoGalleryUpload } from "@/features/admin/components/inline-media-upload";
+import { SeasonSelector } from "@/features/admin/components/season-selector";
 import { formatCurrencyARS } from "@/lib/format";
 
 type PackageFormProps = {
@@ -31,7 +32,7 @@ function toDefaults(pkg?: ExcursionPackage): PackageFormData {
     featuredOnHome: pkg?.featuredOnHome ?? false,
     homeOrder: pkg?.homeOrder ?? 100,
     category: pkg?.category ?? "",
-    seasons: ["todo-el-ano"],
+    seasons: pkg?.seasons ?? ["todo-el-ano"],
     promotion: {
       enabled: Boolean(pkg?.promotion?.enabled),
       percent: pkg?.promotion?.percent ?? 0,
@@ -60,6 +61,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
   const photos = watch("photos") ?? [];
   const serviceIds = watch("serviceIds") ?? [];
   const price = watch("price");
+  const seasons = watch("seasons") ?? ["todo-el-ano"];
   const promoEnabled = watch("promotion.enabled");
   const promoPercent = watch("promotion.percent") ?? 0;
 
@@ -92,7 +94,6 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
       ...data,
       photos,
       category: data.category || undefined,
-      seasons: ["todo-el-ano"] as PackageFormData["seasons"],
     };
 
     const url = isEdit ? `/api/admin/packages/${pkg!.id}` : "/api/admin/packages";
@@ -114,9 +115,9 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-5">
-        <h2 className="text-lg text-brand-charcoal">Datos del paquete</h2>
-        <p className="text-sm text-brand-muted">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
+        <h2 className="text-lg text-meru-charcoal">Datos del paquete</h2>
+        <p className="text-sm text-meru-muted">
           Combiná 2, 3 o más excursiones existentes a un precio único. El cliente indica un rango
           de fechas; ustedes arman el itinerario y descuentan cupos a mano. El sistema no toca el
           stock de las excursiones.
@@ -129,7 +130,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           error={errors.description?.message}
           {...register("description")}
         />
-        <p className="-mt-3 text-xs text-brand-muted">
+        <p className="-mt-3 text-xs text-meru-muted">
           Usá Enter para separar párrafos. Se respetan en la ficha pública.
         </p>
         <div className="grid gap-5 sm:grid-cols-2">
@@ -140,13 +141,13 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
             {...register("price", { valueAsNumber: true })}
           />
           {price > 0 ? (
-            <p className="self-end pb-2 text-sm text-brand-muted">
+            <p className="self-end pb-2 text-sm text-meru-muted">
               Vista previa: {formatCurrencyARS(price)}
               {promoEnabled && promoPercent > 0 ? (
                 <>
                   {" "}
                   → promo{" "}
-                  <span className="font-medium text-brand-primary">
+                  <span className="font-medium text-meru-primary">
                     {formatCurrencyARS(
                       Math.max(0, Math.round(price * (1 - promoPercent / 100)))
                     )}
@@ -163,7 +164,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
               min={0}
               {...register("stock", { valueAsNumber: true })}
             />
-            <p className="mt-1 text-xs text-brand-muted">
+            <p className="mt-1 text-xs text-meru-muted">
               Dejá <strong>0</strong> si no querés poner un máximo. Si ponés un número (ej. 10),
               solo se podrán confirmar esa cantidad de reservas de este paquete. El cupo de cada
               excursión lo manejás aparte al armar el itinerario.
@@ -171,8 +172,8 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-brand-border bg-brand-ice/40 p-4 space-y-3">
-          <label className="flex items-center gap-2 text-sm text-brand-charcoal">
+        <div className="rounded-lg border border-meru-border bg-meru-ice/40 p-4 space-y-3">
+          <label className="flex items-center gap-2 text-sm text-meru-charcoal">
             <input type="checkbox" className="rounded" {...register("promotion.enabled")} />
             Activar promo (descuento %)
           </label>
@@ -186,16 +187,20 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
               {...register("promotion.percent", { valueAsNumber: true })}
             />
           ) : null}
-          <p className="text-xs text-brand-muted">
+          <p className="text-xs text-meru-muted">
             En el catálogo se muestra “Promo” y el %; el precio tachado es el habitual y el
             destacado es el promocional.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-brand-charcoal">
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("active")} />
           Publicado (visible en /paquetes)
         </label>
-        <label className="flex items-center gap-2 text-sm text-brand-charcoal">
+        <SeasonSelector
+          value={seasons}
+          onChange={(next) => setValue("seasons", next, { shouldDirty: true, shouldValidate: true })}
+        />
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("featuredOnHome")} />
           Destacar en el home
         </label>
@@ -208,11 +213,11 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
         />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg text-brand-charcoal">Excursiones incluidas</h2>
-            <p className="mt-1 text-sm text-brand-muted">
+            <h2 className="text-lg text-meru-charcoal">Excursiones incluidas</h2>
+            <p className="mt-1 text-sm text-meru-muted">
               Elegí de las ya creadas. Si falta alguna, creala primero en Excursiones.
             </p>
           </div>
@@ -220,7 +225,7 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
             href="/admin/excursiones/nueva"
             target="_blank"
             rel="noreferrer"
-            className="text-sm font-medium text-brand-secondary hover:underline"
+            className="text-sm font-medium text-meru-secondary hover:underline"
           >
             + Nueva excursión
           </a>
@@ -229,9 +234,9 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           <p className="text-sm text-red-600">{errors.serviceIds.message}</p>
         ) : null}
         {services.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-brand-border p-4 text-sm text-brand-muted">
+          <p className="rounded-lg border border-dashed border-meru-border p-4 text-sm text-meru-muted">
             Todavía no hay excursiones. Creá al menos una en{" "}
-            <a href="/admin/excursiones/nueva" className="text-brand-secondary hover:underline">
+            <a href="/admin/excursiones/nueva" className="text-meru-secondary hover:underline">
               Excursiones
             </a>{" "}
             y volvé a armar el paquete.
@@ -240,16 +245,16 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           <ul className="max-h-72 space-y-2 overflow-y-auto">
             {services.map((service) => (
               <li key={service.id}>
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-brand-border px-3 py-2 hover:bg-brand-ice/50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-meru-border px-3 py-2 hover:bg-meru-ice/50">
                   <input
                     type="checkbox"
                     checked={serviceIds.includes(service.id)}
                     onChange={() => toggleService(service.id)}
                   />
-                  <span className="text-sm text-brand-charcoal">
+                  <span className="text-sm text-meru-charcoal">
                     {service.title}
                     {!service.active ? (
-                      <span className="ml-2 text-xs text-brand-muted">(inactiva)</span>
+                      <span className="ml-2 text-xs text-meru-muted">(inactiva)</span>
                     ) : null}
                   </span>
                 </label>
@@ -258,14 +263,14 @@ export function PackageForm({ package: pkg }: PackageFormProps) {
           </ul>
         )}
         {serviceIds.length > 0 ? (
-          <p className="text-xs text-brand-muted">
+          <p className="text-xs text-meru-muted">
             {serviceIds.length} excursión{serviceIds.length === 1 ? "" : "es"} seleccionada
             {serviceIds.length === 1 ? "" : "s"}.
           </p>
         ) : null}
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6">
+      <section className="rounded-xl border border-meru-border bg-white p-6">
         <PhotoGalleryUpload
           folder="excursions"
           photos={photos}

@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
-import { getAppUrl } from "@/config/brand";
 
-const appUrl = getAppUrl();
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+  /\/$/,
+  ""
+);
 
 export default function robots(): MetadataRoute.Robots {
   return {

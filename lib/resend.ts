@@ -16,6 +16,6 @@ export function isResendConfigured(): boolean {
 }
 
 export const resendDefaults = {
-  from: process.env.RESEND_FROM_EMAIL ?? process.env.NEXT_PUBLIC_BRAND_EMAIL ?? "",
-  to: process.env.RESEND_TO_EMAIL ?? process.env.NEXT_PUBLIC_BRAND_EMAIL ?? "",
+  from: process.env.RESEND_FROM_EMAIL ?? "consultas@meruviajes.tur.ar",
+  to: process.env.RESEND_TO_EMAIL ?? "info@meruviajes.tur.ar",
 };

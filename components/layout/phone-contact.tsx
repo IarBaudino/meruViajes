@@ -1,7 +1,6 @@
 "use client";
 
 import { Phone } from "lucide-react";
-import { formatPhoneHref } from "@/config/brand";
 
 type Props = {
   phoneLabel: string;
@@ -17,25 +16,26 @@ export function PhoneContact({ phoneLabel, phoneNumber, className }: Props) {
   if (!hasNumber) {
     return (
       <span className={className}>
-        <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <Phone className="h-4 w-4 shrink-0 text-meru-secondary" aria-hidden />
         {phoneLabel}
       </span>
     );
   }
 
-  const { tel: telHref, whatsapp: waHref } = formatPhoneHref(digits);
+  const telHref = `tel:+54${digits.startsWith("54") ? digits.slice(2) : digits}`;
+  const waHref = `https://wa.me/54${digits.startsWith("54") ? digits.slice(2) : digits}`;
 
   return (
     <span className={className ?? "inline-flex flex-col gap-1"}>
-      <a href={telHref} className="inline-flex items-center gap-2 hover:text-brand-secondary">
-        <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <a href={telHref} className="inline-flex items-center gap-2 hover:text-meru-sand">
+        <Phone className="h-4 w-4 shrink-0 text-meru-secondary" aria-hidden />
         {phoneLabel}
       </a>
       <a
         href={waHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-xs text-brand-muted hover:text-brand-charcoal"
+        className="pl-6 text-xs text-meru-sand/70 hover:text-meru-sand"
       >
         WhatsApp
       </a>

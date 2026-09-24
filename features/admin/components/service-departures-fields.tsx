@@ -125,17 +125,17 @@ export function ServiceDeparturesFields({
   }
 
   return (
-    <section className="rounded-xl border border-brand-border bg-white p-6 space-y-5">
+    <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
       <div>
-        <h2 className="text-lg text-brand-charcoal">Salidas (fecha y hora)</h2>
-        <p className="mt-1 text-sm text-brand-muted">
+        <h2 className="text-lg text-meru-charcoal">Salidas (fecha y hora)</h2>
+        <p className="mt-1 text-sm text-meru-muted">
           Obligatorio para vender online. Generá por rango (semana/mes) y revisá solo los próximos
           turnos.
         </p>
       </div>
 
-      <div className="rounded-lg border border-brand-border bg-brand-sand/40 p-4 space-y-4">
-        <p className="text-sm font-medium text-brand-charcoal">Generar varios turnos</p>
+      <div className="rounded-lg border border-meru-border bg-meru-sand/40 p-4 space-y-4">
+        <p className="text-sm font-medium text-meru-charcoal">Generar varios turnos</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input
             label="Desde"
@@ -164,7 +164,7 @@ export function ServiceDeparturesFields({
           />
         </div>
         <div>
-          <p className="mb-2 text-xs text-brand-muted">Días de la semana</p>
+          <p className="mb-2 text-xs text-meru-muted">Días de la semana</p>
           <div className="flex flex-wrap gap-2">
             {WEEKDAYS.map((day) => {
               const on = weekdays.includes(day.value);
@@ -174,8 +174,8 @@ export function ServiceDeparturesFields({
                   type="button"
                   className={`rounded-lg border px-3 py-1.5 text-sm ${
                     on
-                      ? "border-brand-primary bg-brand-ice text-brand-primary"
-                      : "border-brand-border text-brand-muted"
+                      ? "border-meru-primary bg-meru-ice text-meru-primary"
+                      : "border-meru-border text-meru-muted"
                   }`}
                   onClick={() => toggleWeekday(day.value)}
                 >
@@ -206,8 +206,8 @@ export function ServiceDeparturesFields({
               type="button"
               className={`rounded-lg border px-3 py-1.5 text-sm ${
                 filter === key
-                  ? "border-brand-primary bg-brand-ice text-brand-primary"
-                  : "border-brand-border text-brand-muted"
+                  ? "border-meru-primary bg-meru-ice text-meru-primary"
+                  : "border-meru-border text-meru-muted"
               }`}
               onClick={() => {
                 setFilter(key);
@@ -218,7 +218,7 @@ export function ServiceDeparturesFields({
             </button>
           ))}
         </div>
-        <p className="text-xs text-brand-muted">
+        <p className="text-xs text-meru-muted">
           {filtered.length} en esta vista · {departures.length} en total
         </p>
       </div>
@@ -244,11 +244,11 @@ export function ServiceDeparturesFields({
       </div>
 
       {pageItems.length === 0 ? (
-        <p className="text-sm text-brand-muted">No hay turnos en esta vista.</p>
+        <p className="text-sm text-meru-muted">No hay turnos en esta vista.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-brand-border">
+        <div className="overflow-x-auto rounded-lg border border-meru-border">
           <table className="min-w-full text-sm">
-            <thead className="bg-brand-sand/50 text-left text-brand-muted">
+            <thead className="bg-meru-sand/50 text-left text-meru-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Salida</th>
                 <th className="px-3 py-2 font-medium">Cupos</th>
@@ -262,13 +262,13 @@ export function ServiceDeparturesFields({
                 const remaining = slotRemaining(item);
                 const isEditing = editingIndex === item.index;
                 return (
-                  <tr key={fields[item.index]?.id ?? item.index} className="border-t border-brand-border/70">
-                    <td className="px-3 py-2 text-brand-charcoal">
+                  <tr key={fields[item.index]?.id ?? item.index} className="border-t border-meru-border/70">
+                    <td className="px-3 py-2 text-meru-charcoal">
                       {isEditing ? (
                         <div className="flex flex-wrap gap-2">
                           <input
                             type="date"
-                            className="rounded border border-brand-border px-2 py-1"
+                            className="rounded border border-meru-border px-2 py-1"
                             value={item.date}
                             onChange={(e) =>
                               setValue(depPath(item.index, "date"), e.target.value, {
@@ -278,7 +278,7 @@ export function ServiceDeparturesFields({
                           />
                           <input
                             type="time"
-                            className="rounded border border-brand-border px-2 py-1"
+                            className="rounded border border-meru-border px-2 py-1"
                             value={item.time}
                             onChange={(e) =>
                               setValue(depPath(item.index, "time"), e.target.value, {
@@ -298,7 +298,7 @@ export function ServiceDeparturesFields({
                         <input
                           type="number"
                           min={1}
-                          className="w-20 rounded border border-brand-border px-2 py-1"
+                          className="w-20 rounded border border-meru-border px-2 py-1"
                           value={item.capacity}
                           onChange={(e) =>
                             setValue(depPath(item.index, "capacity"), Number(e.target.value), {
@@ -310,7 +310,7 @@ export function ServiceDeparturesFields({
                         item.capacity
                       )}
                     </td>
-                    <td className="px-3 py-2 text-brand-muted">{remaining}</td>
+                    <td className="px-3 py-2 text-meru-muted">{remaining}</td>
                     <td className="px-3 py-2">
                       <label className="inline-flex items-center gap-1.5 text-xs">
                         <input
@@ -330,7 +330,7 @@ export function ServiceDeparturesFields({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          className="text-brand-secondary hover:underline"
+                          className="text-meru-secondary hover:underline"
                           onClick={() =>
                             setEditingIndex(isEditing ? null : item.index)
                           }
@@ -368,7 +368,7 @@ export function ServiceDeparturesFields({
           >
             Anterior
           </Button>
-          <span className="text-brand-muted">
+          <span className="text-meru-muted">
             Página {safePage + 1} de {pageCount}
           </span>
           <Button

@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyARS } from "@/lib/format";
-import { paymentMethodLabel } from "@/lib/payments/methods";
 import {
   formatPassengersSummary,
   normalizeCartPassengers,
@@ -87,16 +86,6 @@ type OrderDetail = {
   serviceOrderGeneratedAt?: string | null;
   isGuest?: boolean;
   items: OrderItem[];
-  coupon?: {
-    code: string;
-    sellerName: string;
-    discountAmount: number;
-    commissionPercent: number;
-    commissionAmount: number;
-    subtotal: number;
-  } | null;
-  subtotal?: number | null;
-  discountAmount?: number;
   archived?: boolean;
   holdExpiresAt: string | null;
   stockReleased: boolean;
@@ -235,7 +224,7 @@ export default function AdminOrderDetailPage() {
   }
 
   if (loading) {
-    return <p className="text-brand-muted">Cargando detalle…</p>;
+    return <p className="text-meru-muted">Cargando detalle…</p>;
   }
 
   if (error || !order) {
@@ -282,22 +271,22 @@ export default function AdminOrderDetailPage() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-          <h2 className="text-lg text-brand-charcoal">Cliente / facturación</h2>
+        <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+          <h2 className="text-lg text-meru-charcoal">Cliente / facturación</h2>
           <dl className="space-y-3 text-sm">
             <div>
-              <dt className="text-brand-muted">Nombre</dt>
-              <dd className="text-brand-charcoal">
+              <dt className="text-meru-muted">Nombre</dt>
+              <dd className="text-meru-charcoal">
                 {order.billing?.fullName || order.customerName || "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-brand-muted">Email</dt>
+              <dt className="text-meru-muted">Email</dt>
               <dd>
                 {(order.billing?.email || order.customerEmail) ? (
                   <a
                     href={`mailto:${order.billing?.email || order.customerEmail}`}
-                    className="text-brand-secondary hover:underline"
+                    className="text-meru-secondary hover:underline"
                   >
                     {order.billing?.email || order.customerEmail}
                   </a>
@@ -307,12 +296,12 @@ export default function AdminOrderDetailPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-brand-muted">Teléfono (WhatsApp)</dt>
+              <dt className="text-meru-muted">Teléfono (WhatsApp)</dt>
               <dd>
                 {(order.billing?.phoneFull || order.customerPhone) ? (
                   <a
                     href={`tel:${order.billing?.phoneFull || order.customerPhone}`}
-                    className="text-brand-secondary hover:underline"
+                    className="text-meru-secondary hover:underline"
                   >
                     {order.billing?.phoneFull || order.customerPhone}
                   </a>
@@ -322,8 +311,8 @@ export default function AdminOrderDetailPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-brand-muted">Identificación</dt>
-              <dd className="text-brand-charcoal">
+              <dt className="text-meru-muted">Identificación</dt>
+              <dd className="text-meru-charcoal">
                 {order.billing
                   ? `${order.billing.identificationType} ${order.billing.identificationNumber}`
                   : order.customerDni || "—"}
@@ -331,8 +320,8 @@ export default function AdminOrderDetailPage() {
             </div>
             {order.billing?.address ? (
               <div>
-                <dt className="text-brand-muted">Dirección</dt>
-                <dd className="text-brand-charcoal">
+                <dt className="text-meru-muted">Dirección</dt>
+                <dd className="text-meru-charcoal">
                   {order.billing.address.street}
                   {order.billing.address.apartment
                     ? `, ${order.billing.address.apartment}`
@@ -345,8 +334,8 @@ export default function AdminOrderDetailPage() {
               </div>
             ) : null}
             <div>
-              <dt className="text-brand-muted">Cuenta</dt>
-              <dd className="text-brand-muted">
+              <dt className="text-meru-muted">Cuenta</dt>
+              <dd className="text-meru-muted">
                 {order.isGuest || !order.userId
                   ? "Compra sin cuenta (invitado)"
                   : `UID ${order.userId}`}
@@ -355,8 +344,8 @@ export default function AdminOrderDetailPage() {
           </dl>
         </section>
 
-        <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-          <h2 className="text-lg text-brand-charcoal">Pago y estado</h2>
+        <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+          <h2 className="text-lg text-meru-charcoal">Pago y estado</h2>
           {order.serviceOrderNumber ? (
             <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
               <p className="font-semibold">Orden de servicio</p>
@@ -368,13 +357,13 @@ export default function AdminOrderDetailPage() {
               ) : null}
             </div>
           ) : order.paymentStatus === "pendiente" ? (
-            <p className="text-sm text-brand-muted">
+            <p className="text-sm text-meru-muted">
               La orden de servicio se genera al confirmar el pago.
             </p>
           ) : null}
           <dl className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-brand-muted">Estado</dt>
+              <dt className="text-meru-muted">Estado</dt>
               <dd className="flex flex-wrap items-center justify-end gap-2">
                 <Badge
                   className={
@@ -393,50 +382,35 @@ export default function AdminOrderDetailPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-brand-muted">Método</dt>
-              <dd className="text-brand-charcoal">
-                {paymentMethodLabel(order.paymentMethod)}
+              <dt className="text-meru-muted">Método</dt>
+              <dd className="text-meru-charcoal">
+                {order.paymentMethod === "getnet" ? "Getnet" : "Coordinar con la agencia"}
               </dd>
             </div>
             {order.paymentInformation ? (
               <div>
-                <dt className="text-brand-muted">Referencia de pago</dt>
-                <dd className="font-mono text-xs text-brand-charcoal">{order.paymentInformation}</dd>
+                <dt className="text-meru-muted">Referencia de pago</dt>
+                <dd className="font-mono text-xs text-meru-charcoal">{order.paymentInformation}</dd>
               </div>
             ) : null}
             <div>
-              <dt className="text-brand-muted">Total</dt>
-              <dd className="text-xl font-semibold text-brand-primary">
+              <dt className="text-meru-muted">Total</dt>
+              <dd className="text-xl font-semibold text-meru-primary">
                 {formatCurrencyARS(order.total)}
               </dd>
             </div>
-            {order.coupon ? (
-              <div className="sm:col-span-2">
-                <dt className="text-brand-muted">Cupón</dt>
-                <dd className="text-brand-charcoal">
-                  {order.coupon.code}
-                  {order.coupon.sellerName ? ` · ${order.coupon.sellerName}` : ""}
-                  {order.coupon.discountAmount
-                    ? ` · descuento ${formatCurrencyARS(order.coupon.discountAmount)}`
-                    : ""}
-                  {order.coupon.commissionAmount
-                    ? ` · comisión ${formatCurrencyARS(order.coupon.commissionAmount)}`
-                    : ""}
-                </dd>
-              </div>
-            ) : null}
             {order.paymentStatus === "pendiente" && order.holdExpiresAt ? (
               <div>
-                <dt className="text-brand-muted">Cupo reservado hasta</dt>
-                <dd className="text-brand-charcoal">
+                <dt className="text-meru-muted">Cupo reservado hasta</dt>
+                <dd className="text-meru-charcoal">
                   {new Date(order.holdExpiresAt).toLocaleString("es-AR")}
                 </dd>
               </div>
             ) : null}
             {order.paymentStatus === "cancelado" ? (
               <div>
-                <dt className="text-brand-muted">Cancelación</dt>
-                <dd className="text-brand-charcoal">
+                <dt className="text-meru-muted">Cancelación</dt>
+                <dd className="text-meru-charcoal">
                   {order.cancelledAt
                     ? new Date(order.cancelledAt).toLocaleString("es-AR")
                     : "—"}
@@ -450,16 +424,16 @@ export default function AdminOrderDetailPage() {
               </div>
             ) : null}
             <div>
-              <dt className="text-brand-muted">Creada</dt>
-              <dd className="text-brand-charcoal">
+              <dt className="text-meru-muted">Creada</dt>
+              <dd className="text-meru-charcoal">
                 {order.createdAt
                   ? new Date(order.createdAt).toLocaleString("es-AR")
                   : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-brand-muted">ID completo</dt>
-              <dd className="break-all font-mono text-xs text-brand-muted">{order.id}</dd>
+              <dt className="text-meru-muted">ID completo</dt>
+              <dd className="break-all font-mono text-xs text-meru-muted">{order.id}</dd>
             </div>
           </dl>
 
@@ -503,50 +477,50 @@ export default function AdminOrderDetailPage() {
         </section>
       </div>
 
-      <section className="mt-6 rounded-xl border border-brand-border bg-white p-6">
-        <h2 className="text-lg text-brand-charcoal">Ítems del pedido</h2>
+      <section className="mt-6 rounded-xl border border-meru-border bg-white p-6">
+        <h2 className="text-lg text-meru-charcoal">Ítems del pedido</h2>
         {order.items.length === 0 ? (
-          <p className="mt-4 text-sm text-brand-muted">Sin ítems guardados en la orden.</p>
+          <p className="mt-4 text-sm text-meru-muted">Sin ítems guardados en la orden.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-brand-border">
+          <ul className="mt-4 divide-y divide-meru-border">
             {order.items.map((item, idx) => (
               <li key={`${item.serviceId ?? idx}-${idx}`} className="py-4 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     {item.packageId || item.packageTitle ? (
-                      <p className="text-xs font-medium uppercase tracking-wider text-brand-secondary">
+                      <p className="text-xs font-medium uppercase tracking-wider text-meru-secondary">
                         Paquete
                       </p>
                     ) : null}
-                    <p className="text-brand-charcoal">
+                    <p className="text-meru-charcoal">
                       {item.serviceTitle || item.packageTitle || "Ítem"}
                     </p>
                     {item.slug ? (
-                      <p className="text-xs text-brand-muted">/{item.slug}</p>
+                      <p className="text-xs text-meru-muted">/{item.slug}</p>
                     ) : null}
                     {passengersLabel(item.passengers) ? (
-                      <p className="mt-1 text-sm text-brand-muted">
+                      <p className="mt-1 text-sm text-meru-muted">
                         {passengersLabel(item.passengers)}
                       </p>
                     ) : (
-                      <p className="mt-1 text-sm text-brand-muted">
+                      <p className="mt-1 text-sm text-meru-muted">
                         {item.quantity ?? 1} pasajero
                         {(item.quantity ?? 1) === 1 ? "" : "s"}
                       </p>
                     )}
                     {item.stayFrom && item.stayTo ? (
-                      <p className="mt-1 text-sm text-brand-secondary">
+                      <p className="mt-1 text-sm text-meru-secondary">
                         Estadía: {item.stayFrom.split("-").reverse().join("/")} →{" "}
                         {item.stayTo.split("-").reverse().join("/")}
                       </p>
                     ) : item.departureDate && item.departureTime ? (
-                      <p className="mt-1 text-sm text-brand-secondary">
+                      <p className="mt-1 text-sm text-meru-secondary">
                         Salida: {item.departureDate.split("-").reverse().join("/")} ·{" "}
                         {item.departureTime}
                       </p>
                     ) : null}
                     {item.includedServices?.length ? (
-                      <ul className="mt-2 space-y-1 text-sm text-brand-muted">
+                      <ul className="mt-2 space-y-1 text-sm text-meru-muted">
                         {item.includedServices.map((s) => (
                           <li key={s.serviceId}>· {s.title}</li>
                         ))}
@@ -558,12 +532,12 @@ export default function AdminOrderDetailPage() {
                       </p>
                     ) : null}
                     {typeof item.unitPrice === "number" ? (
-                      <p className="text-xs text-brand-muted">
+                      <p className="text-xs text-meru-muted">
                         Precio ref.: {formatCurrencyARS(item.unitPrice)}
                       </p>
                     ) : null}
                   </div>
-                  <p className="font-semibold text-brand-primary">
+                  <p className="font-semibold text-meru-primary">
                     {formatCurrencyARS(item.lineTotal ?? 0)}
                   </p>
                 </div>
@@ -573,28 +547,28 @@ export default function AdminOrderDetailPage() {
         )}
       </section>
 
-      <section className="mt-6 rounded-xl border border-brand-border bg-white p-6">
-        <h2 className="text-lg text-brand-charcoal">Reservas / cupos asociados</h2>
+      <section className="mt-6 rounded-xl border border-meru-border bg-white p-6">
+        <h2 className="text-lg text-meru-charcoal">Reservas / cupos asociados</h2>
         {bookings.length === 0 ? (
-          <p className="mt-4 text-sm text-brand-muted">No hay bookings vinculados a esta orden.</p>
+          <p className="mt-4 text-sm text-meru-muted">No hay bookings vinculados a esta orden.</p>
         ) : (
           <ul className="mt-4 space-y-3">
             {bookings.map((booking) => (
               <li
                 key={booking.id}
-                className="rounded-lg border border-brand-border/80 bg-brand-sand/40 px-4 py-3 text-sm"
+                className="rounded-lg border border-meru-border/80 bg-meru-sand/40 px-4 py-3 text-sm"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-brand-charcoal">{booking.serviceTitle}</p>
+                    <p className="text-meru-charcoal">{booking.serviceTitle}</p>
                     {passengersLabel(booking.passengers) ? (
-                      <p className="text-brand-muted">
+                      <p className="text-meru-muted">
                         {passengersLabel(booking.passengers)}
                       </p>
                     ) : (
-                      <p className="text-brand-muted">Cantidad: {booking.quantity}</p>
+                      <p className="text-meru-muted">Cantidad: {booking.quantity}</p>
                     )}
-                    <p className="text-xs text-brand-muted">
+                    <p className="text-xs text-meru-muted">
                       DNI reserva: {booking.dni || "—"}
                       {booking.bookingDate
                         ? ` · ${new Date(booking.bookingDate).toLocaleString("es-AR")}`
@@ -611,7 +585,7 @@ export default function AdminOrderDetailPage() {
                     >
                       {booking.active ? "Activa" : "Inactiva"}
                     </Badge>
-                    <p className="mt-1 font-medium text-brand-charcoal">
+                    <p className="mt-1 font-medium text-meru-charcoal">
                       {formatCurrencyARS(booking.lineTotal)}
                     </p>
                   </div>

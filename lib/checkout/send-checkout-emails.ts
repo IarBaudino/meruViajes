@@ -1,9 +1,3 @@
-import {
-  brand,
-  brandEmailSignatureHtml,
-  brandLogoHtml,
-  getAppUrl,
-} from "@/config/brand";
 import { formatCurrencyARS } from "@/lib/format";
 import { getResend, isResendConfigured, resendDefaults } from "@/lib/resend";
 import {
@@ -30,7 +24,9 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
   const resend = getResend();
   if (!resend || !params.customerEmail) return;
 
-  const logoHtml = brandLogoHtml();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar";
+  const logoUrl = `${appUrl.replace(/\/$/, "")}/logo.png`;
+  const logoHtml = `<img src="${logoUrl}" alt="Meru Viajes y Turismo" width="120" style="display:block;margin:0 0 20px 0" />`;
 
   const itemsHtml = params.items
     .map((item) => {
@@ -76,7 +72,7 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
   await resend.emails.send({
     from: resendDefaults.from,
     to: params.customerEmail,
-    subject: `Reserva recibida — ${brand.agencyName} (#${orderRef})`,
+    subject: `Reserva recibida — Meru Viajes (#${orderRef})`,
     html: `
       ${logoHtml}
       <p>Hola ${params.customerName},</p>
@@ -86,14 +82,14 @@ export async function sendCheckoutEmails(params: CheckoutEmailParams): Promise<v
       <ul>${itemsHtml}</ul>
       <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
       <p>Estado del pago: <strong>pendiente</strong></p>
-      <p>Saludos,<br>${brandEmailSignatureHtml()}</p>
+      <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
     `,
   });
 
   await resend.emails.send({
     from: resendDefaults.from,
     to: resendDefaults.to,
-    subject: `[${brand.shortName}] Nueva reserva de ${params.customerName}${
+    subject: `[Meru] Nueva reserva de ${params.customerName}${
       hasManualPackage ? " · PAQUETE MANUAL" : ""
     }`,
     html: `
@@ -118,7 +114,9 @@ type CancelEmailParams = CheckoutEmailParams & {
 };
 
 function orderLogoHtml() {
-  return brandLogoHtml();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar";
+  const logoUrl = `${appUrl.replace(/\/$/, "")}/logo.png`;
+  return `<img src="${logoUrl}" alt="Meru Viajes y Turismo" width="120" style="display:block;margin:0 0 20px 0" />`;
 }
 
 function simpleItemsHtml(items: OrderItem[]) {
@@ -164,14 +162,17 @@ export async function sendOrderPaidEmail(params: CheckoutEmailParams): Promise<v
       </ul>
     `
     : "";
-  const appUrl = getAppUrl();
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+    /\/$/,
+    ""
+  );
 
   await resend.emails.send({
     from: resendDefaults.from,
     to: params.customerEmail,
     subject: osNumber
-      ? `Orden de servicio ${osNumber} — ${brand.agencyName}`
-      : `Reserva confirmada y abonada — ${brand.agencyName} (#${orderRef})`,
+      ? `Orden de servicio ${osNumber} — Meru Viajes`
+      : `Reserva confirmada y abonada — Meru Viajes (#${orderRef})`,
     html: `
       ${logoHtml}
       <p>Hola ${params.customerName},</p>
@@ -181,7 +182,7 @@ export async function sendOrderPaidEmail(params: CheckoutEmailParams): Promise<v
       ${billingHtml}
       <p><strong>Total abonado:</strong> ${formatCurrencyARS(params.total)}</p>
       <p>Podés verla en <a href="${appUrl}/mi-cuenta/reservas">Mis reservas</a> si tenés cuenta.</p>
-      <p>¡Gracias por elegirnos!<br>${brandEmailSignatureHtml()}</p>
+      <p>¡Gracias por elegirnos!<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
     `,
   });
 
@@ -189,8 +190,8 @@ export async function sendOrderPaidEmail(params: CheckoutEmailParams): Promise<v
     from: resendDefaults.from,
     to: resendDefaults.to,
     subject: osNumber
-      ? `[${brand.shortName}] Orden de servicio ${osNumber} — ${params.customerName}`
-      : `[${brand.shortName}] Reserva pagada — ${params.customerName} (#${orderRef})`,
+      ? `[Meru] Orden de servicio ${osNumber} — ${params.customerName}`
+      : `[Meru] Reserva pagada — ${params.customerName} (#${orderRef})`,
     html: `
       ${logoHtml}
       <h2>Orden de servicio generada</h2>
@@ -223,7 +224,7 @@ export async function sendOrderCancelledEmail(params: CancelEmailParams): Promis
   await resend.emails.send({
     from: resendDefaults.from,
     to: params.customerEmail,
-    subject: `Reserva cancelada — ${brand.agencyName} (#${orderRef})`,
+    subject: `Reserva cancelada — Meru Viajes (#${orderRef})`,
     html: `
       ${logoHtml}
       <p>Hola ${params.customerName},</p>
@@ -231,14 +232,14 @@ export async function sendOrderCancelledEmail(params: CancelEmailParams): Promis
       <ul>${itemsHtml}</ul>
       <p><strong>Total:</strong> ${formatCurrencyARS(params.total)}</p>
       <p>Podés volver a reservar desde el sitio cuando quieras.</p>
-      <p>Saludos,<br>${brandEmailSignatureHtml()}</p>
+      <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
     `,
   });
 
   await resend.emails.send({
     from: resendDefaults.from,
     to: resendDefaults.to,
-    subject: `[${brand.shortName}] Reserva cancelada — ${params.customerName} (#${orderRef})`,
+    subject: `[Meru] Reserva cancelada — ${params.customerName} (#${orderRef})`,
     html: `
       ${logoHtml}
       <h2>Reserva cancelada</h2>

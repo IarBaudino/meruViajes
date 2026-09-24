@@ -30,10 +30,6 @@ export interface SiteSettings {
     title: string;
     description: string;
   };
-  groupTripsPreview: {
-    title: string;
-    description: string;
-  };
   about: {
     title: string;
     quote: string;
@@ -51,12 +47,8 @@ export interface SiteSettings {
     email: string;
     /** Texto visible, ej. (2901) 588864 */
     phoneLabel: string;
-    /** Solo dígitos para tel:/WhatsApp */
+    /** Solo dígitos para tel:/WhatsApp, ej. 2901588864 */
     phoneNumber?: string;
-  };
-  social: {
-    instagramUrl: string;
-    instagramHandle: string;
   };
   googleReviews?: {
     enabled: boolean;
@@ -84,12 +76,5 @@ export interface SiteSettings {
      * Advertencia al cliente. Usá {horas} para el plazo vigente.
      */
     holdWarningMessage?: string;
-  };
-  payments?: {
-    bankName: string;
-    accountHolder: string;
-    cbu: string;
-    alias: string;
-    notes: string;
   };
 }

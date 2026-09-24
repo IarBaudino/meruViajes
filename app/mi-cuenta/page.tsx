@@ -26,10 +26,10 @@ export default async function AccountHomePage() {
           <Link key={href} href={href}>
             <Card className="h-full transition-shadow hover:shadow-[var(--shadow-card)]">
               <CardContent className="flex items-center gap-4 pt-6">
-                <div className="rounded-lg bg-brand-ice p-3">
-                  <Icon className="h-5 w-5 text-brand-primary" aria-hidden />
+                <div className="rounded-lg bg-meru-ice p-3">
+                  <Icon className="h-5 w-5 text-meru-primary" aria-hidden />
                 </div>
-                <span className="text-brand-charcoal">{label}</span>
+                <span className="text-meru-charcoal">{label}</span>
               </CardContent>
             </Card>
           </Link>

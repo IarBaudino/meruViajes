@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
-import {
-  brand,
-  brandEmailSignatureHtml,
-  brandLogoHtml,
-} from "@/config/brand";
 import { inquirySchema } from "@/schemas/inquiry";
 import { getAdminFirestore, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getResend, isResendConfigured, resendDefaults } from "@/lib/resend";
@@ -20,7 +15,6 @@ function escapeHtml(value: string) {
 function relatedLabel(kind?: string) {
   if (kind === "package") return "Paquete";
   if (kind === "excursion") return "Excursión";
-  if (kind === "groupTrip") return "Viaje grupal";
   return "Producto";
 }
 
@@ -62,7 +56,8 @@ export async function POST(request: Request) {
     if (isResendConfigured()) {
       const resend = getResend();
       if (resend) {
-        const logoHtml = brandLogoHtml();
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar";
+        const logoHtml = `<img src="${appUrl.replace(/\/$/, "")}/logo.png" alt="Meru Viajes y Turismo" width="120" style="display:block;margin:0 0 20px 0" />`;
         const relatedHtml = hasRelated
           ? `<p><strong>${relatedLabel(kind)}:</strong> ${escapeHtml(title || slug)}${
               slug ? ` <span style="color:#666">(${escapeHtml(slug)})</span>` : ""
@@ -74,7 +69,7 @@ export async function POST(request: Request) {
           from: resendDefaults.from,
           to: resendDefaults.to,
           replyTo: email,
-          subject: `[${brand.shortName}] Nueva consulta de ${name}${subjectSuffix}`,
+          subject: `[Meru Turismo] Nueva consulta de ${name}${subjectSuffix}`,
           html: `
             ${logoHtml}
             <h2>Nueva consulta desde el sitio web</h2>
@@ -89,14 +84,14 @@ export async function POST(request: Request) {
         await resend.emails.send({
           from: resendDefaults.from,
           to: email,
-          subject: `Recibimos tu consulta — ${brand.agencyName}`,
+          subject: "Recibimos tu consulta — Meru Viajes y Turismo",
           html: `
             ${logoHtml}
             <p>Hola ${escapeHtml(name)},</p>
             <p>Gracias por contactarnos. Recibimos tu consulta${
               title ? ` sobre <strong>${escapeHtml(title)}</strong>` : ""
             } y te responderemos a la brevedad.</p>
-            <p>Saludos,<br>${brandEmailSignatureHtml()}</p>
+            <p>Saludos,<br>Equipo Meru Viajes y Turismo<br>Ushuaia, Tierra del Fuego</p>
           `,
         });
       }

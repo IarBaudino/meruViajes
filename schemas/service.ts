@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATALOG_SEASONS } from "@/lib/seasons";
 
 export const discountPercentSchema = z
   .number()
@@ -109,15 +110,15 @@ export const serviceSchema = z
     active: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    const enabledSeasons = data.seasonalVariants.verano.enabled
-      ? (["verano"] as const)
-      : [];
+    const enabledSeasons = CATALOG_SEASONS.filter(
+      (season) => data.seasonalVariants[season].enabled
+    );
 
     if (enabledSeasons.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Completá la ficha de la excursión",
-        path: ["seasonalVariants", "verano"],
+        message: "Habilitá al menos una temporada (verano o invierno)",
+        path: ["seasonalVariants"],
       });
       return;
     }

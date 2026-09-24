@@ -15,7 +15,7 @@ Compresión **antes** de subir para ahorrar espacio y egress.
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=agency-media
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=meru-media
 ADMIN_UPLOAD_SECRET=          # dev / scripts (header x-admin-upload-key)
 NEXT_PUBLIC_ADMIN_UPLOAD_KEY= # solo local; opcional espejo del secret
 ```
@@ -48,7 +48,7 @@ npm run recompress:videos -- --min-mb=1 --min-savings=0.2 --ffmpeg=ffmpeg
 
 ## Supabase Console
 
-1. Crear el bucket (`NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET`, p. ej. `agency-media`; público para URLs de excursiones, o RLS según necesidad).
+1. Crear bucket `meru-media` (público para URLs de excursiones, o RLS según necesidad).
 2. Políticas: lectura pública si las URLs van en el sitio; escritura solo service role / signed upload.
 
 ## Límites

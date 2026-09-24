@@ -40,7 +40,7 @@ export function HeroCarouselBackground({ media }: Props) {
       {media.map((item, i) => (
         <motion.div
           key={`${item.type}-${item.url}-${i}`}
-          className="absolute inset-0 overflow-hidden bg-brand-sand"
+          className="absolute inset-0 overflow-hidden bg-meru-charcoal"
           initial={{ opacity: i === 0 ? 1 : 0 }}
           animate={{ opacity: i === index ? 1 : 0 }}
           transition={{ duration: FADE_SECONDS, ease: "easeInOut" }}
@@ -58,7 +58,7 @@ export function HeroCarouselBackground({ media }: Props) {
                 onEnded={media.length > 1 ? goNext : undefined}
               />
             ) : (
-              <div className="h-full w-full bg-brand-sand" />
+              <div className="h-full w-full bg-meru-charcoal" />
             )
           ) : (
             <div
@@ -72,7 +72,7 @@ export function HeroCarouselBackground({ media }: Props) {
         className="pointer-events-none absolute inset-0 z-[1]"
         style={{
           background:
-            "linear-gradient(180deg, rgba(58,48,36,0.55) 0%, rgba(58,48,36,0.38) 45%, rgba(45,37,28,0.78) 100%)",
+            "linear-gradient(180deg, rgba(20,20,18,0.55) 0%, rgba(20,20,18,0.42) 45%, rgba(20,20,18,0.72) 100%)",
         }}
       />
     </div>

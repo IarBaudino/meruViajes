@@ -46,8 +46,8 @@ function formatDateTime(iso: string | null): string {
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid gap-0.5 sm:grid-cols-[140px_1fr] sm:gap-3">
-      <dt className="text-xs font-medium uppercase tracking-wide text-brand-muted">{label}</dt>
-      <dd className="text-sm text-brand-charcoal break-words">{value || "—"}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-meru-muted">{label}</dt>
+      <dd className="text-sm text-meru-charcoal break-words">{value || "—"}</dd>
     </div>
   );
 }
@@ -125,9 +125,9 @@ function UserDetailPanel({
   }
 
   return (
-    <div className="mt-2 space-y-5 rounded-lg border border-brand-border bg-brand-sand/40 p-4">
+    <div className="mt-2 space-y-5 rounded-lg border border-meru-border bg-meru-sand/40 p-4">
       <div>
-        <h3 className="text-sm font-semibold text-brand-charcoal">Datos del perfil</h3>
+        <h3 className="text-sm font-semibold text-meru-charcoal">Datos del perfil</h3>
         <dl className="mt-3 space-y-2.5">
           <DetailRow label="UID" value={<span className="font-mono text-xs">{user.uid}</span>} />
           <DetailRow label="Nombre" value={user.name} />
@@ -143,7 +143,7 @@ function UserDetailPanel({
                   href={user.image}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-secondary hover:underline"
+                  className="text-meru-secondary hover:underline"
                 >
                   Ver imagen
                 </a>
@@ -163,7 +163,7 @@ function UserDetailPanel({
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-brand-charcoal">Autenticación (Firebase)</h3>
+        <h3 className="text-sm font-semibold text-meru-charcoal">Autenticación (Firebase)</h3>
         <dl className="mt-3 space-y-2.5">
           <DetailRow
             label="Cuenta Auth"
@@ -194,11 +194,11 @@ function UserDetailPanel({
         </dl>
       </div>
 
-      <div className="border-t border-brand-border pt-4 space-y-4">
-        <p className="text-sm text-brand-charcoal">
+      <div className="border-t border-meru-border pt-4 space-y-4">
+        <p className="text-sm text-meru-charcoal">
           <strong>Gestión de contraseña</strong>
           {!user.hasPasswordLogin ? (
-            <span className="block text-xs text-brand-muted mt-1">
+            <span className="block text-xs text-meru-muted mt-1">
               Esta cuenta entró con Google. Asigná una contraseña para que pueda ingresar con email.
             </span>
           ) : null}
@@ -250,7 +250,7 @@ function UserDetailPanel({
         ) : null}
 
         {resetLink ? (
-          <p className="break-all rounded border border-brand-border bg-white p-2 text-xs font-mono text-brand-charcoal">
+          <p className="break-all rounded border border-meru-border bg-white p-2 text-xs font-mono text-meru-charcoal">
             {resetLink}
           </p>
         ) : null}
@@ -284,20 +284,20 @@ export function AdminUsersList() {
         description="Perfil completo de cada cuenta: contacto, documento y acceso."
       />
 
-      <p className="mb-6 text-sm text-brand-muted">
+      <p className="mb-6 text-sm text-meru-muted">
         Abrí <strong>Ver detalle</strong> para ver DNI, teléfono, dirección y datos de Auth. Las
         contraseñas no se pueden ver una vez guardadas.
       </p>
 
-      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
+      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
 
       {!loading && users.length === 0 ? (
-        <p className="text-brand-muted">No hay usuarios registrados todavía.</p>
+        <p className="text-meru-muted">No hay usuarios registrados todavía.</p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-brand-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-meru-border bg-white">
         <table className="min-w-full text-sm">
-          <thead className="border-b border-brand-border bg-brand-sand/50 text-left text-brand-muted">
+          <thead className="border-b border-meru-border bg-meru-sand/50 text-left text-meru-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Nombre</th>
               <th className="px-4 py-3 font-medium">Contacto</th>
@@ -313,8 +313,8 @@ export function AdminUsersList() {
               const open = openUid === user.uid;
               return (
                 <Fragment key={user.uid}>
-                  <tr className="border-b border-brand-border/60 align-top">
-                    <td className="px-4 py-3 text-brand-charcoal">
+                  <tr className="border-b border-meru-border/60 align-top">
+                    <td className="px-4 py-3 text-meru-charcoal">
                       <p className="font-medium">{user.name || "—"}</p>
                       {!user.active ? (
                         <Badge className="mt-1 bg-red-50 text-red-700">Inactivo</Badge>
@@ -322,14 +322,14 @@ export function AdminUsersList() {
                     </td>
                     <td className="px-4 py-3">
                       <p>{user.email || "—"}</p>
-                      <p className="mt-0.5 text-xs text-brand-muted">
+                      <p className="mt-0.5 text-xs text-meru-muted">
                         {user.phone || "Sin teléfono"}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-brand-charcoal">
-                      {user.dni || <span className="text-brand-muted">—</span>}
+                    <td className="px-4 py-3 text-meru-charcoal">
+                      {user.dni || <span className="text-meru-muted">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-brand-muted">
+                    <td className="px-4 py-3 text-xs text-meru-muted">
                       {user.authProviderLabels.length > 0
                         ? user.authProviderLabels.join(", ")
                         : "—"}
@@ -341,14 +341,14 @@ export function AdminUsersList() {
                       <Badge
                         className={
                           user.role === "admin"
-                            ? "bg-brand-ice text-brand-primary"
+                            ? "bg-meru-ice text-meru-primary"
                             : "bg-slate-100 text-slate-600"
                         }
                       >
                         {user.role === "admin" ? "Admin" : "Cliente"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-xs text-brand-muted whitespace-nowrap">
+                    <td className="px-4 py-3 text-xs text-meru-muted whitespace-nowrap">
                       {formatDateTime(user.createdAt)}
                     </td>
                     <td className="px-4 py-3">

@@ -23,7 +23,6 @@ type ArchiveView = "active" | "archived";
 function relatedLabel(kind?: string | null) {
   if (kind === "package") return "Paquete";
   if (kind === "excursion") return "Excursión";
-  if (kind === "groupTrip") return "Viaje grupal";
   return "Consulta sobre";
 }
 
@@ -126,8 +125,8 @@ export default function AdminInquiriesPage() {
             onClick={() => setArchiveView(value)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               archiveView === value
-                ? "border border-brand-charcoal bg-white font-medium text-brand-charcoal"
-                : "bg-brand-ice text-brand-charcoal hover:bg-brand-border/60"
+                ? "bg-meru-primary text-white"
+                : "bg-meru-ice text-meru-charcoal hover:bg-meru-border/60"
             }`}
           >
             {label}
@@ -141,25 +140,25 @@ export default function AdminInquiriesPage() {
         </p>
       ) : null}
 
-      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
+      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
 
       <div className="space-y-4">
         {inquiries.map((inquiry) => (
           <article
             key={inquiry.id}
-            className="rounded-xl border border-brand-border bg-white p-5"
+            className="rounded-xl border border-meru-border bg-white p-5"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-brand-charcoal">{inquiry.name}</p>
+                <p className="text-meru-charcoal">{inquiry.name}</p>
                 <a
                   href={`mailto:${inquiry.email}`}
-                  className="text-sm text-brand-secondary hover:underline"
+                  className="text-sm text-meru-secondary hover:underline"
                 >
                   {inquiry.email}
                 </a>
                 {inquiry.relatedTitle || inquiry.relatedSlug ? (
-                  <p className="mt-2 text-sm font-medium text-brand-primary">
+                  <p className="mt-2 text-sm font-medium text-meru-primary">
                     {relatedLabel(inquiry.relatedKind)}:{" "}
                     {inquiry.relatedTitle || inquiry.relatedSlug}
                     {inquiry.relatedSlug && inquiry.relatedKind === "excursion" ? (
@@ -167,7 +166,7 @@ export default function AdminInquiriesPage() {
                         {" · "}
                         <a
                           href={`/excursiones/${inquiry.relatedSlug}`}
-                          className="font-normal text-brand-secondary hover:underline"
+                          className="font-normal text-meru-secondary hover:underline"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -180,20 +179,7 @@ export default function AdminInquiriesPage() {
                         {" · "}
                         <a
                           href={`/paquetes/${inquiry.relatedSlug}`}
-                          className="font-normal text-brand-secondary hover:underline"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          ver ficha
-                        </a>
-                      </>
-                    ) : null}
-                    {inquiry.relatedSlug && inquiry.relatedKind === "groupTrip" ? (
-                      <>
-                        {" · "}
-                        <a
-                          href={`/viajes-grupales/${inquiry.relatedSlug}`}
-                          className="font-normal text-brand-secondary hover:underline"
+                          className="font-normal text-meru-secondary hover:underline"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -204,7 +190,7 @@ export default function AdminInquiriesPage() {
                   </p>
                 ) : null}
                 {inquiry.createdAt ? (
-                  <p className="mt-1 text-xs text-brand-muted">
+                  <p className="mt-1 text-xs text-meru-muted">
                     {new Date(inquiry.createdAt).toLocaleString("es-AR")}
                   </p>
                 ) : null}
@@ -224,7 +210,7 @@ export default function AdminInquiriesPage() {
                 ) : null}
               </div>
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-sm text-brand-charcoal-muted">
+            <p className="mt-4 whitespace-pre-wrap text-sm text-meru-charcoal-muted">
               {inquiry.message}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -265,7 +251,7 @@ export default function AdminInquiriesPage() {
           </article>
         ))}
         {!loading && inquiries.length === 0 ? (
-          <p className="text-brand-muted">
+          <p className="text-meru-muted">
             {archiveView === "archived"
               ? "No hay consultas archivadas."
               : "No hay consultas activas."}

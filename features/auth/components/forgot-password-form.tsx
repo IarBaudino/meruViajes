@@ -35,8 +35,8 @@ export function ForgotPasswordForm() {
 
   return (
     <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
-      <h1 className="text-2xl text-brand-charcoal">Recuperar contraseña</h1>
-      <p className="mt-2 text-sm text-brand-muted">
+      <h1 className="text-2xl text-meru-charcoal">Recuperar contraseña</h1>
+      <p className="mt-2 text-sm text-meru-muted">
         Te enviamos un correo con un enlace para elegir una nueva contraseña.
       </p>
 
@@ -47,7 +47,7 @@ export function ForgotPasswordForm() {
             Si el correo está registrado, recibirás las instrucciones en unos minutos. Revisá también
             spam.
           </p>
-          <Link href="/login" className="inline-block text-sm font-semibold text-brand-secondary hover:underline">
+          <Link href="/login" className="inline-block text-sm font-semibold text-meru-secondary hover:underline">
             Volver a iniciar sesión
           </Link>
         </div>
@@ -75,7 +75,7 @@ export function ForgotPasswordForm() {
         </form>
       )}
 
-      <Link href="/login" className="mt-6 inline-block text-sm text-brand-muted hover:text-brand-charcoal">
+      <Link href="/login" className="mt-6 inline-block text-sm text-meru-muted hover:text-meru-charcoal">
         ← Volver a iniciar sesión
       </Link>
     </div>

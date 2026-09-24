@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { isAdminUiPreview, PREVIEW_ADMIN_USER } from "@/lib/auth/admin-preview";
 import type { UserRole } from "@/types";
 
 export async function getSessionUser() {
@@ -18,9 +17,6 @@ export async function requireAuth(redirectTo = "/login") {
 }
 
 export async function requireAdmin(redirectTo = "/login?error=admin") {
-  if (isAdminUiPreview()) {
-    return PREVIEW_ADMIN_USER;
-  }
   const user = await requireAuth(redirectTo);
   if (user.role !== "admin") {
     redirect(redirectTo);

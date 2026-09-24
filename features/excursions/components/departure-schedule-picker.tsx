@@ -136,22 +136,22 @@ export function DepartureSchedulePicker({
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-sm font-medium text-brand-charcoal">Elegí la fecha</p>
-        <div className="rounded-xl border border-brand-border bg-white p-3">
+        <p className="mb-2 text-sm font-medium text-meru-charcoal">Elegí la fecha</p>
+        <div className="rounded-xl border border-meru-border bg-white p-3">
           <div className="mb-3 flex items-center justify-between gap-2">
             <button
               type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-border text-brand-charcoal disabled:opacity-30"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border text-meru-charcoal disabled:opacity-30"
               aria-label="Mes anterior"
               disabled={!canPrev}
               onClick={() => shiftMonth(-1)}
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
             </button>
-            <p className="text-sm font-semibold text-brand-charcoal">{monthLabel(viewY, viewM)}</p>
+            <p className="text-sm font-semibold text-meru-charcoal">{monthLabel(viewY, viewM)}</p>
             <button
               type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-brand-border text-brand-charcoal disabled:opacity-30"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border text-meru-charcoal disabled:opacity-30"
               aria-label="Mes siguiente"
               disabled={!canNext}
               onClick={() => shiftMonth(1)}
@@ -160,7 +160,7 @@ export function DepartureSchedulePicker({
             </button>
           </div>
 
-          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase tracking-wide text-brand-muted">
+          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase tracking-wide text-meru-muted">
             {WEEKDAYS.map((d) => (
               <span key={d}>{d}</span>
             ))}
@@ -186,10 +186,10 @@ export function DepartureSchedulePicker({
                   className={cn(
                     "h-9 rounded-lg text-sm tabular-nums transition-colors",
                     cell.selected
-                      ? "border border-brand-charcoal bg-white font-semibold text-brand-charcoal"
+                      ? "bg-meru-primary font-semibold text-white"
                       : cell.available
-                        ? "bg-brand-ice/70 font-medium text-brand-charcoal hover:bg-brand-ice"
-                        : "cursor-not-allowed text-brand-border"
+                        ? "bg-meru-ice/70 font-medium text-meru-charcoal hover:bg-meru-ice"
+                        : "cursor-not-allowed text-meru-border"
                   )}
                 >
                   {cell.day}
@@ -198,17 +198,17 @@ export function DepartureSchedulePicker({
             })}
           </div>
 
-          <p className="mt-3 text-xs text-brand-muted">
+          <p className="mt-3 text-xs text-meru-muted">
             Solo se pueden elegir los días marcados (con al menos un horario con lugar).
           </p>
         </div>
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-brand-charcoal">
+        <p className="mb-2 text-sm font-medium text-meru-charcoal">
           Horarios disponibles
           {selectedDate ? (
-            <span className="font-normal text-brand-muted">
+            <span className="font-normal text-meru-muted">
               {" "}
               · {formatSelectedDate(selectedDate)}
             </span>
@@ -232,8 +232,8 @@ export function DepartureSchedulePicker({
                   className={cn(
                     "min-w-[4.5rem] rounded-lg border px-3 py-2.5 text-sm font-semibold tabular-nums transition-colors",
                     selected
-                      ? "border-brand-charcoal bg-white text-brand-charcoal"
-                      : "border-brand-border bg-white text-brand-charcoal hover:border-brand-primary/40 hover:bg-brand-ice/50",
+                      ? "border-meru-primary bg-meru-primary text-white"
+                      : "border-meru-border bg-white text-meru-charcoal hover:border-meru-primary/40 hover:bg-meru-ice/50",
                     opt.disabled && "cursor-not-allowed opacity-40"
                   )}
                 >

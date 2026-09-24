@@ -31,7 +31,6 @@ type Props = {
     };
   };
   newDiscountId: () => string;
-  hideSeasonUi?: boolean;
 };
 
 export function ServiceSeasonVariantSection({
@@ -42,11 +41,10 @@ export function ServiceSeasonVariantSection({
   setValue,
   errors,
   newDiscountId,
-  hideSeasonUi = false,
 }: Props) {
   const base = `seasonalVariants.${season}` as const;
   const departuresPath = `${base}.departures` as FieldPath<ServiceFormData>;
-  const enabled = hideSeasonUi ? true : watch(`${base}.enabled`);
+  const enabled = watch(`${base}.enabled`);
   const price = watch(`${base}.price`) ?? 0;
   const photos = watch(`${base}.photos`) ?? [];
   const promoEnabled = watch(`${base}.promotion.enabled`);
@@ -66,24 +64,19 @@ export function ServiceSeasonVariantSection({
   }
 
   return (
-    <section className="rounded-xl border border-brand-border bg-white p-6 space-y-6">
+    <section className="rounded-xl border border-meru-border bg-white p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg text-brand-charcoal">
-            {hideSeasonUi ? "Ficha de la excursión" : `Temporada ${SEASON_LABELS[season]}`}
-          </h2>
-          <p className="mt-1 text-sm text-brand-muted">
-            {hideSeasonUi
-              ? "Título, precio, salidas, descuentos y fotos."
-              : `Ficha completa para ${SEASON_LABELS[season].toLowerCase()}: título, precio, salidas, descuentos y promo propios.`}
+          <h2 className="text-lg text-meru-charcoal">Temporada {SEASON_LABELS[season]}</h2>
+          <p className="mt-1 text-sm text-meru-muted">
+            Ficha completa para {SEASON_LABELS[season].toLowerCase()}: título, precio, salidas,
+            descuentos y promo propios.
           </p>
         </div>
-        {hideSeasonUi ? null : (
-          <label className="flex items-center gap-2 text-sm font-medium text-brand-charcoal">
-            <input type="checkbox" className="rounded" {...register(`${base}.enabled`)} />
-            Habilitada
-          </label>
-        )}
+        <label className="flex items-center gap-2 text-sm font-medium text-meru-charcoal">
+          <input type="checkbox" className="rounded" {...register(`${base}.enabled`)} />
+          Habilitada
+        </label>
       </div>
 
       {enabled ? (
@@ -99,7 +92,7 @@ export function ServiceSeasonVariantSection({
             error={errors?.description?.message}
             {...register(`${base}.description`)}
           />
-          <p className="-mt-3 text-xs text-brand-muted">
+          <p className="-mt-3 text-xs text-meru-muted">
             Usá Enter para separar párrafos. Se respetan en la ficha pública.
           </p>
 
@@ -112,7 +105,7 @@ export function ServiceSeasonVariantSection({
               {...register(`${base}.price`, { valueAsNumber: true })}
             />
             {price > 0 ? (
-              <p className="self-end text-sm text-brand-muted pb-2">
+              <p className="self-end text-sm text-meru-muted pb-2">
                 Vista previa: {formatCurrencyARS(price)}
               </p>
             ) : null}
@@ -128,10 +121,10 @@ export function ServiceSeasonVariantSection({
             departuresPath={departuresPath}
           />
 
-          <div className="space-y-5 border-t border-brand-border pt-5">
+          <div className="space-y-5 border-t border-meru-border pt-5">
             <div>
-              <h3 className="text-base text-brand-charcoal">Descuentos por tipo de pasajero</h3>
-              <p className="mt-1 text-sm text-brand-muted">
+              <h3 className="text-base text-meru-charcoal">Descuentos por tipo de pasajero</h3>
+              <p className="mt-1 text-sm text-meru-muted">
                 El % se aplica sobre la tarifa adulta vigente (habitual o promo). Los infantes son
                 gratis.
               </p>
@@ -191,16 +184,16 @@ export function ServiceSeasonVariantSection({
             </Button>
           </div>
 
-          <div className="space-y-5 border-t border-brand-border pt-5">
+          <div className="space-y-5 border-t border-meru-border pt-5">
             <div>
-              <h3 className="text-base text-brand-charcoal">Promoción temporal</h3>
-              <p className="mt-1 text-sm text-brand-muted">
+              <h3 className="text-base text-meru-charcoal">Promoción temporal</h3>
+              <p className="mt-1 text-sm text-meru-muted">
                 Descuento % sobre la tarifa adulto habitual entre dos fechas. Podés elegir qué
                 descuentos por pasajero siguen aplicando durante la promo.
               </p>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-brand-charcoal">
+            <label className="flex items-center gap-2 text-sm text-meru-charcoal">
               <input type="checkbox" className="rounded" {...register(`${base}.promotion.enabled`)} />
               Activar promoción con fechas
             </label>
@@ -231,11 +224,11 @@ export function ServiceSeasonVariantSection({
                 </div>
 
                 <div>
-                  <p className="mb-2 text-sm font-medium text-brand-charcoal">
+                  <p className="mb-2 text-sm font-medium text-meru-charcoal">
                     Descuentos que aplican en esta promo
                   </p>
                   {discountOptions.length === 0 ? (
-                    <p className="text-sm text-brand-muted">
+                    <p className="text-sm text-meru-muted">
                       Primero agregá al menos un tipo de descuento arriba.
                     </p>
                   ) : (
@@ -245,7 +238,7 @@ export function ServiceSeasonVariantSection({
                         const checked = appliesTo.includes(opt.id);
                         return (
                           <li key={opt.id}>
-                            <label className="flex items-center gap-2 text-sm text-brand-charcoal">
+                            <label className="flex items-center gap-2 text-sm text-meru-charcoal">
                               <input
                                 type="checkbox"
                                 className="rounded"
@@ -265,8 +258,8 @@ export function ServiceSeasonVariantSection({
             ) : null}
           </div>
 
-          <div className="space-y-5 border-t border-brand-border pt-5">
-            <h3 className="text-base text-brand-charcoal">Detalle y logística</h3>
+          <div className="space-y-5 border-t border-meru-border pt-5">
+            <h3 className="text-base text-meru-charcoal">Detalle y logística</h3>
             <Input label="Punto de encuentro" {...register(`${base}.meetingPoint`)} />
             <Textarea label="Requisitos" rows={3} {...register(`${base}.requirements`)} />
             <Textarea
@@ -282,7 +275,7 @@ export function ServiceSeasonVariantSection({
             folder="excursions"
             photos={photos}
             onChange={(next) => setValue(`${base}.photos`, next, { shouldDirty: true })}
-            label={hideSeasonUi ? "Galería de fotos" : `Galería de fotos (${SEASON_LABELS[season]})`}
+            label={`Galería de fotos (${SEASON_LABELS[season]})`}
             hint="La primera foto es la portada. Se comprimen automáticamente."
           />
           {errors?.photos?.message ? (
@@ -290,7 +283,7 @@ export function ServiceSeasonVariantSection({
           ) : null}
         </>
       ) : (
-        <p className="text-sm text-brand-muted">
+        <p className="text-sm text-meru-muted">
           Esta temporada está deshabilitada. No aparecerá en el catálogo ni se podrá reservar.
         </p>
       )}

@@ -1,4 +1,9 @@
+"use client";
+
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import type { ExcursionPackage } from "@/types/catalog";
+import { isAvailableInSeason } from "@/lib/seasons";
 import { PackageCard } from "@/features/packages/components/package-card";
 
 type Props = {
@@ -6,17 +11,24 @@ type Props = {
 };
 
 export function PackageCatalog({ packages }: Props) {
-  if (packages.length === 0) {
+  const searchParams = useSearchParams();
+  const season = searchParams.get("temporada");
+  const filtered = useMemo(() => {
+    if (season !== "verano" && season !== "invierno") return packages;
+    return packages.filter((pkg) => isAvailableInSeason(pkg.seasons, season));
+  }, [packages, season]);
+
+  if (filtered.length === 0) {
     return (
-      <p className="mt-12 rounded-xl border border-dashed border-brand-border bg-white py-16 text-center text-brand-muted">
-        No hay paquetes publicados por ahora.
+      <p className="mt-12 rounded-xl border border-dashed border-meru-border bg-white py-16 text-center text-meru-muted">
+        No hay paquetes disponibles para esta temporada por ahora.
       </p>
     );
   }
 
   return (
     <ul className="mt-10 grid list-none gap-8 sm:grid-cols-2 lg:grid-cols-3">
-      {packages.map((pkg) => (
+      {filtered.map((pkg) => (
         <li key={pkg.id}>
           <PackageCard package={pkg} />
         </li>

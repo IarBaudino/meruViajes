@@ -30,10 +30,6 @@ export const siteSettingsSchema = z.object({
     title: z.string().min(3),
     description: z.string().min(10),
   }),
-  groupTripsPreview: z.object({
-    title: z.string().min(3),
-    description: z.string().min(10),
-  }),
   about: z.object({
     title: z.string().min(3),
     quote: z.string().min(5),
@@ -55,10 +51,6 @@ export const siteSettingsSchema = z.object({
       z.string().regex(/^\d{8,15}$/, "Solo dígitos, 8 a 15 caracteres"),
     ]),
   }),
-  social: z.object({
-    instagramUrl: z.union([z.literal(""), z.string().url()]),
-    instagramHandle: z.string(),
-  }),
   googleReviews: z.object({
     enabled: z.boolean(),
     placeId: z.string(),
@@ -76,13 +68,6 @@ export const siteSettingsSchema = z.object({
       .min(1, "Mínimo 1 hora")
       .max(72, "Máximo 72 horas antes de la salida"),
     holdWarningMessage: z.string().max(600),
-  }),
-  payments: z.object({
-    bankName: z.string().default(""),
-    accountHolder: z.string().default(""),
-    cbu: z.string().default(""),
-    alias: z.string().default(""),
-    notes: z.string().default(""),
   }),
 });
 

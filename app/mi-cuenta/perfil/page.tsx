@@ -5,7 +5,7 @@ import { AdminAccessBanner } from "@/features/auth/components/admin-access-banne
 
 export default function ProfilePage() {
   return (
-    <div className="rounded-xl border border-brand-border bg-white p-6 sm:p-8">
+    <div className="rounded-xl border border-meru-border bg-white p-6 sm:p-8">
       <PageHeader
         title="Mi perfil"
         description="Datos personales y de facturación para agilizar tus reservas."

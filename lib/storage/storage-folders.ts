@@ -1,5 +1,5 @@
 /**
- * Carpetas permitidas en Supabase Storage.
+ * Carpetas permitidas en Supabase Storage (bucket meru-media).
  * `excursions` usa el perfil de compresión de `products`.
  */
 export const STORAGE_FOLDERS = [
@@ -74,7 +74,7 @@ export function isVideoFile(file: File): boolean {
 }
 
 export function getStorageBucket(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? "agency-media";
+  return process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? "meru-media";
 }
 
 export function getPublicStorageUrl(path: string): string {

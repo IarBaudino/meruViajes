@@ -148,8 +148,8 @@ export function ProfileForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-8" noValidate>
       <section className="space-y-5">
         <div>
-          <h2 className="text-base font-medium text-brand-charcoal">Datos personales</h2>
-          <p className="mt-1 text-sm text-brand-muted">
+          <h2 className="text-base font-medium text-meru-charcoal">Datos personales</h2>
+          <p className="mt-1 text-sm text-meru-muted">
             Nombre y correo de tu cuenta. El nombre también se usa en la facturación.
           </p>
         </div>
@@ -163,10 +163,10 @@ export function ProfileForm() {
         />
       </section>
 
-      <section className="space-y-5 border-t border-brand-border pt-8">
+      <section className="space-y-5 border-t border-meru-border pt-8">
         <div>
-          <h2 className="text-base font-medium text-brand-charcoal">Datos de facturación</h2>
-          <p className="mt-1 text-sm text-brand-muted">
+          <h2 className="text-base font-medium text-meru-charcoal">Datos de facturación</h2>
+          <p className="mt-1 text-sm text-meru-muted">
             Se autocompletan al comprar. Podés actualizarlos cuando quieras.
           </p>
         </div>

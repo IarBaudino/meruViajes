@@ -15,16 +15,16 @@ export async function ExcursionsPreview({ section }: ExcursionsPreviewProps) {
     <section id="excursiones" className="scroll-mt-24 bg-white py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl text-brand-charcoal">{section.title}</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-brand-muted">{section.description}</p>
+          <h2 className="text-3xl text-meru-charcoal">{section.title}</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-meru-muted">{section.description}</p>
         </div>
 
         {preview.length === 0 ? (
-          <div className="mt-12 rounded-xl border border-dashed border-brand-border bg-brand-sand/50 py-16 text-center">
-            <p className="text-lg font-medium text-brand-charcoal">
+          <div className="mt-12 rounded-xl border border-dashed border-meru-border bg-meru-sand/50 py-16 text-center">
+            <p className="text-lg font-medium text-meru-charcoal">
               Próximamente nuevas excursiones
             </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-brand-muted">
+            <p className="mx-auto mt-2 max-w-md text-sm text-meru-muted">
               Estamos preparando el catálogo. Escribinos y te ayudamos a planificar tu viaje.
             </p>
             <Link href="/#consulta" className="mt-6 inline-block">

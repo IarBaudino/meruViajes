@@ -99,15 +99,15 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-brand-muted">
+      <p className="text-sm text-meru-muted">
         Indicá el rango de fechas y cuántos pasajeros van. La agencia arma el itinerario y te lo
         envía por privado.
       </p>
 
       {promo ? (
-        <p className="rounded-lg border border-brand-border bg-brand-ice px-3 py-2 text-sm text-brand-charcoal">
+        <p className="rounded-lg border border-meru-secondary/30 bg-meru-secondary/5 px-3 py-2 text-sm text-meru-charcoal">
           Promo −{percent}% · {formatCurrencyARS(unitPrice)} por persona
-          <span className="ml-2 text-brand-muted line-through">
+          <span className="ml-2 text-meru-muted line-through">
             {formatCurrencyARS(pkg.price)}
           </span>
         </p>
@@ -140,11 +140,11 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs text-brand-muted">Pasajeros</label>
+        <label className="mb-1.5 block text-xs text-meru-muted">Pasajeros</label>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-border"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border"
             aria-label="Menos pasajeros"
             onClick={() => setPassengers((q) => Math.max(1, q - 1))}
           >
@@ -153,7 +153,7 @@ export function AddPackageToCartButton({ package: pkg, services }: Props) {
           <span className="w-8 text-center text-sm font-semibold tabular-nums">{passengers}</span>
           <button
             type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-border"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-meru-border"
             aria-label="Más pasajeros"
             onClick={() => setPassengers((q) => Math.min(maxPassengers, q + 1))}
           >

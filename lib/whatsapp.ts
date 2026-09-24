@@ -1,5 +1,4 @@
 import type { CartItem } from "@/types";
-import { brand } from "@/config/brand";
 import { formatCurrencyARS } from "@/lib/format";
 import { formatDepartureLabel } from "@/features/excursions/lib/departures";
 import {
@@ -8,7 +7,7 @@ import {
 } from "@/features/excursions/lib/pricing";
 
 /** Número de WhatsApp de la agencia (E.164 sin +). */
-export const AGENCY_WHATSAPP_NUMBER = brand.whatsappNumber;
+export const MERU_WHATSAPP_NUMBER = "5492901588864";
 
 export type WhatsAppOrderLine = {
   title: string;
@@ -20,11 +19,10 @@ export type WhatsAppOrderLine = {
   stayTo?: string;
   passengersSummary?: string;
   isPackage?: boolean;
-  isGroupTrip?: boolean;
 };
 
 export function whatsappHref(text: string) {
-  return `https://wa.me/${AGENCY_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${MERU_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
 function formatStay(from?: string, to?: string) {
@@ -34,7 +32,6 @@ function formatStay(from?: string, to?: string) {
 
 function formatCartLine(item: CartItem): WhatsAppOrderLine {
   const isPackage = item.kind === "package";
-  const isGroupTrip = item.kind === "groupTrip";
   const passengers = item.passengers
     ? formatPassengersSummary(
         normalizeCartPassengers(item.passengers) ?? {
@@ -55,18 +52,11 @@ function formatCartLine(item: CartItem): WhatsAppOrderLine {
     stayTo: item.stayTo,
     passengersSummary: passengers,
     isPackage,
-    isGroupTrip,
   };
 }
 
 function formatLineText(line: WhatsAppOrderLine) {
-  const bits: string[] = [
-    line.isGroupTrip
-      ? `Viaje grupal: ${line.title}`
-      : line.isPackage
-        ? `Paquete: ${line.title}`
-        : line.title,
-  ];
+  const bits: string[] = [line.isPackage ? `Paquete: ${line.title}` : line.title];
 
   if (line.stayFrom && line.stayTo) {
     bits.push(formatStay(line.stayFrom, line.stayTo));
@@ -103,7 +93,7 @@ export function buildCartWhatsAppMessage(input: {
     : "";
 
   return [
-    `Hola, quiero proceder al pago de mi reserva en ${brand.agencyName}.`,
+    "Hola, quiero proceder al pago de mi reserva en Meru Viajes.",
     "",
     ...lines,
     "",
@@ -118,7 +108,7 @@ export function buildOrderWhatsAppMessage(input: {
 }) {
   const lines = input.items.map((item) => formatLineText(item));
   return [
-    `Hola, quiero proceder al pago de mi reserva en ${brand.agencyName}.`,
+    "Hola, quiero proceder al pago de mi reserva en Meru Viajes.",
     "",
     ...lines,
     "",

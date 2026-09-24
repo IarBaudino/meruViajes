@@ -10,22 +10,22 @@ export function AuthNav() {
   const user = session?.user;
 
   if (isLoading) {
-    return <span className="hidden text-sm text-brand-muted md:inline">…</span>;
+    return <span className="hidden text-sm text-meru-muted md:inline">…</span>;
   }
 
   if (user?.email) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Link
           href="/mi-cuenta/perfil"
-          className="hidden rounded-md px-2.5 py-1.5 text-sm font-medium text-brand-charcoal transition-colors hover:bg-brand-ice lg:inline"
+          className="hidden rounded-lg px-3 py-2 text-sm font-medium text-meru-charcoal transition-colors hover:bg-meru-ice lg:inline"
         >
           Mi cuenta
         </Link>
         {user.role === "admin" && (
           <Link
             href="/admin"
-            className="hidden rounded-md px-2.5 py-1.5 text-sm font-semibold text-brand-secondary transition-colors hover:bg-brand-ice lg:inline"
+            className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-meru-secondary transition-colors hover:bg-meru-ice lg:inline"
           >
             Admin
           </Link>
@@ -33,7 +33,7 @@ export function AuthNav() {
         <button
           type="button"
           onClick={() => endSession("/")}
-          className="rounded-md border border-brand-border px-2.5 py-1.5 text-sm font-medium leading-none text-brand-charcoal transition-colors hover:bg-brand-ice"
+          className="rounded-lg border border-meru-border px-3 py-2 text-sm font-medium text-meru-charcoal transition-colors hover:bg-meru-ice"
         >
           Salir
         </button>
@@ -42,16 +42,16 @@ export function AuthNav() {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       <Link
         href="/registro"
-        className="rounded-md px-2.5 py-1.5 text-sm font-semibold text-brand-primary transition-colors hover:bg-brand-ice"
+        className="rounded-lg px-3 py-2 text-sm font-semibold text-meru-primary transition-colors hover:bg-meru-ice"
       >
         Registrarse
       </Link>
       <Link
         href="/login"
-        className="rounded-md border border-brand-charcoal bg-white px-3 py-1.5 text-sm font-semibold leading-none text-brand-charcoal transition-colors hover:bg-brand-sand"
+        className="rounded-lg bg-meru-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-meru-primary-dark"
       >
         Iniciar sesión
       </Link>

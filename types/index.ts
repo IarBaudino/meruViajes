@@ -34,13 +34,12 @@ export interface User {
 
 export interface CartItem {
   /** Por defecto "service". Los paquetes usan kind="package" y serviceId = packageId. */
-  kind?: "service" | "package" | "groupTrip";
+  kind?: "service" | "package";
   serviceId: string;
   packageId?: string;
-  groupTripId?: string;
   slug: string;
   title: string;
-  /** Precio unitario adulto (excursión), paquete, o seña/total del grupal. */
+  /** Precio unitario adulto (excursión) o precio del paquete. */
   price: number;
   /** Cupos / plazas (suma de pasajeros en excursiones). */
   quantity: number;
@@ -69,12 +68,6 @@ export interface CartItem {
   /** Paquetes: rango de fechas de estadía del viajero. */
   stayFrom?: string;
   stayTo?: string;
-  /** Viaje grupal: seña cobrada ahora. */
-  depositAmount?: number;
-  /** Viaje grupal: tarifa vigente por persona. */
-  fullUnitPrice?: number;
-  /** Viaje grupal: fecha límite del saldo. */
-  balanceDueDate?: string;
   /** Snapshot de excursiones incluidas en el paquete (solo informativo). */
   includedServices?: Array<{
     serviceId: string;
@@ -228,11 +221,6 @@ export interface OrderItem {
   lineTotal: number;
   packageId?: string;
   packageTitle?: string;
-  groupTripId?: string;
-  groupTripTitle?: string;
-  depositAmount?: number;
-  fullUnitPrice?: number;
-  balanceDueDate?: string;
   passengers?: {
     adult: number;
     infant: number;
@@ -299,20 +287,6 @@ export interface Order {
   /** Oculta la orden del listado principal de admin. */
   archived?: boolean;
   archivedAt?: Date | null;
-  /** Cupón aplicado (vendedora). */
-  coupon?: {
-    id: string;
-    code: string;
-    sellerName: string;
-    discountType: "percent" | "fixed";
-    discountValue: number;
-    discountAmount: number;
-    commissionPercent: number;
-    commissionAmount: number;
-    subtotal: number;
-  } | null;
-  subtotal?: number;
-  discountAmount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -349,7 +323,7 @@ export interface Inquiry {
   name: string;
   email: string;
   message: string;
-  relatedKind?: "excursion" | "package" | "groupTrip" | null;
+  relatedKind?: "excursion" | "package" | null;
   relatedSlug?: string | null;
   relatedTitle?: string | null;
   status: InquiryStatus;

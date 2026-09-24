@@ -94,7 +94,7 @@ async function main() {
       continue;
     }
 
-    const dir = mkdtempSync(join(tmpdir(), "agency-vid-"));
+    const dir = mkdtempSync(join(tmpdir(), "meru-vid-"));
     const inFile = join(dir, "in");
     const outFile = join(dir, "out.mp4");
     writeFileSync(inFile, original);

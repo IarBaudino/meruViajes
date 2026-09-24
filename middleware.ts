@@ -2,15 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { getSessionCookieName } from "@/lib/auth/session-cookie";
-import { isAdminUiPreview } from "@/lib/auth/admin-preview";
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  if (pathname.startsWith("/admin") && isAdminUiPreview()) {
-    return NextResponse.next();
-  }
-
   const secret = process.env.NEXTAUTH_SECRET;
   const isSecure = request.nextUrl.protocol === "https:";
 
@@ -22,6 +15,8 @@ export async function middleware(request: NextRequest) {
         cookieName: getSessionCookieName(isSecure),
       })
     : null;
+
+  const { pathname } = request.nextUrl;
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);

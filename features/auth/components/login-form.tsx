@@ -74,8 +74,8 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
-      <h1 className="text-2xl text-brand-charcoal">Iniciar sesión</h1>
-      <p className="mt-2 text-sm text-brand-muted">
+      <h1 className="text-2xl text-meru-charcoal">Iniciar sesión</h1>
+      <p className="mt-2 text-sm text-meru-muted">
         Accedé a tu cuenta para reservar excursiones y gestionar tu perfil.
       </p>
 
@@ -99,7 +99,7 @@ export function LoginForm() {
         <div className="text-right">
           <Link
             href="/recuperar-contrasena"
-            className="text-sm font-medium text-brand-secondary hover:underline"
+            className="text-sm font-medium text-meru-secondary hover:underline"
           >
             ¿Olvidaste tu contraseña?
           </Link>
@@ -119,10 +119,10 @@ export function LoginForm() {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-brand-border" />
+          <div className="w-full border-t border-meru-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-brand-muted">o</span>
+          <span className="bg-white px-2 text-meru-muted">o</span>
         </div>
       </div>
 
@@ -136,14 +136,14 @@ export function LoginForm() {
         Continuar con Google
       </Button>
 
-      <p className="mt-6 text-center text-sm text-brand-muted">
+      <p className="mt-6 text-center text-sm text-meru-muted">
         ¿No tenés cuenta?{" "}
-        <Link href="/registro" className="font-semibold text-brand-secondary hover:underline">
+        <Link href="/registro" className="font-semibold text-meru-secondary hover:underline">
           Registrate
         </Link>
       </p>
 
-      <Link href="/" className="mt-4 inline-block text-sm text-brand-muted hover:text-brand-charcoal">
+      <Link href="/" className="mt-4 inline-block text-sm text-meru-muted hover:text-meru-charcoal">
         ← Volver al inicio
       </Link>
     </div>

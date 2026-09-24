@@ -67,9 +67,9 @@ export function SiteSettingsForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Hero (inicio)</h2>
-        <p className="text-sm text-brand-muted">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Hero (inicio)</h2>
+        <p className="text-sm text-meru-muted">
           Textos y fondo del encabezado. Podés usar solo fotos, solo videos, un mix, o un único
           video. Sobre el medio hay una veladura oscura automática para leer el texto.
         </p>
@@ -98,9 +98,9 @@ export function SiteSettingsForm() {
         />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Sección excursiones (home)</h2>
-        <p className="text-sm text-brand-muted">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Sección excursiones (home)</h2>
+        <p className="text-sm text-meru-muted">
           Qué excursiones aparecen y en qué orden se define en cada excursión (Destacar en home +
           orden).
         </p>
@@ -108,30 +108,21 @@ export function SiteSettingsForm() {
         <Textarea label="Descripción" rows={3} {...register("excursionsPreview.description")} />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Sección paquetes (home)</h2>
-        <p className="text-sm text-brand-muted">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Sección paquetes (home)</h2>
+        <p className="text-sm text-meru-muted">
           Debajo de las excursiones. Marcá paquetes como destacados y su orden en cada paquete.
         </p>
         <Input label="Título" {...register("packagesPreview.title")} />
         <Textarea label="Descripción" rows={3} {...register("packagesPreview.description")} />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Sección viajes grupales (home)</h2>
-        <p className="text-sm text-brand-muted">
-          Debajo de los paquetes. Marcá viajes como destacados y su orden en cada ficha.
-        </p>
-        <Input label="Título" {...register("groupTripsPreview.title")} />
-        <Textarea label="Descripción" rows={3} {...register("groupTripsPreview.description")} />
-      </section>
-
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Sobre nosotros</h2>
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Sobre nosotros</h2>
         <Input label="Título de sección" {...register("about.title")} />
         <Input label="Cita" {...register("about.quote")} />
         {fields.map((field, index) => (
-          <div key={field.id} className="rounded-lg border border-brand-border p-4 space-y-3">
+          <div key={field.id} className="rounded-lg border border-meru-border p-4 space-y-3">
             <Input label={`Bloque ${index + 1} — título`} {...register(`about.values.${index}.title`)} />
             <Textarea label="Texto" rows={3} {...register(`about.values.${index}.text`)} />
           </div>
@@ -139,14 +130,14 @@ export function SiteSettingsForm() {
         <Textarea label="Párrafo final" rows={4} {...register("about.closingText")} />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Formulario de consultas</h2>
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Formulario de consultas</h2>
         <Input label="Título" {...register("inquiry.title")} />
         <Input label="Subtítulo" {...register("inquiry.subtitle")} />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Footer y contacto</h2>
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Footer y contacto</h2>
         <Input label="Nombre de marca" {...register("footer.brandName")} />
         <Textarea label="Descripción" rows={3} {...register("footer.tagline")} />
         <Input label="Dirección" {...register("footer.address")} />
@@ -154,41 +145,17 @@ export function SiteSettingsForm() {
         <Input label="Teléfono (texto visible)" {...register("footer.phoneLabel")} />
         <Input
           label="Teléfono (solo dígitos, para llamar / WhatsApp)"
-          placeholder="1123456789"
+          placeholder="2901588864"
           {...register("footer.phoneNumber")}
         />
-        <p className="text-xs text-brand-muted">
+        <p className="text-xs text-meru-muted">
           El texto se muestra en el footer; los dígitos se usan para el enlace de llamada y WhatsApp.
         </p>
-        <Input label="Instagram — URL" placeholder="https://www.instagram.com/..." {...register("social.instagramUrl")} />
-        <Input label="Instagram — handle visible" placeholder="@agencia" {...register("social.instagramHandle")} />
       </section>
 
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Pagos (transferencia)</h2>
-        <p className="text-sm text-brand-muted">
-          Datos de la cuenta para quien elija transferir. Mercado Pago se configura con{" "}
-          <code className="text-[11px]">MERCADOPAGO_ACCESS_TOKEN</code> en el servidor.
-        </p>
-        <Input label="Banco" placeholder="Banco Santander" {...register("payments.bankName")} />
-        <Input
-          label="Titular"
-          placeholder="Cantero Evelyn Micaela"
-          {...register("payments.accountHolder")}
-        />
-        <Input label="CBU" placeholder="0720738188000000795304" {...register("payments.cbu")} />
-        <Input label="Alias" placeholder="KUSI.TURISMO" {...register("payments.alias")} />
-        <Textarea
-          label="Notas"
-          rows={3}
-          placeholder="Enviá el comprobante por WhatsApp o mail."
-          {...register("payments.notes")}
-        />
-      </section>
-
-      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-4">
-        <h2 className="text-lg text-brand-charcoal">Reseñas de Google</h2>
-        <label className="flex items-center gap-2 text-sm text-brand-charcoal">
+      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-4">
+        <h2 className="text-lg text-meru-charcoal">Reseñas de Google</h2>
+        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
           <input type="checkbox" className="rounded" {...register("googleReviews.enabled")} />
           Mostrar sección de reseñas en la home
         </label>
@@ -198,7 +165,7 @@ export function SiteSettingsForm() {
           placeholder="ChIJ…"
           {...register("googleReviews.placeId")}
         />
-        <p className="text-xs text-brand-muted">
+        <p className="text-xs text-meru-muted">
           Pegá el Place ID, tocá <strong>Guardar contenido web</strong> y después{" "}
           <strong>Actualizar reseñas desde Google</strong>. También necesitás{" "}
           <code className="text-[11px]">GOOGLE_PLACES_API_KEY</code> en Vercel. Las reseñas se

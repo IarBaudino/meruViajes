@@ -9,7 +9,7 @@ export default function NewExcursionPage() {
         title="Nueva excursión"
         description="Completá los datos y publicá en el catálogo."
         action={
-          <Link href="/admin/excursiones" className="text-sm text-brand-secondary hover:underline">
+          <Link href="/admin/excursiones" className="text-sm text-meru-secondary hover:underline">
             ← Volver al listado
           </Link>
         }

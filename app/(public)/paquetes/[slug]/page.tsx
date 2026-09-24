@@ -16,13 +16,15 @@ import {
   getPackageDiscountPercent,
   hasActivePackagePromotion,
 } from "@/features/packages/lib/pricing";
-import { brand, getAppUrl } from "@/config/brand";
 
 export const revalidate = 60;
 
 type Props = { params: Promise<{ slug: string }> };
 
-const appUrl = getAppUrl();
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
+  /\/$/,
+  ""
+);
 
 export async function generateStaticParams() {
   const packages = await getActivePackages();
@@ -44,11 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: url },
     openGraph: {
       type: "website",
-      locale: brand.locale,
+      locale: "es_AR",
       url,
       title: pkg.title,
       description: pkg.description.slice(0, 180),
-      siteName: brand.agencyName,
+      siteName: "Meru Viajes y Turismo",
       images: image ? [{ url: image, alt: pkg.title }] : undefined,
     },
     twitter: {
@@ -80,10 +82,10 @@ export default async function PackageDetailPage({ params }: Props) {
     name: pkg.title,
     description: pkg.description.slice(0, 300),
     image: pkg.photos.slice(0, 5),
-    brand: { "@type": "Brand", name: brand.agencyName },
+    brand: { "@type": "Brand", name: "Meru Viajes y Turismo" },
     offers: {
       "@type": "Offer",
-      priceCurrency: brand.currency,
+      priceCurrency: "ARS",
       price: effectivePrice,
       availability: "https://schema.org/InStock",
       url: `${appUrl}/paquetes/${pkg.slug}`,
@@ -93,8 +95,8 @@ export default async function PackageDetailPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <JsonLd data={productLd} />
-      <p className="text-sm text-brand-muted">
-        <Link href="/paquetes" className="hover:text-brand-secondary">
+      <p className="text-sm text-meru-muted">
+        <Link href="/paquetes" className="hover:text-meru-secondary">
           Paquetes
         </Link>{" "}
         / {pkg.title}
@@ -103,7 +105,7 @@ export default async function PackageDetailPage({ params }: Props) {
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div>
           {cover ? (
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-brand-ice">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-meru-ice">
               <Image
                 src={cover}
                 alt={pkg.title}
@@ -114,36 +116,36 @@ export default async function PackageDetailPage({ params }: Props) {
               />
             </div>
           ) : null}
-          <h1 className="mt-6 text-3xl text-brand-charcoal">{pkg.title}</h1>
-          <p className="mt-4 whitespace-pre-line text-brand-muted leading-relaxed">
+          <h1 className="mt-6 text-3xl text-meru-charcoal">{pkg.title}</h1>
+          <p className="mt-4 whitespace-pre-line text-meru-muted leading-relaxed">
             {pkg.description}
           </p>
 
           <section className="mt-10 space-y-6">
-            <h2 className="text-xl text-brand-charcoal">Excursiones incluidas</h2>
+            <h2 className="text-xl text-meru-charcoal">Excursiones incluidas</h2>
             {included.length === 0 ? (
-              <p className="text-sm text-brand-muted">Todavía no hay excursiones asociadas.</p>
+              <p className="text-sm text-meru-muted">Todavía no hay excursiones asociadas.</p>
             ) : (
               included.map((service) => (
                 <article
                   key={service.id}
-                  className="rounded-xl border border-brand-border bg-white p-5"
+                  className="rounded-xl border border-meru-border bg-white p-5"
                 >
-                  <h3 className="text-lg text-brand-charcoal">
+                  <h3 className="text-lg text-meru-charcoal">
                     <Link
                       href={`/excursiones/${service.slug}`}
-                      className="hover:text-brand-secondary"
+                      className="hover:text-meru-secondary"
                     >
                       {service.title}
                     </Link>
                   </h3>
                   {service.duration || service.location ? (
-                    <p className="mt-1 text-xs text-brand-muted">
+                    <p className="mt-1 text-xs text-meru-muted">
                       {[service.duration, service.location].filter(Boolean).join(" · ")}
                     </p>
                   ) : null}
                   {service.description ? (
-                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-brand-muted">
+                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-meru-muted">
                       {service.description}
                     </p>
                   ) : null}
@@ -153,31 +155,31 @@ export default async function PackageDetailPage({ params }: Props) {
           </section>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-brand-border bg-white p-6 shadow-sm lg:sticky lg:top-24">
+        <aside className="h-fit rounded-2xl border border-meru-border bg-white p-6 shadow-sm lg:sticky lg:top-24">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm text-brand-muted">Precio del paquete</p>
+            <p className="text-sm text-meru-muted">Precio del paquete</p>
             {promo ? (
-              <Badge className="bg-brand-sand text-brand-secondary">
+              <Badge className="bg-meru-secondary/10 text-meru-secondary">
                 Promo −{percent}%
               </Badge>
             ) : null}
           </div>
           {promo ? (
             <div className="mt-1 flex flex-wrap items-baseline gap-3">
-              <p className="text-lg text-brand-muted line-through">
+              <p className="text-lg text-meru-muted line-through">
                 {formatCurrencyARS(pkg.price)}
               </p>
-              <p className="text-3xl font-semibold text-brand-primary">
+              <p className="text-3xl font-semibold text-meru-primary">
                 {formatCurrencyARS(effectivePrice)}
               </p>
             </div>
           ) : (
-            <p className="mt-1 text-3xl font-semibold text-brand-primary">
+            <p className="mt-1 text-3xl font-semibold text-meru-primary">
               {formatCurrencyARS(pkg.price)}
             </p>
           )}
-          <p className="mt-1 text-xs text-brand-muted">Por persona</p>
-          <p className="mt-2 text-sm text-brand-muted">
+          <p className="mt-1 text-xs text-meru-muted">Por persona</p>
+          <p className="mt-2 text-sm text-meru-muted">
             Elegí el rango de fechas y la cantidad de pasajeros. Nosotros armamos el itinerario y
             te lo enviamos por privado.
           </p>
