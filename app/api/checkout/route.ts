@@ -7,6 +7,8 @@ import { createCheckout } from "@/lib/checkout/create-checkout";
 import { CheckoutError } from "@/lib/checkout/errors";
 import { sendCheckoutEmails } from "@/lib/checkout/send-checkout-emails";
 import { getAdminFirestore } from "@/lib/firebase/admin";
+import { isMercadoPagoConfigured } from "@/lib/payments/methods";
+import { createMercadoPagoPreference } from "@/lib/payments/mercadopago/create-preference";
 
 export async function POST(request: Request) {
   try {
@@ -20,10 +22,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const paymentMethod = parsed.data.paymentMethod ?? "coordinar";
-    if (paymentMethod !== "coordinar") {
+    const paymentMethod = parsed.data.paymentMethod ?? "transfer";
+    if (paymentMethod === "mercadopago" && !isMercadoPagoConfigured()) {
       return NextResponse.json(
-        { error: "Por ahora coordinamos el pago por WhatsApp." },
+        { error: "Mercado Pago todavía no está configurado. Elegí transferencia." },
         { status: 400 }
       );
     }
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
       billing,
       paymentMethod,
       userId,
+      couponCode: parsed.data.couponCode,
     });
 
     const db = getAdminFirestore();
@@ -55,6 +58,37 @@ export async function POST(request: Request) {
       }
     }
 
+    let checkoutUrl: string | undefined;
+    if (paymentMethod === "mercadopago") {
+      if (!(result.total > 0)) {
+        return NextResponse.json({
+          success: true,
+          orderId: result.orderId,
+          total: result.total,
+          bookingIds: result.bookingIds,
+          paymentMethod: "transfer",
+          paymentStatus: result.paymentStatus,
+        });
+      }
+      const mp = await createMercadoPagoPreference({
+        orderId: result.orderId,
+        amount: result.total,
+        customerEmail: billing.email,
+        customerName: billing.fullName,
+      });
+      if (db) {
+        await db.collection("orders").doc(result.orderId).set(
+          {
+            paymentMethod: "mercadopago",
+            paymentInformation: mp.preferenceId,
+            updatedAt: new Date(),
+          },
+          { merge: true }
+        );
+      }
+      checkoutUrl = mp.checkoutUrl;
+    }
+
     return NextResponse.json({
       success: true,
       orderId: result.orderId,
@@ -62,6 +96,7 @@ export async function POST(request: Request) {
       bookingIds: result.bookingIds,
       paymentMethod,
       paymentStatus: result.paymentStatus,
+      checkoutUrl,
     });
   } catch (error) {
     if (error instanceof CheckoutError) {

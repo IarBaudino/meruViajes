@@ -17,7 +17,7 @@ export default async function EditExcursionPage({ params }: PageProps) {
         title="Editar excursión"
         description={service.title}
         action={
-          <Link href="/admin/excursiones" className="text-sm text-meru-secondary hover:underline">
+          <Link href="/admin/excursiones" className="text-sm text-brand-secondary hover:underline">
             ← Volver al listado
           </Link>
         }

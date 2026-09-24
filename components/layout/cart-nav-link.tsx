@@ -19,7 +19,7 @@ export function CartNavLink({ onNavigate, className }: Props) {
       onClick={onNavigate}
       className={
         className ??
-        "relative inline-flex items-center justify-center rounded-lg p-2 text-meru-charcoal transition-colors hover:bg-meru-ice"
+        "relative inline-flex items-center justify-center rounded-md p-1.5 text-brand-charcoal transition-colors hover:bg-brand-ice"
       }
       aria-label={
         totalItems > 0
@@ -29,7 +29,7 @@ export function CartNavLink({ onNavigate, className }: Props) {
     >
       <ShoppingCart className="h-5 w-5" aria-hidden />
       {totalItems > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-meru-secondary px-1 text-[10px] font-bold text-white">
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-sand px-1 text-[10px] font-bold text-brand-charcoal">
           {totalItems > 99 ? "99+" : totalItems}
         </span>
       ) : null}

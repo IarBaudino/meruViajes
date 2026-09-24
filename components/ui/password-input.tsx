@@ -18,12 +18,12 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
       <div className="w-full">
         {label ? (
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <label htmlFor={inputId} className="text-sm font-medium text-meru-charcoal">
+            <label htmlFor={inputId} className="text-sm font-medium text-brand-charcoal">
               {label}
             </label>
             <button
               type="button"
-              className="text-xs font-medium text-meru-secondary hover:underline"
+              className="text-xs font-medium text-brand-secondary hover:underline"
               onClick={() => setVisible((v) => !v)}
               aria-pressed={visible}
             >
@@ -37,8 +37,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             id={inputId}
             type={visible ? "text" : "password"}
             className={cn(
-              "w-full rounded-lg border border-meru-border bg-white px-4 py-2.5 pr-11 text-meru-charcoal",
-              "placeholder:text-meru-muted/70 focus:border-meru-primary focus:ring-2 focus:ring-meru-primary/25",
+              "w-full rounded-lg border border-brand-border bg-white px-4 py-2.5 pr-11 text-brand-charcoal",
+              "placeholder:text-brand-muted/70 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/25",
               error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
               className
             )}
@@ -48,7 +48,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           />
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-meru-muted hover:bg-meru-ice hover:text-meru-charcoal"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-brand-muted hover:bg-brand-ice hover:text-brand-charcoal"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
             aria-pressed={visible}

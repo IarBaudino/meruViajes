@@ -70,8 +70,8 @@ export function RegisterForm() {
 
   return (
     <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-[var(--shadow-card)]">
-      <h1 className="text-2xl text-meru-charcoal">Crear cuenta</h1>
-      <p className="mt-2 text-sm text-meru-muted">
+      <h1 className="text-2xl text-brand-charcoal">Crear cuenta</h1>
+      <p className="mt-2 text-sm text-brand-muted">
         Registrate para reservar excursiones y guardar tu información de contacto.
       </p>
 
@@ -120,10 +120,10 @@ export function RegisterForm() {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-meru-border" />
+          <div className="w-full border-t border-brand-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-meru-muted">o</span>
+          <span className="bg-white px-2 text-brand-muted">o</span>
         </div>
       </div>
 
@@ -137,14 +137,14 @@ export function RegisterForm() {
         Registrarse con Google
       </Button>
 
-      <p className="mt-6 text-center text-sm text-meru-muted">
+      <p className="mt-6 text-center text-sm text-brand-muted">
         ¿Ya tenés cuenta?{" "}
-        <Link href="/login" className="font-semibold text-meru-secondary hover:underline">
+        <Link href="/login" className="font-semibold text-brand-secondary hover:underline">
           Iniciar sesión
         </Link>
       </p>
 
-      <Link href="/" className="mt-4 inline-block text-sm text-meru-muted hover:text-meru-charcoal">
+      <Link href="/" className="mt-4 inline-block text-sm text-brand-muted hover:text-brand-charcoal">
         ← Volver al inicio
       </Link>
     </div>

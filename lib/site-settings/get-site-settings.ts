@@ -53,6 +53,10 @@ function mergeSettings(partial: Partial<SiteSettings> & { hero?: Partial<HeroFir
       ...DEFAULT_SITE_SETTINGS.packagesPreview,
       ...partial.packagesPreview,
     },
+    groupTripsPreview: {
+      ...DEFAULT_SITE_SETTINGS.groupTripsPreview,
+      ...partial.groupTripsPreview,
+    },
     about: {
       ...DEFAULT_SITE_SETTINGS.about,
       ...partial.about,
@@ -62,6 +66,7 @@ function mergeSettings(partial: Partial<SiteSettings> & { hero?: Partial<HeroFir
     },
     inquiry: { ...DEFAULT_SITE_SETTINGS.inquiry, ...partial.inquiry },
     footer: { ...DEFAULT_SITE_SETTINGS.footer, ...partial.footer },
+    social: { ...DEFAULT_SITE_SETTINGS.social, ...partial.social },
     googleReviews: {
       ...DEFAULT_SITE_SETTINGS.googleReviews!,
       ...partial.googleReviews,
@@ -84,6 +89,10 @@ function mergeSettings(partial: Partial<SiteSettings> & { hero?: Partial<HeroFir
         holdWarningMessage: merged.holdWarningMessage ?? "",
       };
     })(),
+    payments: {
+      ...DEFAULT_SITE_SETTINGS.payments!,
+      ...partial.payments,
+    },
   };
 }
 

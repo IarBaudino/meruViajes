@@ -24,7 +24,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
       <li>
         <Link
           href={cartHref}
-          className="mt-2 block rounded-lg px-3 py-2.5 text-meru-charcoal hover:bg-meru-ice"
+          className="mt-2 block rounded-lg px-3 py-2.5 text-brand-charcoal hover:bg-brand-ice"
           onClick={onNavigate}
         >
           Carrito{totalItems > 0 ? ` (${totalItems})` : ""}
@@ -35,7 +35,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
           <li>
             <Link
               href="/mi-cuenta/perfil"
-              className="block rounded-lg px-3 py-2.5 text-meru-charcoal hover:bg-meru-ice"
+              className="block rounded-lg px-3 py-2.5 text-brand-charcoal hover:bg-brand-ice"
               onClick={onNavigate}
             >
               Mi cuenta
@@ -45,7 +45,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
             <li>
               <Link
                 href="/admin"
-                className="block rounded-lg px-3 py-2.5 font-semibold text-meru-secondary hover:bg-meru-ice"
+                className="block rounded-lg px-3 py-2.5 font-semibold text-brand-secondary hover:bg-brand-ice"
                 onClick={onNavigate}
               >
                 Administración
@@ -55,7 +55,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
           <li>
             <button
               type="button"
-              className="mt-2 w-full rounded-lg border border-meru-border px-3 py-2.5 text-center font-semibold text-meru-charcoal"
+              className="mt-2 w-full rounded-lg border border-brand-border px-3 py-2.5 text-center font-semibold text-brand-charcoal"
               onClick={() => {
                 onNavigate?.();
                 void endSession("/");
@@ -70,7 +70,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
           <li>
             <Link
               href="/registro"
-              className="mt-2 block rounded-lg border border-meru-primary px-3 py-2.5 text-center font-semibold text-meru-primary"
+              className="mt-2 block rounded-lg border border-brand-primary px-3 py-2.5 text-center font-semibold text-brand-primary"
               onClick={onNavigate}
             >
               Registrarse
@@ -79,7 +79,7 @@ export function MobileAuthMenu({ onNavigate }: MobileAuthMenuProps) {
           <li>
             <Link
               href="/login"
-              className="mt-2 block rounded-lg bg-meru-primary px-3 py-2.5 text-center font-semibold text-white"
+              className="mt-2 block rounded-lg border-2 border-brand-charcoal bg-white px-3 py-2.5 text-center font-semibold text-brand-charcoal"
               onClick={onNavigate}
             >
               Iniciar sesión

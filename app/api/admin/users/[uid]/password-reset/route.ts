@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { brand } from "@/config/brand";
 import { requireAdminApi } from "@/lib/auth/require-admin-api";
 import { getAdminAuth } from "@/lib/firebase/admin";
 import { getResend, isResendConfigured, resendDefaults } from "@/lib/resend";
@@ -31,10 +32,10 @@ export async function POST(request: Request, context: RouteContext) {
         await resend.emails.send({
           from: resendDefaults.from,
           to: user.email,
-          subject: "Restablecer contraseña — Meru Viajes",
+          subject: `Restablecer contraseña — ${brand.agencyName}`,
           html: `
             <p>Hola,</p>
-            <p>Un administrador solicitó restablecer tu contraseña de Meru Viajes.</p>
+            <p>Un administrador solicitó restablecer tu contraseña de ${brand.agencyName}.</p>
             <p><a href="${resetLink}">Hacé clic aquí para elegir una nueva contraseña</a></p>
             <p>Si no pediste esto, ignorá este correo.</p>
           `,

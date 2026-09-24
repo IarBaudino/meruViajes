@@ -36,11 +36,11 @@ export function BillingFormFields({ register, errors, hideIdentity = false }: Pr
 
       <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-meru-charcoal">
+          <label className="mb-1.5 block text-sm font-medium text-brand-charcoal">
             Código país
           </label>
           <select
-            className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-meru-charcoal"
+            className="w-full rounded-lg border border-brand-border bg-white px-3 py-2.5 text-brand-charcoal"
             {...register("phoneCountryCode")}
           >
             {PHONE_COUNTRY_CODES.map((c) => (
@@ -63,11 +63,11 @@ export function BillingFormFields({ register, errors, hideIdentity = false }: Pr
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-meru-charcoal">
+          <label className="mb-1.5 block text-sm font-medium text-brand-charcoal">
             Tipo de identificación
           </label>
           <select
-            className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-meru-charcoal"
+            className="w-full rounded-lg border border-brand-border bg-white px-3 py-2.5 text-brand-charcoal"
             {...register("identificationType")}
           >
             {IDENTIFICATION_TYPES.map((t) => (
@@ -87,8 +87,8 @@ export function BillingFormFields({ register, errors, hideIdentity = false }: Pr
         />
       </div>
 
-      <div className="space-y-4 border-t border-meru-border pt-5">
-        <h3 className="text-base text-meru-charcoal">Dirección</h3>
+      <div className="space-y-4 border-t border-brand-border pt-5">
+        <h3 className="text-base text-brand-charcoal">Dirección</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             label="País"

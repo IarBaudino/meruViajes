@@ -1,3 +1,4 @@
+import { brand } from "@/config/brand";
 import { getGetnetConfig, isGetnetConfigured } from "@/lib/payments/getnet/config";
 
 type CreateGetnetInput = {
@@ -71,7 +72,7 @@ export async function createGetnetCheckout(
           items: [
             {
               id: 1,
-              name: `Reserva Meru ${input.orderId}`,
+              name: `Reserva ${brand.shortName} ${input.orderId}`,
               quantity: 1,
               unitPrice: {
                 currency: "032",

@@ -1,57 +1,51 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
-import { Oswald, Source_Sans_3 } from "next/font/google";
+import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
+import { brand, brandThemeCssVars, getAppUrl } from "@/config/brand";
 
-const fontSans = Source_Sans_3({
-  subsets: ["latin"],
-  variable: "--font-meru-sans",
+const fontSans = Montserrat({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-brand-sans",
   display: "swap",
 });
 
-const fontHeading = Oswald({
-  subsets: ["latin"],
-  variable: "--font-meru-heading",
+const fontHeading = Cormorant_Garamond({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-brand-heading",
   display: "swap",
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const appUrl = getAppUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "Meru Viajes y Turismo | Excursiones en Ushuaia",
-    template: "%s | Meru Viajes y Turismo",
+    default: brand.seo.titleDefault,
+    template: brand.seo.titleTemplate,
   },
-  description:
-    "Excursiones, navegaciones y paquetes en Ushuaia, Tierra del Fuego. Reservá online con Meru Viajes y Turismo — cupos confirmados y atención local.",
-  keywords: [
-    "excursiones Ushuaia",
-    "turismo Tierra del Fuego",
-    "Meru Viajes",
-    "paquetes Ushuaia",
-    "Fin del Mundo",
-    "trekking Ushuaia",
-  ],
+  description: brand.seo.description,
+  keywords: [...brand.seo.keywords],
   icons: {
-    icon: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/logo.png" }],
-    shortcut: ["/logo.png"],
+    icon: [{ url: brand.logo.src, type: "image/png" }],
+    apple: [{ url: brand.logo.src }],
+    shortcut: [brand.logo.src],
   },
   openGraph: {
     type: "website",
-    locale: "es_AR",
+    locale: brand.locale,
     url: appUrl,
-    siteName: "Meru Viajes y Turismo",
-    title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
-    description:
-      "Excursiones y paquetes en el Fin del Mundo. Reservá online con Meru.",
+    siteName: brand.agencyName,
+    title: brand.seo.titleDefault,
+    description: brand.seo.description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Meru Viajes y Turismo | Excursiones en Ushuaia",
-    description:
-      "Excursiones y paquetes en Ushuaia, Tierra del Fuego. Reservá online.",
+    title: brand.seo.titleDefault,
+    description: brand.seo.description,
   },
   robots: {
     index: true,
@@ -65,7 +59,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${fontSans.variable} ${fontHeading.variable}`}>
+    <html
+      lang={brand.htmlLang}
+      className={`${fontSans.variable} ${fontHeading.variable}`}
+      style={brandThemeCssVars() as CSSProperties}
+    >
       <body>
         <Providers>{children}</Providers>
       </body>

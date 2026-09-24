@@ -21,59 +21,59 @@ export function ExcursionPricingPanel({ service }: Props) {
 
   return (
     <div>
-      <p className="text-sm text-meru-muted">
+      <p className="text-sm text-brand-muted">
         {promoActive ? `Tarifa promocional (−${promoPercent}%)` : "Tarifa adulto"}
       </p>
       {promoActive ? (
         <div className="mt-1">
-          <p className="text-sm text-meru-muted line-through">
+          <p className="text-sm text-brand-muted line-through">
             {formatCurrencyARS(service.price)}
           </p>
-          <p className="text-3xl font-bold text-meru-primary">
+          <p className="text-3xl font-bold text-brand-primary">
             {formatCurrencyARS(adultPrice)}
           </p>
           {service.promotion?.endsAt ? (
-            <p className="mt-1 text-xs text-meru-secondary">
+            <p className="mt-1 text-xs text-brand-secondary">
               Hasta {service.promotion.endsAt.split("-").reverse().join("/")}
             </p>
           ) : null}
         </div>
       ) : (
-        <p className="mt-1 text-3xl font-bold text-meru-primary">
+        <p className="mt-1 text-3xl font-bold text-brand-primary">
           {formatCurrencyARS(adultPrice)}
         </p>
       )}
 
       {(hasAnyDiscount(service) || discountOptions.length > 0) && (
-        <div className="mt-4 rounded-lg border border-meru-border bg-meru-sand/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-meru-charcoal">
+        <div className="mt-4 rounded-lg border border-brand-border bg-brand-sand/80 p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-brand-charcoal">
             Tarifas con descuento
           </p>
           <ul className="mt-2 space-y-2">
-            <li className="flex items-center justify-between text-sm text-meru-charcoal-muted">
+            <li className="flex items-center justify-between text-sm text-brand-charcoal-muted">
               <span>
-                Infantes <span className="text-meru-secondary">gratis</span>
+                Infantes <span className="text-brand-secondary">gratis</span>
               </span>
-              <span className="font-semibold text-meru-charcoal">
+              <span className="font-semibold text-brand-charcoal">
                 {formatCurrencyARS(0)}
               </span>
             </li>
             {discountOptions.map((opt) => (
               <li
                 key={opt.id}
-                className="flex items-center justify-between text-sm text-meru-charcoal-muted"
+                className="flex items-center justify-between text-sm text-brand-charcoal-muted"
               >
                 <span>
                   {opt.label}{" "}
-                  <span className="text-meru-secondary">−{opt.percent}%</span>
+                  <span className="text-brand-secondary">−{opt.percent}%</span>
                 </span>
-                <span className="font-semibold text-meru-charcoal">
+                <span className="font-semibold text-brand-charcoal">
                   {formatCurrencyARS(applyDiscountPercent(adultPrice, opt.percent))}
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-meru-muted">
+          <p className="mt-3 text-xs text-brand-muted">
             Los descuentos se calculan al armar la reserva según el tipo de pasajero.
           </p>
         </div>

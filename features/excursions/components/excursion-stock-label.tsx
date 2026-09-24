@@ -13,7 +13,7 @@ export function ExcursionStockLabel({ stock, className }: Props) {
     <p
       className={cn(
         "text-sm font-medium",
-        available ? "text-meru-secondary" : "text-red-600",
+        available ? "text-brand-secondary" : "text-red-600",
         className
       )}
     >

@@ -7,6 +7,22 @@ import type { DepartureSlot, OrderItem, PaymentStatus, CatalogSeason } from "@/t
 import { resolveServiceForSeason } from "@/lib/seasons";
 import { PACKAGES_COLLECTION, mapFirestorePackage } from "@/features/packages/lib/firestore-mapper";
 import { getEffectivePackagePrice } from "@/features/packages/lib/pricing";
+import {
+  GROUP_TRIPS_COLLECTION,
+  mapFirestoreGroupTrip,
+} from "@/features/group-trips/lib/firestore-mapper";
+import {
+  getGroupTripChargeNow,
+  getGroupTripUnitPrice,
+} from "@/features/group-trips/lib/pricing";
+import { applyCouponToSubtotal } from "@/features/coupons/lib/apply";
+import {
+  COUPONS_COLLECTION,
+  mapFirestoreCoupon,
+  normalizeCouponCode,
+} from "@/features/coupons/lib/firestore-mapper";
+import type { AppliedCoupon } from "@/types/coupon";
+import type { CouponAppliesTo } from "@/schemas/coupon";
 import { mapFirestoreService } from "@/features/excursions/lib/firestore-mapper";
 import {
   computePassengersLineTotalFromService,
@@ -27,11 +43,11 @@ export type CheckoutResult = {
   orderId: string;
   total: number;
   bookingIds: string[];
-  paymentMethod: "coordinar" | "getnet";
+  paymentMethod: "transfer" | "mercadopago";
   paymentStatus: PaymentStatus;
 };
 
-type PaymentMethod = "coordinar" | "getnet";
+type PaymentMethod = "transfer" | "mercadopago";
 
 type OrderLine = OrderItem;
 type BookingDraft = {
@@ -41,6 +57,7 @@ type BookingDraft = {
   unitPrice: number;
   lineTotal: number;
   packageId?: string;
+  groupTripId?: string;
   passengers?: CartPassengers;
   departureId?: string;
   departureDate?: string;
@@ -61,10 +78,11 @@ export type CreateCheckoutParams = {
   billing: OrderBilling;
   paymentMethod?: PaymentMethod;
   userId?: string | null;
+  couponCode?: string;
 };
 
 export async function createCheckout(params: CreateCheckoutParams): Promise<CheckoutResult> {
-  const { items, billing, paymentMethod = "coordinar", userId = null } = params;
+  const { items, billing, paymentMethod = "transfer", userId = null, couponCode } = params;
 
   const db = getAdminFirestore();
   if (!db) {
@@ -80,8 +98,14 @@ export async function createCheckout(params: CreateCheckoutParams): Promise<Chec
   let earliestDeparture: Date | null = null;
   for (const item of items) {
     const candidates: Array<{ date: string; time: string }> = [];
-    if ((item.kind ?? "service") === "package" && item.stayFrom) {
+    const kind = item.kind ?? "service";
+    if (kind === "package" && item.stayFrom) {
       candidates.push({ date: item.stayFrom, time: "09:00" });
+    } else if (kind === "groupTrip" && item.stayFrom) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (item.stayFrom >= today) {
+        candidates.push({ date: item.stayFrom, time: "09:00" });
+      }
     } else if (item.departureDate && item.departureTime) {
       candidates.push({ date: item.departureDate, time: item.departureTime });
     }
@@ -116,6 +140,78 @@ export async function createCheckout(params: CreateCheckoutParams): Promise<Chec
 
     for (const item of items) {
       const kind = item.kind ?? "service";
+
+      if (kind === "groupTrip") {
+        const tripId = item.groupTripId ?? item.serviceId;
+        const tripRef = db.collection(GROUP_TRIPS_COLLECTION).doc(tripId);
+        const tripSnap = await tx.get(tripRef);
+
+        if (!tripSnap.exists) {
+          throw new CheckoutError("Uno de los viajes grupales ya no está disponible.", 404);
+        }
+
+        const trip = mapFirestoreGroupTrip(tripId, tripSnap.data()!);
+        const title = trip.title || "Viaje grupal";
+        const stock = trip.stock;
+
+        if (!trip.active) {
+          throw new CheckoutError(`"${title}" ya no está publicado.`, 400);
+        }
+
+        const today = new Date().toISOString().slice(0, 10);
+        if (trip.endDate && trip.endDate < today) {
+          throw new CheckoutError(`"${title}" ya finalizó.`, 400);
+        }
+
+        if (stock < 1 || item.quantity > stock) {
+          throw new CheckoutError(
+            stock < 1
+              ? `"${title}" está completo.`
+              : `Solo quedan ${stock} lugar${stock === 1 ? "" : "es"} para "${title}".`,
+            409
+          );
+        }
+
+        const unitPrice = getGroupTripChargeNow(trip);
+        const fullUnitPrice = getGroupTripUnitPrice(trip);
+        if (unitPrice <= 0) {
+          throw new CheckoutError(`"${title}" no tiene precio configurado.`, 400);
+        }
+
+        orderItems.push({
+          serviceId: tripId,
+          serviceTitle: title,
+          slug: trip.slug,
+          quantity: item.quantity,
+          unitPrice,
+          lineTotal: unitPrice * item.quantity,
+          groupTripId: tripId,
+          groupTripTitle: title,
+          stayFrom: trip.startDate,
+          stayTo: trip.endDate,
+          depositAmount: trip.depositAmount > 0 ? trip.depositAmount : 0,
+          fullUnitPrice,
+          balanceDueDate: trip.balanceDueDate || undefined,
+        });
+
+        bookingDrafts.push({
+          serviceId: tripId,
+          serviceTitle: title,
+          quantity: item.quantity,
+          unitPrice,
+          lineTotal: unitPrice * item.quantity,
+          groupTripId: tripId,
+          departureDate: trip.startDate,
+          departureTime: "00:00",
+        });
+
+        stockUpdates.push({
+          kind: "stock",
+          ref: tripRef,
+          nextStock: stock - item.quantity,
+        });
+        continue;
+      }
 
       if (kind === "package") {
         const packageId = item.packageId ?? item.serviceId;
@@ -378,7 +474,39 @@ export async function createCheckout(params: CreateCheckoutParams): Promise<Chec
       }
     }
 
-    const total = orderItems.reduce((sum, line) => sum + line.lineTotal, 0);
+    const subtotal = orderItems.reduce((sum, line) => sum + line.lineTotal, 0);
+    let total = subtotal;
+    let couponPayload: AppliedCoupon | null = null;
+
+    const normalizedCode = couponCode ? normalizeCouponCode(couponCode) : "";
+    if (normalizedCode) {
+      const couponQuery = db
+        .collection(COUPONS_COLLECTION)
+        .where("code", "==", normalizedCode)
+        .limit(1);
+      const couponSnap = await tx.get(couponQuery);
+      if (couponSnap.empty) {
+        throw new CheckoutError("Cupón no encontrado.", 400);
+      }
+      const couponDoc = couponSnap.docs[0]!;
+      const coupon = mapFirestoreCoupon(couponDoc.id, couponDoc.data());
+      const kinds = items.map((item): CouponAppliesTo => {
+        if (item.kind === "package") return "package";
+        if (item.kind === "groupTrip") return "groupTrip";
+        return "excursion";
+      });
+      const applied = applyCouponToSubtotal(coupon, subtotal, kinds);
+      if (!applied.ok) {
+        throw new CheckoutError(applied.error, 400);
+      }
+      total = Math.max(0, subtotal - applied.applied.discountAmount);
+      couponPayload = applied.applied;
+      tx.update(couponDoc.ref, {
+        usedCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     const orderRef = db.collection("orders").doc();
     const now = FieldValue.serverTimestamp();
 
@@ -386,10 +514,13 @@ export async function createCheckout(params: CreateCheckoutParams): Promise<Chec
       userId: userId || null,
       isGuest: !userId,
       orderDate: now,
+      subtotal,
+      discountAmount: couponPayload ? couponPayload.discountAmount : 0,
       total,
       paymentStatus,
       paymentMethod,
       items: orderItems,
+      coupon: couponPayload,
       customerName,
       customerEmail,
       customerDni,
@@ -419,6 +550,7 @@ export async function createCheckout(params: CreateCheckoutParams): Promise<Chec
         unitPrice: draft.unitPrice,
         lineTotal: draft.lineTotal,
         packageId: draft.packageId ?? null,
+        groupTripId: draft.groupTripId ?? null,
         passengers: draft.passengers ?? null,
         departureId: draft.departureId ?? null,
         departureDate: draft.departureDate ?? null,

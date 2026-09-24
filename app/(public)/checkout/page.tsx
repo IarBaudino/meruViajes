@@ -10,8 +10,8 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <header className="mb-8">
-        <h1 className="text-3xl text-meru-charcoal">Confirmar reserva</h1>
-        <p className="mt-2 text-meru-muted">
+        <h1 className="text-3xl text-brand-charcoal">Confirmar reserva</h1>
+        <p className="mt-2 text-brand-muted">
           Completá tus datos de facturación para reservar el cupo.
         </p>
       </header>

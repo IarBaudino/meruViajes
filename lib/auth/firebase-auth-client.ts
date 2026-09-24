@@ -98,7 +98,7 @@ export function mapFirebaseAuthError(code: string): string {
     "auth/provider-already-linked": "Esta cuenta ya tiene contraseña. Usá 'Cambiar contraseña'.",
     "auth/credential-already-in-use": "Ese correo ya está en uso con otra cuenta.",
     "auth/unauthorized-domain":
-      "Este dominio no está autorizado en Firebase. Agregá meru-viajes.vercel.app en Authentication → Settings → Authorized domains.",
+      "Este dominio no está autorizado en Firebase. Agregalo en Authentication → Settings → Authorized domains.",
   };
   return messages[code] ?? "No se pudo completar la autenticación.";
 }

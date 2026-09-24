@@ -158,9 +158,9 @@ export function CategoriesAdminList() {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="mb-8 space-y-4 rounded-xl border border-meru-border bg-white p-6"
+        className="mb-8 space-y-4 rounded-xl border border-brand-border bg-white p-6"
       >
-        <h2 className="text-lg text-meru-charcoal">
+        <h2 className="text-lg text-brand-charcoal">
           {editingId ? "Editar categoría" : "Nueva categoría"}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -171,7 +171,7 @@ export function CategoriesAdminList() {
             type="number"
             {...register("sortOrder", { valueAsNumber: true })}
           />
-          <label className="flex items-end gap-2 pb-2 text-sm text-meru-charcoal">
+          <label className="flex items-end gap-2 pb-2 text-sm text-brand-charcoal">
             <input type="checkbox" className="rounded" {...register("visible")} />
             Visible en el catálogo
           </label>
@@ -189,12 +189,12 @@ export function CategoriesAdminList() {
         </div>
       </form>
 
-      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
+      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
       {error ? <p className="text-red-600">{error}</p> : null}
 
-      <div className="overflow-x-auto rounded-xl border border-meru-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-brand-border bg-white">
         <table className="min-w-full text-sm">
-          <thead className="border-b border-meru-border bg-meru-sand/50 text-left text-meru-muted">
+          <thead className="border-b border-brand-border bg-brand-sand/50 text-left text-brand-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Nombre</th>
               <th className="px-4 py-3 font-medium">Orden</th>
@@ -204,12 +204,12 @@ export function CategoriesAdminList() {
           </thead>
           <tbody>
             {categories.map((category) => (
-              <tr key={category.id} className="border-b border-meru-border/60 last:border-0">
+              <tr key={category.id} className="border-b border-brand-border/60 last:border-0">
                 <td className="px-4 py-3">
-                  <p className="text-meru-charcoal">{category.name}</p>
-                  <p className="text-xs text-meru-muted">/{category.slug}</p>
+                  <p className="text-brand-charcoal">{category.name}</p>
+                  <p className="text-xs text-brand-muted">/{category.slug}</p>
                 </td>
-                <td className="px-4 py-3 text-meru-muted">{category.sortOrder}</td>
+                <td className="px-4 py-3 text-brand-muted">{category.sortOrder}</td>
                 <td className="px-4 py-3">
                   <Badge
                     className={
@@ -225,7 +225,7 @@ export function CategoriesAdminList() {
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     <button
                       type="button"
-                      className="text-meru-secondary hover:underline"
+                      className="text-brand-secondary hover:underline"
                       onClick={() => startEdit(category)}
                     >
                       Editar
@@ -253,7 +253,7 @@ export function CategoriesAdminList() {
       </div>
 
       {!loading && categories.length === 0 ? (
-        <p className="mt-4 text-sm text-meru-muted">
+        <p className="mt-4 text-sm text-brand-muted">
           Todavía no hay categorías. Creá por ejemplo: Trekking, Convencionales, Experiencias.
         </p>
       ) : null}

@@ -7,58 +7,48 @@ import { ExcursionGallery } from "@/features/excursions/components/excursion-gal
 import { ExcursionBookingPanel } from "@/features/excursions/components/excursion-booking-panel";
 import { Badge } from "@/components/ui/badge";
 import { JsonLd } from "@/components/seo/json-ld";
-import { parseCatalogSeason, resolveServiceForSeason, SEASON_LABELS, isSeasonVariantEnabled, pickDefaultCatalogSeason } from "@/lib/seasons";
+import { brand, getAppUrl } from "@/config/brand";
+import { pickDefaultCatalogSeason, resolveServiceForCatalog } from "@/lib/seasons";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ temporada?: string }>;
 };
 
 export const revalidate = 60;
 
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
-  /\/$/,
-  ""
-);
+const appUrl = getAppUrl();
 
 export async function generateStaticParams() {
   const services = await getActiveServices();
   return services.map((s) => ({ slug: s.slug }));
 }
 
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const sp = await searchParams;
-  const season = parseCatalogSeason(sp.temporada);
   const base = await getServiceBySlug(slug);
   if (!base) {
     return { title: "Excursión no encontrada" };
   }
-  const service = resolveServiceForSeason(base, season);
+  const service = resolveServiceForCatalog(base, null);
   const description = service.description.slice(0, 160);
-  const url =
-    season != null
-      ? `${appUrl}/excursiones/${service.slug}?temporada=${season}`
-      : `${appUrl}/excursiones/${service.slug}`;
+  const url = `${appUrl}/excursiones/${service.slug}`;
   const image = service.photos[0];
-  const title =
-    season != null ? `${service.title} (${SEASON_LABELS[season]})` : service.title;
   return {
-    title,
+    title: service.title,
     description,
-    alternates: { canonical: `${appUrl}/excursiones/${service.slug}` },
+    alternates: { canonical: url },
     openGraph: {
       type: "website",
-      locale: "es_AR",
+      locale: brand.locale,
       url,
-      title,
+      title: service.title,
       description: service.description.slice(0, 180),
-      siteName: "Meru Viajes y Turismo",
+      siteName: brand.agencyName,
       images: image ? [{ url: image, alt: service.title }] : undefined,
     },
     twitter: {
       card: image ? "summary_large_image" : "summary",
-      title,
+      title: service.title,
       description,
       images: image ? [image] : undefined,
     },
@@ -73,32 +63,22 @@ function InfoBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-meru-border bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-meru-secondary">{title}</h2>
-      <div className="mt-2 text-sm leading-relaxed text-meru-charcoal-muted">{children}</div>
+    <div className="rounded-xl border border-brand-border bg-white p-5 shadow-sm">
+      <h2 className="text-sm font-medium uppercase tracking-wide text-brand-secondary">{title}</h2>
+      <div className="mt-2 text-sm leading-relaxed text-brand-charcoal-muted">{children}</div>
     </div>
   );
 }
 
-export default async function ExcursionDetailPage({ params, searchParams }: Props) {
+export default async function ExcursionDetailPage({ params }: Props) {
   const { slug } = await params;
-  const sp = await searchParams;
-  const season = parseCatalogSeason(sp.temporada);
   const base = await getServiceBySlug(slug);
   if (!base) {
     notFound();
   }
 
-  const effectiveSeason = season ?? pickDefaultCatalogSeason(base);
-  if (season && !isSeasonVariantEnabled(base, season)) {
-    notFound();
-  }
-  if (!effectiveSeason) {
-    notFound();
-  }
-
-  const service = resolveServiceForSeason(base, effectiveSeason);
-  const catalogHref = season ? `/excursiones?temporada=${season}` : "/excursiones";
+  const effectiveSeason = pickDefaultCatalogSeason(base);
+  const service = resolveServiceForCatalog(base, null);
 
   const productLd = {
     "@context": "https://schema.org",
@@ -106,10 +86,10 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
     name: service.title,
     description: service.description.slice(0, 300),
     image: service.photos.slice(0, 5),
-    brand: { "@type": "Brand", name: "Meru Viajes y Turismo" },
+    brand: { "@type": "Brand", name: brand.agencyName },
     offers: {
       "@type": "Offer",
-      priceCurrency: "ARS",
+      priceCurrency: brand.currency,
       price: service.price,
       availability: "https://schema.org/InStock",
       url: `${appUrl}/excursiones/${service.slug}`,
@@ -119,42 +99,32 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd data={productLd} />
-      <nav aria-label="Migas de pan" className="text-sm text-meru-muted">
-        <Link href="/" className="hover:text-meru-secondary">
+      <nav aria-label="Migas de pan" className="text-sm text-brand-muted">
+        <Link href="/" className="hover:text-brand-secondary">
           Inicio
         </Link>
         <span className="mx-2" aria-hidden>
           /
         </span>
-        <Link href={catalogHref} className="hover:text-meru-secondary">
+        <Link href="/excursiones" className="hover:text-brand-secondary">
           Excursiones
         </Link>
         <span className="mx-2" aria-hidden>
           /
         </span>
-        <span className="text-meru-charcoal">{service.title}</span>
+        <span className="text-brand-charcoal">{service.title}</span>
       </nav>
 
       <header className="mt-6">
         <div className="flex flex-wrap items-center gap-2">
           {service.category && (
-            <Badge className="bg-meru-ice text-meru-primary">{service.category}</Badge>
-          )}
-          {season && (
-            <Badge className="bg-meru-secondary/10 text-meru-secondary">
-              Temporada {SEASON_LABELS[season]}
-            </Badge>
-          )}
-          {!season && effectiveSeason && (
-            <Badge className="bg-meru-secondary/10 text-meru-secondary">
-              Temporada {SEASON_LABELS[effectiveSeason]}
-            </Badge>
+            <Badge className="bg-brand-ice text-brand-primary">{service.category}</Badge>
           )}
         </div>
-        <h1 className="mt-3 text-3xl text-meru-charcoal">{service.title}</h1>
+        <h1 className="mt-3 text-3xl text-brand-charcoal">{service.title}</h1>
         {service.location && (
-          <p className="mt-3 flex items-center gap-2 text-meru-muted">
-            <MapPin className="h-5 w-5 shrink-0 text-meru-accent" aria-hidden />
+          <p className="mt-3 flex items-center gap-2 text-brand-muted">
+            <MapPin className="h-5 w-5 shrink-0 text-brand-accent" aria-hidden />
             {service.location}
           </p>
         )}
@@ -164,7 +134,6 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
         <ExcursionGallery
           photos={service.photos}
           title={service.title}
-          seasonalPhotos={service.seasonalPhotos}
         />
       </div>
 
@@ -174,7 +143,7 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
             <h2 id="desc-heading" className="sr-only">
               Descripción
             </h2>
-            <p className="whitespace-pre-line text-lg leading-relaxed text-meru-charcoal-muted">
+            <p className="whitespace-pre-line text-lg leading-relaxed text-brand-charcoal-muted">
               {service.description}
             </p>
           </section>
@@ -209,15 +178,15 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-xl border border-meru-border bg-white p-6 shadow-[var(--shadow-card)]">
+          <div className="rounded-xl border border-brand-border bg-white p-6 shadow-[var(--shadow-card)]">
             {service.duration && (
-              <p className="text-sm text-meru-charcoal-muted">
-                <span className="font-medium text-meru-charcoal">Duración:</span> {service.duration}
+              <p className="text-sm text-brand-charcoal-muted">
+                <span className="font-medium text-brand-charcoal">Duración:</span> {service.duration}
               </p>
             )}
             {service.difficulty && (
-              <p className="mt-1 text-sm text-meru-charcoal-muted">
-                <span className="font-medium text-meru-charcoal">Dificultad:</span>{" "}
+              <p className="mt-1 text-sm text-brand-charcoal-muted">
+                <span className="font-medium text-brand-charcoal">Dificultad:</span>{" "}
                 {service.difficulty}
               </p>
             )}
@@ -230,11 +199,11 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
                 slug: service.slug,
                 titulo: service.title,
               }).toString()}#consulta`}
-              className="mt-3 flex h-12 w-full items-center justify-center rounded-lg border-2 border-meru-primary font-semibold text-meru-primary transition-colors hover:bg-meru-ice"
+              className="mt-3 flex h-12 w-full items-center justify-center rounded-lg border-2 border-brand-primary font-semibold text-brand-primary transition-colors hover:bg-brand-ice"
             >
               Consultar por esta excursión
             </Link>
-            <p className="mt-4 text-xs text-meru-muted">
+            <p className="mt-4 text-xs text-brand-muted">
               Elegí adultos, menores, infantes (sin cargo) y jubilados. El total se calcula con los
               descuentos de la excursión. Al confirmar desde el carrito reservamos los lugares.
             </p>
@@ -243,7 +212,7 @@ export default async function ExcursionDetailPage({ params, searchParams }: Prop
       </div>
 
       <div className="mt-12">
-        <Link href={catalogHref} className="font-semibold text-meru-secondary hover:underline">
+        <Link href="/excursiones" className="font-semibold text-brand-secondary hover:underline">
           ← Ver todas las excursiones
         </Link>
       </div>

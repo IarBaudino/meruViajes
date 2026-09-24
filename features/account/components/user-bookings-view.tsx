@@ -74,14 +74,14 @@ export function UserBookingsView() {
         description="Acá ves las reservas pagadas y las que fueron canceladas. Las pendientes están en el carrito."
       />
 
-      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
+      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
 
       {!loading && paidOrders.length === 0 ? (
-        <div className="mb-10 rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
-          <p className="text-meru-charcoal">Todavía no tenés reservas pagadas.</p>
-          <p className="mt-2 text-sm text-meru-muted">
+        <div className="mb-10 rounded-xl border border-dashed border-brand-border bg-white p-10 text-center">
+          <p className="text-brand-charcoal">Todavía no tenés reservas pagadas.</p>
+          <p className="mt-2 text-sm text-brand-muted">
             Si ya reservaste y el pago está pendiente, mirá el{" "}
-            <Link href="/carrito" className="text-meru-secondary hover:underline">
+            <Link href="/carrito" className="text-brand-secondary hover:underline">
               carrito
             </Link>
             .
@@ -94,21 +94,21 @@ export function UserBookingsView() {
 
       {paidOrders.length > 0 ? (
         <section className="mb-10">
-          <h2 className="mb-4 text-lg text-meru-charcoal">Confirmadas</h2>
+          <h2 className="mb-4 text-lg text-brand-charcoal">Confirmadas</h2>
           <ul className="space-y-4">
             {paidOrders.map((order) => (
-              <li key={order.id} className="rounded-xl border border-meru-border bg-white p-5">
+              <li key={order.id} className="rounded-xl border border-brand-border bg-white p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium text-meru-charcoal">
+                    <p className="font-medium text-brand-charcoal">
                       Reserva #{order.id.slice(0, 8).toUpperCase()}
                     </p>
-                    <p className="mt-1 text-sm text-meru-muted">
+                    <p className="mt-1 text-sm text-brand-muted">
                       {order.createdAt
                         ? new Date(order.createdAt).toLocaleString("es-AR")
                         : "—"}
                     </p>
-                    <ul className="mt-3 space-y-1 text-sm text-meru-charcoal">
+                    <ul className="mt-3 space-y-1 text-sm text-brand-charcoal">
                       {(order.items ?? []).map((item, idx) => (
                         <li key={`${order.id}-${idx}`}>
                           {item.serviceTitle ?? "Ítem"}
@@ -128,7 +128,7 @@ export function UserBookingsView() {
                   </div>
                   <div className="text-right">
                     <Badge className="bg-green-100 text-green-800">Pagado</Badge>
-                    <p className="mt-2 font-semibold text-meru-primary">
+                    <p className="mt-2 font-semibold text-brand-primary">
                       {formatCurrencyARS(order.total)}
                     </p>
                   </div>
@@ -141,7 +141,7 @@ export function UserBookingsView() {
 
       {!loading && cancelledOrders.length > 0 ? (
         <section>
-          <h2 className="mb-4 text-lg text-meru-charcoal">Canceladas</h2>
+          <h2 className="mb-4 text-lg text-brand-charcoal">Canceladas</h2>
           <ul className="space-y-3">
             {cancelledOrders.map((order) => (
               <li
@@ -150,10 +150,10 @@ export function UserBookingsView() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium text-meru-charcoal">
+                    <p className="font-medium text-brand-charcoal">
                       Pedido #{order.id.slice(0, 8).toUpperCase()}
                     </p>
-                    <p className="mt-1 text-meru-muted">
+                    <p className="mt-1 text-brand-muted">
                       {order.cancelReason === "expired"
                         ? "Cancelada por vencimiento del plazo de pago. El cupo se liberó."
                         : "Cancelada por la agencia. El cupo se liberó."}
@@ -161,7 +161,7 @@ export function UserBookingsView() {
                         ? ` (${new Date(order.cancelledAt).toLocaleString("es-AR")})`
                         : ""}
                     </p>
-                    <ul className="mt-2 space-y-0.5 text-meru-charcoal">
+                    <ul className="mt-2 space-y-0.5 text-brand-charcoal">
                       {(order.items ?? []).map((item, idx) => (
                         <li key={`${order.id}-c-${idx}`}>
                           {item.serviceTitle ?? "Ítem"}

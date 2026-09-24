@@ -21,6 +21,7 @@ type InquiryFormProps = {
 function relatedLabel(kind?: string) {
   if (kind === "package") return "paquete";
   if (kind === "excursion") return "excursión";
+  if (kind === "groupTrip") return "viaje grupal";
   return "producto";
 }
 
@@ -28,7 +29,7 @@ export function InquiryForm({ inquiry }: InquiryFormProps) {
   const searchParams = useSearchParams();
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [relatedKind, setRelatedKind] = useState<"excursion" | "package" | undefined>();
+  const [relatedKind, setRelatedKind] = useState<"excursion" | "package" | "groupTrip" | undefined>();
   const [relatedSlug, setRelatedSlug] = useState("");
   const [relatedTitle, setRelatedTitle] = useState("");
 
@@ -49,7 +50,9 @@ export function InquiryForm({ inquiry }: InquiryFormProps) {
   useEffect(() => {
     const kindRaw = searchParams.get("consulta")?.trim() || searchParams.get("kind")?.trim();
     const kind =
-      kindRaw === "excursion" || kindRaw === "package" ? kindRaw : undefined;
+      kindRaw === "excursion" || kindRaw === "package" || kindRaw === "groupTrip"
+        ? kindRaw
+        : undefined;
     const slug = searchParams.get("slug")?.trim() || "";
     const title = searchParams.get("titulo")?.trim() || searchParams.get("title")?.trim() || "";
 
@@ -89,15 +92,15 @@ export function InquiryForm({ inquiry }: InquiryFormProps) {
   }
 
   return (
-    <section id="consulta" className="scroll-mt-24 bg-meru-primary py-20 text-white">
+    <section id="consulta" className="scroll-mt-24 bg-brand-surface py-20">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
         <div className="text-center">
-          <h2 className="text-3xl text-white">{inquiry.title}</h2>
-          <p className="mt-3 text-meru-sand/85">{inquiry.subtitle}</p>
+          <h2 className="text-3xl text-brand-charcoal">{inquiry.title}</h2>
+          <p className="mt-3 text-brand-muted">{inquiry.subtitle}</p>
           {relatedTitle ? (
-            <p className="mt-4 inline-block rounded-lg bg-white/15 px-4 py-2 text-sm text-meru-sand">
+            <p className="mt-4 inline-block rounded-lg bg-brand-sand px-4 py-2 text-sm text-brand-charcoal">
               Consultando por {relatedLabel(relatedKind)}:{" "}
-              <span className="font-semibold text-white">{relatedTitle}</span>
+              <span className="font-semibold">{relatedTitle}</span>
             </p>
           ) : null}
         </div>

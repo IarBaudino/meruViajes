@@ -33,15 +33,15 @@ export function SeasonSelector({ value, onChange }: Props) {
 
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-meru-charcoal">Temporada</legend>
-      <p className="mt-1 text-xs text-meru-muted">
+      <legend className="text-sm font-medium text-brand-charcoal">Temporada</legend>
+      <p className="mt-1 text-xs text-brand-muted">
         Define en qué menú aparece. “Todo el año” incluye verano e invierno.
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {OPTIONS.map((option) => (
           <label
             key={option.value}
-            className="flex cursor-pointer gap-2 rounded-lg border border-meru-border p-3 hover:bg-meru-ice/50"
+            className="flex cursor-pointer gap-2 rounded-lg border border-brand-border p-3 hover:bg-brand-ice/50"
           >
             <input
               type="checkbox"
@@ -50,8 +50,8 @@ export function SeasonSelector({ value, onChange }: Props) {
               onChange={(event) => toggle(option.value, event.target.checked)}
             />
             <span>
-              <span className="block text-sm font-medium text-meru-charcoal">{option.label}</span>
-              <span className="block text-xs text-meru-muted">{option.description}</span>
+              <span className="block text-sm font-medium text-brand-charcoal">{option.label}</span>
+              <span className="block text-xs text-brand-muted">{option.description}</span>
             </span>
           </label>
         ))}

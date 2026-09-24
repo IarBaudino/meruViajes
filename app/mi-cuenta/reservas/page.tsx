@@ -3,7 +3,7 @@ import { UserBookingsView } from "@/features/account/components/user-bookings-vi
 
 export default function UserBookingsPage() {
   return (
-    <Suspense fallback={<p className="text-meru-muted">Cargando…</p>}>
+    <Suspense fallback={<p className="text-brand-muted">Cargando…</p>}>
       <UserBookingsView />
     </Suspense>
   );

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getAdminFirestore } from "@/lib/firebase/admin";
-import { createGetnetCheckout } from "@/lib/payments/getnet/create-checkout";
-import { isGetnetConfigured } from "@/lib/payments/getnet/config";
+import { createMercadoPagoPreference } from "@/lib/payments/mercadopago/create-preference";
+import { isMercadoPagoConfigured } from "@/lib/payments/methods";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,11 +13,10 @@ export async function POST(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Iniciá sesión para pagar" }, { status: 401 });
   }
 
-  if (!isGetnetConfigured()) {
+  if (!isMercadoPagoConfigured()) {
     return NextResponse.json(
       {
-        error:
-          "Getnet todavía no está configurado. Coordiná el pago con la agencia o contactanos.",
+        error: "Mercado Pago todavía no está configurado. Pagá por transferencia.",
       },
       { status: 503 }
     );
@@ -36,7 +35,7 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   const data = snap.data()!;
-  if (data.userId !== session.user.id) {
+  if (data.userId && data.userId !== session.user.id) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
@@ -54,7 +53,7 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   try {
-    const getnet = await createGetnetCheckout({
+    const mp = await createMercadoPagoPreference({
       orderId,
       amount: total,
       customerEmail: String(data.customerEmail ?? session.user.email ?? ""),
@@ -63,8 +62,8 @@ export async function POST(_request: Request, { params }: Params) {
 
     await orderRef.set(
       {
-        paymentMethod: "getnet",
-        paymentInformation: getnet.providerOrderId,
+        paymentMethod: "mercadopago",
+        paymentInformation: mp.preferenceId,
         updatedAt: new Date(),
       },
       { merge: true }
@@ -72,7 +71,7 @@ export async function POST(_request: Request, { params }: Params) {
 
     return NextResponse.json({
       ok: true,
-      checkoutUrl: getnet.checkoutUrl,
+      checkoutUrl: mp.checkoutUrl,
       orderId,
     });
   } catch (error) {

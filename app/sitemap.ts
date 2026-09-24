@@ -1,11 +1,9 @@
 import type { MetadataRoute } from "next";
+import { getAppUrl } from "@/config/brand";
 import { getActiveServices } from "@/features/excursions/lib/get-services";
 import { getActivePackages } from "@/features/packages/lib/get-packages";
 
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://meruviajes.tur.ar").replace(
-  /\/$/,
-  ""
-);
+const appUrl = getAppUrl();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [services, packages] = await Promise.all([

@@ -87,18 +87,18 @@ export function BookingHoldSettingsCard() {
   }
 
   return (
-    <section className="mb-8 rounded-xl border border-meru-border bg-white p-5 sm:p-6 space-y-5">
+    <section className="mb-8 rounded-xl border border-brand-border bg-white p-5 sm:p-6 space-y-5">
       <div>
-        <h2 className="text-base font-semibold text-meru-charcoal">
+        <h2 className="text-base font-semibold text-brand-charcoal">
           Plazo para pagar una reserva
         </h2>
-        <p className="mt-1 text-sm text-meru-muted">
+        <p className="mt-1 text-sm text-brand-muted">
           Si no pagan a tiempo, la reserva se cancela y el cupo del turno vuelve a estar libre.
         </p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-meru-muted">Cargando…</p>
+        <p className="text-sm text-brand-muted">Cargando…</p>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -117,7 +117,7 @@ export function BookingHoldSettingsCard() {
                   }))
                 }
               />
-              <p className="mt-1 text-xs text-meru-muted">
+              <p className="mt-1 text-xs text-brand-muted">
                 Tope general. Ej.: 24 = 1 día, 48 = 2 días.
               </p>
             </div>
@@ -135,7 +135,7 @@ export function BookingHoldSettingsCard() {
                   }))
                 }
               />
-              <p className="mt-1 text-xs text-meru-muted">
+              <p className="mt-1 text-xs text-brand-muted">
                 Siempre se libera el cupo esta cantidad de horas antes del turno. Ej.: salida 9:00
                 y valor 2 → si no pagó, cae a las 7:00.
               </p>
@@ -155,8 +155,8 @@ export function BookingHoldSettingsCard() {
                 }))
               }
             />
-            <p className="text-xs text-meru-muted">
-              Usá <code className="text-meru-charcoal">{"{horas}"}</code> para el plazo (ej. “1 día”
+            <p className="text-xs text-brand-muted">
+              Usá <code className="text-brand-charcoal">{"{horas}"}</code> para el plazo (ej. “1 día”
               o “48 horas”). Si está vacío, se usa el mensaje por defecto.
             </p>
             <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">

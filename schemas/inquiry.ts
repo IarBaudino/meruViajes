@@ -11,7 +11,7 @@ export const inquirySchema = z.object({
     .min(10, "El mensaje debe tener al menos 10 caracteres")
     .max(2000, "El mensaje es demasiado largo"),
   /** Contexto opcional: desde ficha de excursión/paquete. */
-  relatedKind: z.enum(["excursion", "package"]).optional(),
+  relatedKind: z.enum(["excursion", "package", "groupTrip"]).optional(),
   relatedSlug: z.string().trim().max(160).optional(),
   relatedTitle: z.string().trim().max(200).optional(),
 });

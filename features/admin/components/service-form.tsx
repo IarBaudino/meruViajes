@@ -89,13 +89,17 @@ function variantFromService(
 
 function toFormDefaults(service?: Service): ServiceFormData {
   if (service?.seasonalVariants) {
+    const source =
+      service.seasonalVariants.verano?.enabled || !service.seasonalVariants.invierno?.enabled
+        ? service.seasonalVariants.verano
+        : service.seasonalVariants.invierno;
     return {
       slug: service.slug ?? "",
       location: service.location ?? "",
       category: service.category ?? "",
       seasonalVariants: {
-        verano: variantFromService(service.seasonalVariants.verano, true),
-        invierno: variantFromService(service.seasonalVariants.invierno, false),
+        verano: variantFromService(source, true),
+        invierno: emptySeasonVariant(false),
       },
       featuredOnHome: service.featuredOnHome ?? false,
       homeOrder: service.homeOrder ?? 100,
@@ -228,7 +232,11 @@ export function ServiceForm({ service }: ServiceFormProps) {
   });
 
   const veranoTitle = watch("seasonalVariants.verano.title");
-  const inviernoTitle = watch("seasonalVariants.invierno.title");
+
+  useEffect(() => {
+    setValue("seasonalVariants.verano.enabled", true);
+    setValue("seasonalVariants.invierno.enabled", false);
+  }, [setValue]);
 
   useEffect(() => {
     async function loadCategorySuggestions() {
@@ -246,12 +254,12 @@ export function ServiceForm({ service }: ServiceFormProps) {
 
   useEffect(() => {
     if (!isEdit) {
-      const title = veranoTitle.trim() || inviernoTitle.trim();
+      const title = veranoTitle.trim();
       if (title) {
         setValue("slug", slugify(title));
       }
     }
-  }, [veranoTitle, inviernoTitle, isEdit, setValue]);
+  }, [veranoTitle, isEdit, setValue]);
 
   async function onSubmit(data: ServiceFormData) {
     setError("");
@@ -261,8 +269,8 @@ export function ServiceForm({ service }: ServiceFormProps) {
       location: data.location || undefined,
       category: data.category || undefined,
       seasonalVariants: {
-        verano: cleanVariant(data.seasonalVariants.verano),
-        invierno: cleanVariant(data.seasonalVariants.invierno),
+        verano: { ...cleanVariant(data.seasonalVariants.verano), enabled: true },
+        invierno: { ...emptySeasonVariant(false), enabled: false },
       },
     };
 
@@ -287,11 +295,10 @@ export function ServiceForm({ service }: ServiceFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <section className="rounded-xl border border-meru-border bg-white p-6 space-y-5">
-        <h2 className="text-lg text-meru-charcoal">Datos compartidos</h2>
-        <p className="text-sm text-meru-muted">
-          Slug, ubicación y categoría son comunes a ambas temporadas. El título y la descripción se
-          cargan por temporada abajo.
+      <section className="rounded-xl border border-brand-border bg-white p-6 space-y-5">
+        <h2 className="text-lg text-brand-charcoal">Datos generales</h2>
+        <p className="text-sm text-brand-muted">
+          Slug, ubicación y categoría. El título y la descripción van en la ficha de abajo.
         </p>
         <Input label="Slug (URL)" error={errors.slug?.message} {...register("slug")} />
         <div className="grid gap-5 sm:grid-cols-2">
@@ -310,11 +317,11 @@ export function ServiceForm({ service }: ServiceFormProps) {
             </datalist>
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+        <label className="flex items-center gap-2 text-sm text-brand-charcoal">
           <input type="checkbox" className="rounded" {...register("active")} />
           Publicada (visible en el catálogo)
         </label>
-        <label className="flex items-center gap-2 text-sm text-meru-charcoal">
+        <label className="flex items-center gap-2 text-sm text-brand-charcoal">
           <input type="checkbox" className="rounded" {...register("featuredOnHome")} />
           Destacar en el home
         </label>
@@ -335,16 +342,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
         setValue={setValue}
         errors={errors.seasonalVariants?.verano as any}
         newDiscountId={newDiscountId}
-      />
-
-      <ServiceSeasonVariantSection
-        season="invierno"
-        control={control}
-        register={register}
-        watch={watch}
-        setValue={setValue}
-        errors={errors.seasonalVariants?.invierno as any}
-        newDiscountId={newDiscountId}
+        hideSeasonUi
       />
 
       {errors.seasonalVariants?.message ? (

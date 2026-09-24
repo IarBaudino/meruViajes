@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { brand } from "@/config/brand";
 import type { CartItem, DiscountOption } from "@/types";
 import { canAddQuantity } from "@/lib/excursions/stock";
 import {
@@ -74,12 +75,12 @@ export const useCartStore = create<CartState>()(
         let added = false;
 
         set((state) => {
-          if (kind === "package") {
+          if (kind === "package" || kind === "groupTrip") {
             const stayKey = packageStayKey(item.stayFrom, item.stayTo);
             const existing = state.items.find(
               (i) =>
                 i.serviceId === item.serviceId &&
-                (i.kind ?? "service") === "package" &&
+                (i.kind ?? "service") === kind &&
                 packageStayKey(i.stayFrom, i.stayTo) === stayKey
             );
             const quantityToAdd = item.quantity ?? 1;
@@ -92,7 +93,7 @@ export const useCartStore = create<CartState>()(
               return {
                 items: state.items.map((i) =>
                   i.serviceId === item.serviceId &&
-                  (i.kind ?? "service") === "package" &&
+                  (i.kind ?? "service") === kind &&
                   packageStayKey(i.stayFrom, i.stayTo) === stayKey
                     ? {
                         ...i,
@@ -107,9 +108,10 @@ export const useCartStore = create<CartState>()(
               items: [
                 ...state.items,
                 {
-                  kind: "package",
+                  kind,
                   serviceId: item.serviceId,
                   packageId: item.packageId,
+                  groupTripId: item.groupTripId,
                   slug: item.slug,
                   title: item.title,
                   price: item.price,
@@ -118,6 +120,9 @@ export const useCartStore = create<CartState>()(
                   stayFrom: item.stayFrom,
                   stayTo: item.stayTo,
                   includedServices: item.includedServices,
+                  depositAmount: item.depositAmount,
+                  fullUnitPrice: item.fullUnitPrice,
+                  balanceDueDate: item.balanceDueDate,
                   lineTotal: item.price * quantityToAdd,
                 },
               ],
@@ -216,7 +221,7 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           items: state.items.map((i) => {
             if (i.serviceId !== serviceId) return i;
-            if (i.kind === "package") {
+            if (i.kind === "package" || i.kind === "groupTrip") {
               return { ...i, quantity, lineTotal: i.price * quantity };
             }
             return {
@@ -257,7 +262,7 @@ export const useCartStore = create<CartState>()(
       totalPrice: () => get().items.reduce((acc, i) => acc + itemLineTotal(i), 0),
     }),
     {
-      name: "meru-cart-v10",
+      name: brand.cartStorageKey,
       partialize: (state) => ({
         items: state.items,
         holdOrderId: state.holdOrderId,

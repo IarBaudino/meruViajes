@@ -73,7 +73,7 @@ export function ExcursionGallery({ photos, title, seasonalPhotos = [] }: Props) 
             <button
               type="button"
               onClick={prev}
-              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-meru-primary shadow-md hover:bg-white"
+              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-brand-primary shadow-md hover:bg-white"
               aria-label="Imagen anterior"
             >
               <ChevronLeft className="h-6 w-6" />
@@ -81,7 +81,7 @@ export function ExcursionGallery({ photos, title, seasonalPhotos = [] }: Props) 
             <button
               type="button"
               onClick={next}
-              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-meru-primary shadow-md hover:bg-white"
+              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-brand-primary shadow-md hover:bg-white"
               aria-label="Imagen siguiente"
             >
               <ChevronRight className="h-6 w-6" />
@@ -90,7 +90,7 @@ export function ExcursionGallery({ photos, title, seasonalPhotos = [] }: Props) 
         )}
         {seasonalCaption && (
           <p className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3 text-sm text-white">
-            Ushuaia en distintas estaciones · {seasonalCaption}
+            {seasonalCaption}
           </p>
         )}
       </div>
@@ -104,7 +104,7 @@ export function ExcursionGallery({ photos, title, seasonalPhotos = [] }: Props) 
                 onClick={() => setIndex(i)}
                 className={cn(
                   "relative h-16 w-24 shrink-0 overflow-hidden rounded-lg ring-2 ring-transparent transition-all",
-                  i === index && "ring-meru-secondary"
+                  i === index && "ring-brand-secondary"
                 )}
                 aria-label={`Ver miniatura ${i + 1}`}
                 aria-current={i === index}

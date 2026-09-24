@@ -57,13 +57,13 @@ export function SingleImageUpload({
   return (
     <div className="space-y-3">
       {label ? (
-        <p className="text-sm font-medium text-meru-charcoal">{label}</p>
+        <p className="text-sm font-medium text-brand-charcoal">{label}</p>
       ) : null}
-      {hint ? <p className="text-xs text-meru-muted">{hint}</p> : null}
+      {hint ? <p className="text-xs text-brand-muted">{hint}</p> : null}
 
       {value ? (
         <div className="relative inline-block">
-          <div className="relative h-40 w-full max-w-md overflow-hidden rounded-lg border border-meru-border bg-meru-sand">
+          <div className="relative h-40 w-full max-w-md overflow-hidden rounded-lg border border-brand-border bg-brand-sand">
             <Image src={value} alt="" fill className="object-cover" sizes="400px" />
           </div>
           <button
@@ -92,10 +92,10 @@ export function SingleImageUpload({
 
       {progress ? (
         <div className="max-w-md">
-          <p className="text-xs text-meru-muted">{progress.message}</p>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-meru-ice">
+          <p className="text-xs text-brand-muted">{progress.message}</p>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-brand-ice">
             <div
-              className="h-full bg-meru-primary transition-all"
+              className="h-full bg-brand-sand transition-all"
               style={{ width: `${progress.progress}%` }}
             />
           </div>
@@ -205,19 +205,19 @@ export function PhotoGalleryUpload({
 
   return (
     <div className="space-y-4">
-      {label ? <p className="text-sm font-medium text-meru-charcoal">{label}</p> : null}
-      {hint ? <p className="text-xs text-meru-muted">{hint}</p> : null}
+      {label ? <p className="text-sm font-medium text-brand-charcoal">{label}</p> : null}
+      {hint ? <p className="text-xs text-brand-muted">{hint}</p> : null}
 
       {photos.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {photos.map((url, index) => (
             <li
               key={`${url}-${index}`}
-              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-meru-border bg-meru-sand"
+              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-border bg-brand-sand"
             >
               <Image src={url} alt="" fill className="object-cover" sizes="200px" />
               {index === 0 ? (
-                <span className="absolute left-1.5 top-1.5 rounded bg-meru-primary px-1.5 py-0.5 text-[10px] font-medium uppercase text-white">
+                <span className="absolute left-1.5 top-1.5 rounded bg-white px-1.5 py-0.5 text-[10px] font-medium uppercase text-brand-charcoal">
                   Portada
                 </span>
               ) : (
@@ -260,7 +260,7 @@ export function PhotoGalleryUpload({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-meru-muted">Todavía no hay fotos.</p>
+        <p className="text-sm text-brand-muted">Todavía no hay fotos.</p>
       )}
 
       <input
@@ -278,10 +278,10 @@ export function PhotoGalleryUpload({
 
       {progress ? (
         <div className="max-w-md">
-          <p className="text-xs text-meru-muted">{progress.message}</p>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-meru-ice">
+          <p className="text-xs text-brand-muted">{progress.message}</p>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-brand-ice">
             <div
-              className="h-full bg-meru-primary transition-all"
+              className="h-full bg-brand-sand transition-all"
               style={{ width: `${progress.progress}%` }}
             />
           </div>
@@ -394,15 +394,15 @@ export function MixedMediaGalleryUpload({
 
   return (
     <div className="space-y-4">
-      {label ? <p className="text-sm font-medium text-meru-charcoal">{label}</p> : null}
-      {hint ? <p className="text-xs text-meru-muted">{hint}</p> : null}
+      {label ? <p className="text-sm font-medium text-brand-charcoal">{label}</p> : null}
+      {hint ? <p className="text-xs text-brand-muted">{hint}</p> : null}
 
       {items.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {items.map((item, index) => (
             <li
               key={`${item.url}-${index}`}
-              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-meru-border bg-meru-sand"
+              className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-border bg-brand-sand"
             >
               {item.type === "video" ? (
                 <video src={item.url} className="h-full w-full object-cover" muted playsInline />
@@ -442,7 +442,7 @@ export function MixedMediaGalleryUpload({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-meru-muted">Todavía no hay medios en el hero.</p>
+        <p className="text-sm text-brand-muted">Todavía no hay medios en el hero.</p>
       )}
 
       <input
@@ -460,10 +460,10 @@ export function MixedMediaGalleryUpload({
 
       {progress ? (
         <div className="max-w-md">
-          <p className="text-xs text-meru-muted">{progress.message}</p>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-meru-ice">
+          <p className="text-xs text-brand-muted">{progress.message}</p>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-brand-ice">
             <div
-              className="h-full bg-meru-primary transition-all"
+              className="h-full bg-brand-sand transition-all"
               style={{ width: `${progress.progress}%` }}
             />
           </div>

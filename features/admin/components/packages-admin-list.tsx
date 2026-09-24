@@ -85,21 +85,21 @@ export function PackagesAdminList() {
           {actionError}
         </p>
       ) : null}
-      {loading ? <p className="text-meru-muted">Cargando…</p> : null}
+      {loading ? <p className="text-brand-muted">Cargando…</p> : null}
       {error ? <p className="text-red-600">{error}</p> : null}
 
       {!loading && packages.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
-          <p className="text-meru-charcoal">Todavía no hay paquetes.</p>
+        <div className="rounded-xl border border-dashed border-brand-border bg-white p-10 text-center">
+          <p className="text-brand-charcoal">Todavía no hay paquetes.</p>
           <Link href="/admin/paquetes/nuevo" className="mt-4 inline-block">
             <Button>Crear el primero</Button>
           </Link>
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-meru-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-brand-border bg-white">
         <table className="min-w-full text-sm">
-          <thead className="border-b border-meru-border bg-meru-sand/50 text-left text-meru-muted">
+          <thead className="border-b border-brand-border bg-brand-sand/50 text-left text-brand-muted">
             <tr>
               <th className="px-4 py-3 font-medium">Título</th>
               <th className="px-4 py-3 font-medium">Precio</th>
@@ -111,14 +111,14 @@ export function PackagesAdminList() {
           </thead>
           <tbody>
             {packages.map((pkg) => (
-              <tr key={pkg.id} className="border-b border-meru-border/60 last:border-0">
+              <tr key={pkg.id} className="border-b border-brand-border/60 last:border-0">
                 <td className="px-4 py-3">
-                  <p className="text-meru-charcoal">{pkg.title}</p>
-                  <p className="text-xs text-meru-muted">/{pkg.slug}</p>
+                  <p className="text-brand-charcoal">{pkg.title}</p>
+                  <p className="text-xs text-brand-muted">/{pkg.slug}</p>
                 </td>
                 <td className="px-4 py-3">{formatCurrencyARS(pkg.price)}</td>
-                <td className="px-4 py-3 text-meru-muted">{pkg.serviceIds.length}</td>
-                <td className="px-4 py-3 text-meru-muted">
+                <td className="px-4 py-3 text-brand-muted">{pkg.serviceIds.length}</td>
+                <td className="px-4 py-3 text-brand-muted">
                   {pkg.featuredOnHome ? `Sí · #${pkg.homeOrder ?? 100}` : "—"}
                 </td>
                 <td className="px-4 py-3">
@@ -136,7 +136,7 @@ export function PackagesAdminList() {
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     <Link
                       href={`/admin/paquetes/${pkg.id}/editar`}
-                      className="text-meru-secondary hover:underline"
+                      className="text-brand-secondary hover:underline"
                     >
                       Editar
                     </Link>
@@ -157,7 +157,7 @@ export function PackagesAdminList() {
                     {pkg.active ? (
                       <Link
                         href={`/paquetes/${pkg.slug}`}
-                        className="text-meru-muted hover:underline"
+                        className="text-brand-muted hover:underline"
                         target="_blank"
                       >
                         Ver

@@ -37,7 +37,7 @@ export default async function AdminDashboardPage() {
     <div>
       <PageHeader
         title="Panel de administración"
-        description="Gestioná excursiones, contenido del sitio, consultas y usuarios desde un solo lugar."
+        description="Gestioná excursiones, paquetes, viajes grupales, contenido, consultas y usuarios."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -45,12 +45,12 @@ export default async function AdminDashboardPage() {
           <Link key={href} href={href}>
             <Card className="transition-shadow hover:shadow-[var(--shadow-card)]">
               <CardContent className="flex items-center gap-4 pt-6">
-                <div className="rounded-lg bg-meru-ice p-3">
-                  <Icon className="h-5 w-5 text-meru-primary" aria-hidden />
+                <div className="rounded-lg bg-brand-ice p-3">
+                  <Icon className="h-5 w-5 text-brand-primary" aria-hidden />
                 </div>
                 <div>
-                  <p className="text-2xl text-meru-charcoal">{value}</p>
-                  <p className="text-sm text-meru-muted">{label}</p>
+                  <p className="text-2xl text-brand-charcoal">{value}</p>
+                  <p className="text-sm text-brand-muted">{label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -58,16 +58,16 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl border border-meru-border bg-white p-6">
-        <h2 className="text-lg text-meru-charcoal">Accesos rápidos</h2>
+      <div className="mt-8 rounded-xl border border-brand-border bg-white p-6">
+        <h2 className="text-lg text-brand-charcoal">Accesos rápidos</h2>
         <ul className="mt-4 flex flex-wrap gap-3 text-sm">
           <li>
-            <Link href="/admin/excursiones/nueva" className="text-meru-secondary hover:underline">
+            <Link href="/admin/excursiones/nueva" className="text-brand-secondary hover:underline">
               + Nueva excursión
             </Link>
           </li>
           <li>
-            <Link href="/admin/contenido" className="text-meru-secondary hover:underline">
+            <Link href="/admin/contenido" className="text-brand-secondary hover:underline">
               Editar contenido web
             </Link>
           </li>

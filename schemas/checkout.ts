@@ -20,9 +20,10 @@ const ymdSchema = z
 
 export const checkoutItemSchema = z
   .object({
-    kind: z.enum(["service", "package"]).default("service"),
+    kind: z.enum(["service", "package", "groupTrip"]).default("service"),
     serviceId: z.string().min(1),
     packageId: z.string().min(1).optional(),
+    groupTripId: z.string().min(1).optional(),
     quantity: z.number().int().positive().max(40),
     passengers: passengersSchema.optional(),
     departureId: z.string().min(1).optional(),
@@ -35,7 +36,8 @@ export const checkoutItemSchema = z
   .superRefine((item, ctx) => {
     const kind = item.kind ?? "service";
 
-    if (kind === "package") {
+    if (kind === "package" || kind === "groupTrip") {
+      if (kind === "groupTrip") return;
       if (!item.stayFrom || !item.stayTo) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -99,7 +101,8 @@ export const checkoutItemSchema = z
 
 export const checkoutSchema = z.object({
   items: z.array(checkoutItemSchema).min(1).max(15),
-  paymentMethod: z.enum(["coordinar", "getnet"]).default("coordinar"),
+  paymentMethod: z.enum(["transfer", "mercadopago"]).default("transfer"),
+  couponCode: z.string().trim().max(24).optional(),
   billing: orderBillingSchema,
 });
 

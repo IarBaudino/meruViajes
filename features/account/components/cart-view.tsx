@@ -15,6 +15,8 @@ import { formatCurrencyARS } from "@/lib/format";
 import { formatPassengersSummary, normalizeCartPassengers } from "@/features/excursions/lib/pricing";
 import { formatDepartureLabel } from "@/features/excursions/lib/departures";
 import { cartWhatsAppHref, orderWhatsAppHref } from "@/lib/whatsapp";
+import { TransferBankDetails } from "@/features/checkout/components/transfer-bank-details";
+import { PayMercadoPagoButton } from "@/features/checkout/components/pay-mercadopago-button";
 
 type OrderItemRow = {
   serviceTitle?: string;
@@ -25,6 +27,7 @@ type OrderItemRow = {
   stayFrom?: string;
   stayTo?: string;
   packageTitle?: string;
+  groupTripTitle?: string;
 };
 
 type UserOrder = {
@@ -55,6 +58,14 @@ export function CartView() {
   const [justReserved, setJustReserved] = useState(false);
   const [holdWarning, setHoldWarning] = useState("");
   const [cartHydrated, setCartHydrated] = useState(false);
+  const [transfer, setTransfer] = useState<{
+    bankName: string;
+    accountHolder: string;
+    cbu: string;
+    alias: string;
+    notes: string;
+  } | null>(null);
+  const [mpEnabled, setMpEnabled] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setPendingLoading(true);
@@ -114,12 +125,29 @@ export function CartView() {
         const data = await res.json();
         if (typeof data.warningMessage === "string" && data.warningMessage.trim()) {
           setHoldWarning(data.warningMessage.trim());
+        } else if (typeof data.holdWarning === "string") {
+          setHoldWarning(data.holdWarning);
         }
       } catch {
         // silencioso
       }
     }
     void loadHoldWarning();
+  }, []);
+
+  useEffect(() => {
+    async function loadPay() {
+      try {
+        const res = await fetch("/api/payments/methods");
+        if (!res.ok) return;
+        const data = await res.json();
+        setMpEnabled(Boolean(data.mercadopago));
+        if (data.transfer) setTransfer(data.transfer);
+      } catch {
+        // silencioso
+      }
+    }
+    void loadPay();
   }, []);
 
   useEffect(() => {
@@ -169,18 +197,18 @@ export function CartView() {
       />
 
       {status !== "authenticated" && !reserved ? (
-        <div className="mb-6 rounded-xl border border-meru-secondary/30 bg-meru-ice/60 p-4 text-sm text-meru-charcoal">
+        <div className="mb-6 rounded-xl border border-brand-border bg-brand-ice/60 p-4 text-sm text-brand-charcoal">
           Podés comprar sin cuenta. Si{" "}
           <Link
             href={`/login?callbackUrl=${encodeURIComponent("/carrito")}`}
-            className="font-semibold text-meru-secondary underline"
+            className="font-semibold text-brand-secondary underline"
           >
             iniciás sesión
           </Link>{" "}
           o{" "}
           <Link
             href={`/registro?callbackUrl=${encodeURIComponent("/carrito")}`}
-            className="font-semibold text-meru-secondary underline"
+            className="font-semibold text-brand-secondary underline"
           >
             creás una cuenta
           </Link>
@@ -192,7 +220,7 @@ export function CartView() {
         <p className="mb-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
-            Cupo reservado. Para proceder al pago, enviá un mensaje por WhatsApp. El carrito se
+            Cupo reservado. Pagá por transferencia o Mercado Pago. El carrito se
             mantiene hasta que confirmemos el pago; después pasa a{" "}
             <Link href="/mi-cuenta/reservas" className="font-semibold underline">
               Reservas
@@ -205,7 +233,7 @@ export function CartView() {
 
       {!pendingLoading && pendingOrders.length > 0 ? (
         <section className="mb-10">
-          <h2 className="mb-4 text-lg text-meru-charcoal">Pendiente de pago</h2>
+          <h2 className="mb-4 text-lg text-brand-charcoal">Pendiente de pago</h2>
           <ul className="space-y-4">
             {pendingOrders.map((order) => (
               <li
@@ -214,15 +242,15 @@ export function CartView() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-meru-charcoal">
+                    <p className="font-medium text-brand-charcoal">
                       Pedido #{order.id.slice(0, 8).toUpperCase()}
                     </p>
-                    <p className="mt-1 text-sm text-meru-muted">
+                    <p className="mt-1 text-sm text-brand-muted">
                       {order.createdAt
                         ? new Date(order.createdAt).toLocaleString("es-AR")
                         : "—"}
                     </p>
-                    <ul className="mt-3 space-y-1 text-sm text-meru-charcoal">
+                    <ul className="mt-3 space-y-1 text-sm text-brand-charcoal">
                       {(order.items ?? []).map((item, idx) => (
                         <li key={`${order.id}-${idx}`}>
                           {item.serviceTitle ?? "Ítem"}
@@ -242,7 +270,7 @@ export function CartView() {
                       ))}
                     </ul>
                     {order.holdExpiresAt ? (
-                      <p className="mt-3 text-xs text-meru-muted">
+                      <p className="mt-3 text-xs text-brand-muted">
                         Cupo reservado hasta{" "}
                         {new Date(order.holdExpiresAt).toLocaleString("es-AR", {
                           dateStyle: "short",
@@ -254,9 +282,12 @@ export function CartView() {
                   </div>
                   <div className="flex flex-col items-stretch gap-2 sm:items-end">
                     <Badge className="w-fit bg-amber-100 text-amber-900">Pendiente de pago</Badge>
-                    <p className="font-semibold text-meru-primary">
+                    <p className="font-semibold text-brand-primary">
                       {formatCurrencyARS(order.total)}
                     </p>
+                    {mpEnabled && status === "authenticated" ? (
+                      <PayMercadoPagoButton orderId={order.id} />
+                    ) : null}
                     <WhatsAppButton
                       href={orderWhatsAppHref({
                         orderId: order.id,
@@ -270,11 +301,12 @@ export function CartView() {
                           stayFrom: item.stayFrom,
                           stayTo: item.stayTo,
                           isPackage: Boolean(item.packageTitle),
+                          isGroupTrip: Boolean(item.groupTripTitle),
                         })),
                       })}
                       size="md"
                     >
-                      Pagar por WhatsApp
+                      Enviar comprobante por WhatsApp
                     </WhatsAppButton>
                   </div>
                 </div>
@@ -286,7 +318,7 @@ export function CartView() {
 
       {!pendingLoading && cancelledOrders.length > 0 ? (
         <section className="mb-10">
-          <h2 className="mb-4 text-lg text-meru-charcoal">Canceladas</h2>
+          <h2 className="mb-4 text-lg text-brand-charcoal">Canceladas</h2>
           <ul className="space-y-3">
             {cancelledOrders.map((order) => (
               <li
@@ -295,15 +327,15 @@ export function CartView() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium text-meru-charcoal">
+                    <p className="font-medium text-brand-charcoal">
                       Pedido #{order.id.slice(0, 8).toUpperCase()}
                     </p>
-                    <p className="mt-1 text-meru-muted">
+                    <p className="mt-1 text-brand-muted">
                       {order.cancelReason === "expired"
                         ? "Se canceló porque venció el plazo de pago y el cupo se liberó."
                         : "La reserva fue cancelada y el cupo quedó libre."}
                     </p>
-                    <ul className="mt-2 space-y-0.5 text-meru-charcoal">
+                    <ul className="mt-2 space-y-0.5 text-brand-charcoal">
                       {(order.items ?? []).map((item, idx) => (
                         <li key={`${order.id}-c-${idx}`}>
                           {item.serviceTitle ?? "Ítem"}
@@ -326,13 +358,13 @@ export function CartView() {
       ) : null}
 
       <section>
-        <h2 className="mb-4 text-lg text-meru-charcoal">
+        <h2 className="mb-4 text-lg text-brand-charcoal">
           {reserved ? "Tu reserva (en carrito)" : "Por confirmar"}
         </h2>
 
         {showEmpty ? (
-          <div className="rounded-xl border border-dashed border-meru-border bg-white p-10 text-center">
-            <p className="text-meru-charcoal">Tu carrito está vacío.</p>
+          <div className="rounded-xl border border-dashed border-brand-border bg-white p-10 text-center">
+            <p className="text-brand-charcoal">Tu carrito está vacío.</p>
             <div className="mt-4 flex flex-wrap justify-center gap-3">
               <Link href="/excursiones">
                 <Button>Explorar excursiones</Button>
@@ -340,10 +372,13 @@ export function CartView() {
               <Link href="/paquetes">
                 <Button variant="outline">Ver paquetes</Button>
               </Link>
+              <Link href="/viajes-grupales">
+                <Button variant="outline">Viajes grupales</Button>
+              </Link>
             </div>
           </div>
         ) : cartEmpty ? (
-          <p className="text-sm text-meru-muted">
+          <p className="text-sm text-brand-muted">
             No hay ítems nuevos por confirmar. Revisá las secciones de arriba.
           </p>
         ) : (
@@ -351,14 +386,17 @@ export function CartView() {
             <ul className="space-y-4">
               {items.map((item) => {
                 const isPackage = item.kind === "package";
-                const href = isPackage
-                  ? `/paquetes/${item.slug}`
-                  : `/excursiones/${item.slug}`;
+                const isGroupTrip = item.kind === "groupTrip";
+                const href = isGroupTrip
+                  ? `/viajes-grupales/${item.slug}`
+                  : isPackage
+                    ? `/paquetes/${item.slug}`
+                    : `/excursiones/${item.slug}`;
                 const lineTotal = item.lineTotal ?? item.price * item.quantity;
                 return (
                   <li
                     key={`${item.kind ?? "service"}-${item.serviceId}-${item.departureId ?? item.departureTime ?? ""}`}
-                    className="flex gap-4 rounded-xl border border-meru-border bg-white p-4"
+                    className="flex gap-4 rounded-xl border border-brand-border bg-white p-4"
                   >
                     {item.image ? (
                       <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-slate-100">
@@ -367,40 +405,57 @@ export function CartView() {
                     ) : null}
                     <div className="min-w-0 flex-1">
                       {isPackage ? (
-                        <p className="text-xs font-medium uppercase tracking-wider text-meru-secondary">
+                        <p className="text-xs font-medium uppercase tracking-wider text-brand-secondary">
                           Paquete
                         </p>
+                      ) : isGroupTrip ? (
+                        <p className="text-xs font-medium uppercase tracking-wider text-brand-secondary">
+                          Viaje grupal
+                        </p>
                       ) : null}
-                      <Link href={href} className="text-meru-charcoal hover:text-meru-secondary">
+                      <Link href={href} className="text-brand-charcoal hover:text-brand-secondary">
                         {item.title}
                       </Link>
                       {item.kind === "package" && item.stayFrom && item.stayTo ? (
                         <div className="mt-1 space-y-1 text-sm">
-                          <p className="text-meru-secondary">
+                          <p className="text-brand-secondary">
                             Estadía: {item.stayFrom.split("-").reverse().join("/")} →{" "}
                             {item.stayTo.split("-").reverse().join("/")}
                           </p>
-                          <p className="text-meru-muted">
+                          <p className="text-brand-muted">
                             {item.quantity} pasajero{item.quantity === 1 ? "" : "s"}
                           </p>
                           {item.includedServices?.length ? (
-                            <ul className="text-meru-muted">
+                            <ul className="text-brand-muted">
                               {item.includedServices.map((s) => (
                                 <li key={s.serviceId}>· {s.title}</li>
                               ))}
                             </ul>
                           ) : null}
                         </div>
+                      ) : item.kind === "groupTrip" && item.stayFrom && item.stayTo ? (
+                        <div className="mt-1 space-y-1 text-sm">
+                          <p className="text-brand-secondary">
+                            {item.stayFrom.split("-").reverse().join("/")} →{" "}
+                            {item.stayTo.split("-").reverse().join("/")}
+                          </p>
+                          <p className="text-brand-muted">
+                            {item.quantity} pasajero{item.quantity === 1 ? "" : "s"}
+                            {item.depositAmount
+                              ? " · seña"
+                              : ""}
+                          </p>
+                        </div>
                       ) : item.departureDate && item.departureTime ? (
-                        <p className="mt-1 text-sm text-meru-secondary">
+                        <p className="mt-1 text-sm text-brand-secondary">
                           {formatDepartureLabel({
                             date: item.departureDate,
                             time: item.departureTime,
                           })}
                         </p>
                       ) : null}
-                      {item.kind === "package" ? null : item.passengers ? (
-                        <p className="mt-1 text-sm text-meru-muted">
+                      {item.kind === "package" || item.kind === "groupTrip" ? null : item.passengers ? (
+                        <p className="mt-1 text-sm text-brand-muted">
                           {formatPassengersSummary(
                             normalizeCartPassengers(item.passengers) ?? {
                               adult: item.quantity,
@@ -410,11 +465,11 @@ export function CartView() {
                           )}
                         </p>
                       ) : (
-                        <p className="mt-1 text-sm text-meru-muted">
+                        <p className="mt-1 text-sm text-brand-muted">
                           {item.quantity} pasajero{item.quantity === 1 ? "" : "s"}
                         </p>
                       )}
-                      <p className="mt-1 text-sm font-semibold text-meru-primary">
+                      <p className="mt-1 text-sm font-semibold text-brand-primary">
                         {formatCurrencyARS(lineTotal)}
                       </p>
                     </div>
@@ -442,12 +497,16 @@ export function CartView() {
             ) : null}
 
             {reserved ? (
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
-                <p className="text-lg text-meru-charcoal">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand-border bg-white p-5">
+                <p className="text-lg text-brand-charcoal">
                   Total:{" "}
-                  <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
+                  <span className="text-brand-primary">{formatCurrencyARS(total)}</span>
                 </p>
                 <div className="flex w-full max-w-sm flex-col items-stretch gap-2 sm:items-end">
+                  {transfer ? <TransferBankDetails transfer={transfer} /> : null}
+                  {holdOrderId && mpEnabled && status === "authenticated" ? (
+                    <PayMercadoPagoButton orderId={holdOrderId} />
+                  ) : null}
                   {holdOrderId ? (
                     <WhatsAppButton
                       href={cartWhatsAppHref({
@@ -456,20 +515,19 @@ export function CartView() {
                         orderId: holdOrderId,
                       })}
                     >
-                      Pagar por WhatsApp
+                      Enviar comprobante por WhatsApp
                     </WhatsAppButton>
                   ) : null}
-                  <p className="text-sm text-meru-muted sm:text-right">
-                    Para proceder al pago, enviá un mensaje por WhatsApp. El carrito se vacía
-                    cuando confirmemos el pago.
+                  <p className="text-sm text-brand-muted sm:text-right">
+                    El carrito se vacía cuando confirmemos el pago.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-meru-border bg-white p-5">
-                <p className="text-lg text-meru-charcoal">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand-border bg-white p-5">
+                <p className="text-lg text-brand-charcoal">
                   Total:{" "}
-                  <span className="text-meru-primary">{formatCurrencyARS(total)}</span>
+                  <span className="text-brand-primary">{formatCurrencyARS(total)}</span>
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button type="button" variant="outline" onClick={clearCart}>

@@ -54,8 +54,8 @@ export function DashboardShell({
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
               active
-                ? "bg-meru-primary text-white"
-                : "text-meru-charcoal hover:bg-meru-ice"
+                ? "bg-brand-sand font-medium text-brand-charcoal"
+                : "text-brand-charcoal hover:bg-brand-ice"
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -67,40 +67,40 @@ export function DashboardShell({
   );
 
   return (
-    <div className="min-h-screen bg-meru-sand">
-      <header className="border-b border-meru-border bg-white lg:hidden">
+    <div className="min-h-screen bg-brand-sand">
+      <header className="border-b border-brand-border bg-white lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <BrandLogo href={backHref} size="sm" />
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-wider text-meru-muted">{title}</p>
+              <p className="text-xs uppercase tracking-wider text-brand-muted">{title}</p>
               {subtitle ? (
-                <p className="truncate text-sm text-meru-charcoal">{subtitle}</p>
+                <p className="truncate text-sm text-brand-charcoal">{subtitle}</p>
               ) : null}
             </div>
           </div>
           <button
             type="button"
-            className="rounded-lg p-2 text-meru-charcoal hover:bg-meru-ice"
+            className="rounded-lg p-2 text-brand-charcoal hover:bg-brand-ice"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-        {mobileOpen ? <div className="border-t border-meru-border pb-3">{navContent}</div> : null}
+        {mobileOpen ? <div className="border-t border-brand-border pb-3">{navContent}</div> : null}
       </header>
 
       <div className="mx-auto flex max-w-7xl">
-        <aside className="hidden w-64 shrink-0 border-r border-meru-border bg-white lg:block lg:min-h-screen">
-          <div className="border-b border-meru-border p-5">
+        <aside className="hidden w-64 shrink-0 border-r border-brand-border bg-white lg:block lg:min-h-screen">
+          <div className="border-b border-brand-border p-5">
             <BrandLogo href={backHref} size="md" />
-            <p className="mt-3 font-medium text-meru-charcoal">{title}</p>
-            {subtitle ? <p className="mt-1 truncate text-xs text-meru-muted">{subtitle}</p> : null}
+            <p className="mt-3 font-medium text-brand-charcoal">{title}</p>
+            {subtitle ? <p className="mt-1 truncate text-xs text-brand-muted">{subtitle}</p> : null}
           </div>
           {navContent}
-          <div className="border-t border-meru-border p-4">
-            <Link href={backHref} className="text-sm text-meru-secondary hover:underline">
+          <div className="border-t border-brand-border p-4">
+            <Link href={backHref} className="text-sm text-brand-secondary hover:underline">
               ← {backLabel}
             </Link>
           </div>
