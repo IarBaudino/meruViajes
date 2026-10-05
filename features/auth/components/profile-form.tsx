@@ -24,6 +24,7 @@ export function ProfileForm() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -135,11 +136,14 @@ export function ProfileForm() {
     return <p className="text-red-600">{loadError}</p>;
   }
 
-  // BillingFormFields espera OrderBillingFormData; casteamos register/errors
+  // BillingFormFields espera OrderBillingFormData; casteamos register/control/errors
   // porque fullName/email viven en name/email del perfil.
   const billingRegister = register as unknown as Parameters<
     typeof BillingFormFields
   >[0]["register"];
+  const billingControl = control as unknown as Parameters<
+    typeof BillingFormFields
+  >[0]["control"];
   const billingErrors = errors as unknown as Parameters<
     typeof BillingFormFields
   >[0]["errors"];
@@ -170,7 +174,12 @@ export function ProfileForm() {
             Se autocompletan al comprar. Podés actualizarlos cuando quieras.
           </p>
         </div>
-        <BillingFormFields register={billingRegister} errors={billingErrors} hideIdentity />
+        <BillingFormFields
+          register={billingRegister}
+          control={billingControl}
+          errors={billingErrors}
+          hideIdentity
+        />
       </section>
 
       {saveStatus === "success" && (

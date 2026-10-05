@@ -33,6 +33,7 @@ export function CheckoutBillingPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -202,7 +203,7 @@ export function CheckoutBillingPage() {
             </p>
           </div>
 
-          <BillingFormFields register={register} errors={errors} />
+          <BillingFormFields register={register} control={control} errors={errors} />
 
           {error ? (
             <p className="flex items-start gap-2 text-sm text-red-600" role="alert">

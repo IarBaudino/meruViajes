@@ -1,21 +1,25 @@
 "use client";
 
-import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import {
-  IDENTIFICATION_TYPES,
-  PHONE_COUNTRY_CODES,
-  type OrderBillingFormData,
-} from "@/schemas/billing";
+import type { Control, FieldErrors, UseFormRegister } from "react-hook-form";
+import { Controller } from "react-hook-form";
+import { IDENTIFICATION_TYPES, type OrderBillingFormData } from "@/schemas/billing";
 import { Input } from "@/components/ui/input";
+import { PhoneCountryCodeField } from "@/features/checkout/components/phone-country-code-field";
 
 type Props = {
   register: UseFormRegister<OrderBillingFormData>;
+  control: Control<OrderBillingFormData>;
   errors: FieldErrors<OrderBillingFormData>;
   /** Si true, oculta nombre/email (cuando ya están en otra sección). */
   hideIdentity?: boolean;
 };
 
-export function BillingFormFields({ register, errors, hideIdentity = false }: Props) {
+export function BillingFormFields({
+  register,
+  control,
+  errors,
+  hideIdentity = false,
+}: Props) {
   return (
     <div className="space-y-5">
       {!hideIdentity ? (
@@ -34,25 +38,19 @@ export function BillingFormFields({ register, errors, hideIdentity = false }: Pr
         </>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-meru-charcoal">
-            Código país
-          </label>
-          <select
-            className="w-full rounded-lg border border-meru-border bg-white px-3 py-2.5 text-meru-charcoal"
-            {...register("phoneCountryCode")}
-          >
-            {PHONE_COUNTRY_CODES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-          {errors.phoneCountryCode?.message ? (
-            <p className="mt-1 text-xs text-red-600">{errors.phoneCountryCode.message}</p>
-          ) : null}
-        </div>
+      <div className="grid gap-4 sm:grid-cols-[220px_1fr]">
+        <Controller
+          name="phoneCountryCode"
+          control={control}
+          render={({ field }) => (
+            <PhoneCountryCodeField
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              error={errors.phoneCountryCode?.message}
+            />
+          )}
+        />
         <Input
           label="Teléfono (WhatsApp)"
           placeholder="11 5555 5555"
